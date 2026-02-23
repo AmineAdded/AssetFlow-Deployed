@@ -1,0 +1,539 @@
+@* ============================================================
+   COUCHE  : AssetFlow.BlazorUI (Frontend)
+   FICHIER : Pages/Employe/Fournisseurs.razor
+   ROUTE   : /fournisseurs
+   RÔLE    : Page CRUD complète — liste, recherche, ajout,
+             modification, suppression des fournisseurs.
+   ============================================================ *@
+
+@page "/fournisseurs"
+@inject AssetFlow.BlazorUI.Services.FournisseurService FournisseurSvc
+
+<div class="page-wrapper">
+
+    @* ─── EN-TÊTE ─────────────────────────────────────────── *@
+    <div class="page-header">
+        <div class="page-title">
+            <h2>Gestion des Fournisseurs</h2>
+            <p>Ajoutez, modifiez et suivez vos fournisseurs.</p>
+        </div>
+        <button class="btn-primary" @onclick="() => OuvrirFormulaire(null)">
+            + Nouveau Fournisseur
+        </button>
+    </div>
+
+    @* ─── BARRE RECHERCHE + FILTRE ────────────────────────── *@
+    <div class="toolbar">
+        <div class="toolbar-left">
+            <span class="tag-count">@_fournisseursAffiches.Count résultat(s)</span>
+
+            @* Recherche en temps réel (filtre côté client) *@
+            <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input
+                    class="search-input"
+                    type="text"
+                    placeholder="Rechercher par nom, tél, adresse, mail…"
+                    @oninput="OnRecherche" />
+            </div>
+        </div>
+    </div>
+
+    @* ─── CHARGEMENT ──────────────────────────────────────── *@
+    @if (_chargement)
+    {
+        <div class="loading-msg">Chargement en cours…</div>
+    }
+
+    @* ─── ERREUR GLOBALE ──────────────────────────────────── *@
+    @if (!string.IsNullOrEmpty(_erreurGlobale))
+    {
+        <div class="alert-error">@_erreurGlobale</div>
+    }
+
+    @* ─── TABLEAU ─────────────────────────────────────────── *@
+    @if (!_chargement)
+    {
+        <div class="table-container">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nom</th>
+                            <th>Téléphone</th>
+                            <th>Adresse</th>
+                            <th>Mail</th>
+                            <th class="th-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_fournisseursAffiches.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="empty-msg">
+                                    Aucun fournisseur trouvé.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var f in _fournisseursAffiches)
+                            {
+                                <tr>
+                                    @* IdFournisseur *@
+                                    <td class="td-id">@f.IdFournisseur</td>
+
+                                    @* Nom avec initiale colorée *@
+                                    <td>
+                                        <div class="supplier-cell">
+                                            <div class="supplier-avatar">
+                                                @f.Nom[0].ToString().ToUpper()
+                                            </div>
+                                            <span class="supplier-name">@f.Nom</span>
+                                        </div>
+                                    </td>
+
+                                    @* Téléphone *@
+                                    <td class="td-secondary">
+                                        @(string.IsNullOrEmpty(f.Telephone) ? "—" : f.Telephone)
+                                    </td>
+
+                                    @* Adresse *@
+                                    <td class="td-secondary td-adresse">
+                                        @(string.IsNullOrEmpty(f.Adresse) ? "—" : f.Adresse)
+                                    </td>
+
+                                    @* Mail *@
+                                    <td class="td-secondary">
+                                        @if (!string.IsNullOrEmpty(f.Mail))
+                                        {
+                                            <a class="mail-link" href="mailto:@f.Mail">@f.Mail</a>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </td>
+
+                                    @* Boutons Modifier / Supprimer *@
+                                    <td>
+                                        <div class="row-actions">
+
+                                            @* ── Bouton Modifier ── *@
+                                            <button
+                                                class="btn-edit"
+                                                title="Modifier @f.Nom"
+                                                @onclick="() => OuvrirFormulaire(f)">
+                                                ✏️
+                                            </button>
+
+                                            @* ── Bouton Supprimer ── *@
+                                            <button
+                                                class="btn-delete"
+                                                title="Supprimer @f.Nom"
+                                                @onclick="() => DemanderSuppression(f)">
+                                                🗑️
+                                            </button>
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-footer">
+                Affichage de @_fournisseursAffiches.Count
+                sur @_tousLesFournisseurs.Count fournisseur(s)
+            </div>
+        </div>
+    }
+
+    @* ─── MODALE DE CONFIRMATION SUPPRESSION ──────────────── *@
+    @if (_fournisseurASupprimer != null)
+    {
+        <div class="modal-overlay" @onclick="AnnulerSuppression">
+            <div class="modal-box" @onclick:stopPropagation="true">
+                <h3 class="modal-title">Confirmer la suppression</h3>
+                <p class="modal-text">
+                    Voulez-vous vraiment supprimer
+                    <strong>@_fournisseurASupprimer.Nom</strong> ?
+                    Cette action est irréversible.
+                </p>
+                <div class="modal-actions">
+                    <button class="btn-cancel-modal"
+                            @onclick="AnnulerSuppression">
+                        Annuler
+                    </button>
+                    <button class="btn-danger"
+                            @onclick="ConfirmerSuppression">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ─── PANNEAU FORMULAIRE (slide-in droite) ────────────── *@
+    @if (_panneauOuvert)
+    {
+        @* Overlay — ferme le panneau si on clique en dehors *@
+        <div class="form-overlay" @onclick="FermerFormulaire"></div>
+
+        <div class="form-panel">
+
+            @* En-tête du panneau *@
+            <div class="form-header">
+                <div class="form-header-icon">👥</div>
+                <h3>@(_modeModif ? "Modifier le fournisseur" : "Ajouter un fournisseur")</h3>
+                <button class="btn-close" @onclick="FermerFormulaire">✕</button>
+            </div>
+
+            @* Corps du formulaire *@
+            <div class="form-body">
+
+                @* ── Nom (obligatoire) ── *@
+                <div class="form-group">
+                    <label class="form-label">Nom du fournisseur *</label>
+                    <input
+                        class="form-input @(_erreurs.ContainsKey("Nom") ? "input-invalid" : "")"
+                        type="text"
+                        placeholder="ex : Global Tech Solutions"
+                        @bind="_form.Nom"
+                        @bind:event="oninput" />
+                    @if (_erreurs.ContainsKey("Nom"))
+                    {
+                        <span class="form-error">@_erreurs["Nom"]</span>
+                    }
+                </div>
+
+                @* ── Téléphone ── *@
+                <div class="form-group">
+                    <label class="form-label">Téléphone</label>
+                    <input
+                        class="form-input"
+                        type="tel"
+                        placeholder="ex : +216 20 000 000"
+                        @bind="_form.Telephone"
+                        @bind:event="oninput" />
+                </div>
+
+                @* ── Adresse ── *@
+                <div class="form-group">
+                    <label class="form-label">Adresse</label>
+                    <textarea
+                        class="form-input form-textarea"
+                        placeholder="ex : 12 Rue de la Paix, Tunis"
+                        @bind="_form.Adresse"
+                        @bind:event="oninput"
+                        rows="3"></textarea>
+                </div>
+
+                @* ── Mail ── *@
+                <div class="form-group">
+                    <label class="form-label">Adresse e-mail</label>
+                    <input
+                        class="form-input @(_erreurs.ContainsKey("Mail") ? "input-invalid" : "")"
+                        type="email"
+                        placeholder="ex : contact@fournisseur.com"
+                        @bind="_form.Mail"
+                        @bind:event="oninput" />
+                    @if (_erreurs.ContainsKey("Mail"))
+                    {
+                        <span class="form-error">@_erreurs["Mail"]</span>
+                    }
+                </div>
+
+            </div>
+
+            @* Pied du formulaire — boutons *@
+            <div class="form-footer">
+                <button class="btn-cancel" @onclick="FermerFormulaire">
+                    Annuler
+                </button>
+                <button class="btn-save"
+                        @onclick="SauvegarderFournisseur"
+                        disabled="@_sauvegarde">
+                    @(_sauvegarde
+                        ? "Enregistrement…"
+                        : (_modeModif ? "Mettre à jour" : "Enregistrer"))
+                </button>
+            </div>
+
+        </div>
+    }
+
+    @* ─── TOAST NOTIFICATION ──────────────────────────────── *@
+    @if (!string.IsNullOrEmpty(_toastMsg))
+    {
+        <div class="toast @_toastType">@_toastMsg</div>
+    }
+
+</div>
+
+@code {
+
+    // ── Listes ───────────────────────────────────────────────
+    private List<AssetFlow.Application.DTOs.FournisseurDto> _tousLesFournisseurs = new();
+    private List<AssetFlow.Application.DTOs.FournisseurDto> _fournisseursAffiches = new();
+
+    // ── État général ─────────────────────────────────────────
+    private bool   _chargement   = true;
+    private string _erreurGlobale = string.Empty;
+
+    // ── Recherche ────────────────────────────────────────────
+    private string _termeRecherche = string.Empty;
+
+    // ── Formulaire ───────────────────────────────────────────
+    private bool   _panneauOuvert = false;
+    private bool   _modeModif     = false;
+    private bool   _sauvegarde    = false;
+    private FormModele _form      = new();
+    private Dictionary<string, string> _erreurs = new();
+
+    // ── Suppression ──────────────────────────────────────────
+    private AssetFlow.Application.DTOs.FournisseurDto? _fournisseurASupprimer;
+
+    // ── Toast ────────────────────────────────────────────────
+    private string _toastMsg  = string.Empty;
+    private string _toastType = "toast-success";
+
+    // ────────────────────────────────────────────────────────
+    // INITIALISATION
+    // ────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerFournisseurs();
+    }
+
+    private async Task ChargerFournisseurs()
+    {
+        _chargement   = true;
+        _erreurGlobale = string.Empty;
+
+        _tousLesFournisseurs = await FournisseurSvc.GetAllAsync();
+        AppliquerRecherche();
+
+        _chargement = false;
+    }
+
+    // ────────────────────────────────────────────────────────
+    // RECHERCHE (filtre côté client, insensible à la casse)
+    // ────────────────────────────────────────────────────────
+
+    private void OnRecherche(ChangeEventArgs e)
+    {
+        _termeRecherche = e.Value?.ToString() ?? string.Empty;
+        AppliquerRecherche();
+    }
+
+    private void AppliquerRecherche()
+    {
+        if (string.IsNullOrWhiteSpace(_termeRecherche))
+        {
+            // Pas de terme → afficher tout
+            _fournisseursAffiches = new List<AssetFlow.Application.DTOs.FournisseurDto>(
+                _tousLesFournisseurs);
+            return;
+        }
+
+        var t = _termeRecherche.Trim().ToLower();
+
+        _fournisseursAffiches = _tousLesFournisseurs.Where(f =>
+            f.Nom.ToLower().Contains(t)                                        ||
+            (f.Telephone != null && f.Telephone.Contains(t))                   ||
+            (f.Adresse   != null && f.Adresse.ToLower().Contains(t))           ||
+            (f.Mail      != null && f.Mail.ToLower().Contains(t))
+        ).ToList();
+    }
+
+    // ────────────────────────────────────────────────────────
+    // FORMULAIRE — Ouverture
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// null  → mode Ajout (formulaire vide)
+    /// dto   → mode Modification (formulaire pré-rempli)
+    /// </summary>
+    private void OuvrirFormulaire(
+        AssetFlow.Application.DTOs.FournisseurDto? fournisseur)
+    {
+        _erreurs.Clear();
+
+        if (fournisseur is not null)
+        {
+            // Mode MODIFICATION — pré-remplir les champs
+            _modeModif = true;
+            _form = new FormModele
+            {
+                IdFournisseur = fournisseur.IdFournisseur,
+                Nom           = fournisseur.Nom,
+                Telephone     = fournisseur.Telephone ?? string.Empty,
+                Adresse       = fournisseur.Adresse   ?? string.Empty,
+                Mail          = fournisseur.Mail      ?? string.Empty
+            };
+        }
+        else
+        {
+            // Mode AJOUT — formulaire vide
+            _modeModif = false;
+            _form = new FormModele();
+        }
+
+        _panneauOuvert = true;
+    }
+
+    // ────────────────────────────────────────────────────────
+    // FORMULAIRE — Fermeture
+    // ────────────────────────────────────────────────────────
+
+    private void FermerFormulaire()
+    {
+        _panneauOuvert = false;
+        _erreurs.Clear();
+    }
+
+    // Fermer avec Échap
+    // (à brancher via JS interop si nécessaire)
+
+    // ────────────────────────────────────────────────────────
+    // FORMULAIRE — Sauvegarde (Ajout ou Modification)
+    // ────────────────────────────────────────────────────────
+
+    private async Task SauvegarderFournisseur()
+    {
+        // ── Validation côté client ────────────────────────────
+        _erreurs.Clear();
+
+        if (string.IsNullOrWhiteSpace(_form.Nom))
+            _erreurs["Nom"] = "Le nom est obligatoire.";
+
+        // Validation format e-mail basique
+        if (!string.IsNullOrWhiteSpace(_form.Mail) &&
+            !_form.Mail.Contains('@'))
+            _erreurs["Mail"] = "L'adresse e-mail n'est pas valide.";
+
+        if (_erreurs.Any()) return;
+
+        _sauvegarde = true;
+        AssetFlow.Application.DTOs.FournisseurReponseDto reponse;
+
+        if (_modeModif)
+        {
+            // ── PUT — Modification ────────────────────────────
+            var dto = new AssetFlow.Application.DTOs.ModifierFournisseurDto
+            {
+                IdFournisseur = _form.IdFournisseur,
+                Nom           = _form.Nom.Trim(),
+                Telephone     = NullSiVide(_form.Telephone),
+                Adresse       = NullSiVide(_form.Adresse),
+                Mail          = NullSiVide(_form.Mail)
+            };
+            reponse = await FournisseurSvc.ModifierAsync(dto);
+        }
+        else
+        {
+            // ── POST — Création ───────────────────────────────
+            var dto = new AssetFlow.Application.DTOs.CreerFournisseurDto
+            {
+                Nom       = _form.Nom.Trim(),
+                Telephone = NullSiVide(_form.Telephone),
+                Adresse   = NullSiVide(_form.Adresse),
+                Mail      = NullSiVide(_form.Mail)
+            };
+            reponse = await FournisseurSvc.AjouterAsync(dto);
+        }
+
+        _sauvegarde = false;
+
+        if (reponse.Succes)
+        {
+            FermerFormulaire();
+            await ChargerFournisseurs();          // Recharger la liste depuis l'API
+            AfficherToast(reponse.Message, "toast-success");
+        }
+        else
+        {
+            _erreurGlobale = reponse.Message;
+        }
+    }
+
+    // ────────────────────────────────────────────────────────
+    // SUPPRESSION
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>Ouvre la modale de confirmation</summary>
+    private void DemanderSuppression(
+        AssetFlow.Application.DTOs.FournisseurDto f)
+    {
+        _fournisseurASupprimer = f;
+    }
+
+    /// <summary>Ferme la modale sans supprimer</summary>
+    private void AnnulerSuppression()
+    {
+        _fournisseurASupprimer = null;
+    }
+
+    /// <summary>Confirme et exécute la suppression</summary>
+    private async Task ConfirmerSuppression()
+    {
+        if (_fournisseurASupprimer == null) return;
+
+        var nom = _fournisseurASupprimer.Nom;
+        var id  = _fournisseurASupprimer.IdFournisseur;
+        _fournisseurASupprimer = null;   // Fermer la modale immédiatement
+
+        var reponse = await FournisseurSvc.SupprimerAsync(id);
+
+        if (reponse.Succes)
+        {
+            await ChargerFournisseurs();
+            AfficherToast($"« {nom} » a été supprimé.", "toast-success");
+        }
+        else
+        {
+            _erreurGlobale = reponse.Message;
+        }
+    }
+
+    // ────────────────────────────────────────────────────────
+    // HELPERS
+    // ────────────────────────────────────────────────────────
+
+    /// <summary>Retourne null si la chaîne est vide ou whitespace</summary>
+    private static string? NullSiVide(string? valeur) =>
+        string.IsNullOrWhiteSpace(valeur) ? null : valeur.Trim();
+
+    /// <summary>Affiche un toast qui disparaît après 3 secondes</summary>
+    private async void AfficherToast(string message, string type)
+    {
+        _toastMsg  = message;
+        _toastType = type;
+        StateHasChanged();
+
+        await Task.Delay(3000);
+
+        _toastMsg = string.Empty;
+        StateHasChanged();
+    }
+
+    // ────────────────────────────────────────────────────────
+    // MODÈLE DU FORMULAIRE (classe interne)
+    // Lié aux champs via @bind dans le template HTML.
+    // Converti en DTO lors de la sauvegarde.
+    // ────────────────────────────────────────────────────────
+
+    private class FormModele
+    {
+        public int    IdFournisseur { get; set; }
+        public string Nom          { get; set; } = string.Empty;
+        public string Telephone    { get; set; } = string.Empty;
+        public string Adresse      { get; set; } = string.Empty;
+        public string Mail         { get; set; } = string.Empty;
+    }
+}

@@ -17,6 +17,7 @@ namespace AssetFlow.Infrastructure.Data
         public DbSet<Materiel> Materiels { get; set; }
         public DbSet<Affectation> Affectations { get; set; }
         public DbSet<Incident> Incidents { get; set; }
+        public DbSet<Fournisseur> Fournisseurs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -80,6 +81,34 @@ namespace AssetFlow.Infrastructure.Data
                       .WithMany()
                       .HasForeignKey(i => i.AffectationId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+            // === CONFIGURATION Fournisseur ===
+             modelBuilder.Entity<Fournisseur>(entity =>
+            {
+                // Nom exact de la table SQL
+                entity.ToTable("Fournisseur");
+
+                // Clé primaire → IdFournisseur (INT IDENTITY)
+                entity.HasKey(f => f.IdFournisseur);
+                entity.Property(f => f.IdFournisseur)
+                      .ValueGeneratedOnAdd();   // IDENTITY(1,1)
+
+                // Nom — VARCHAR(100) NOT NULL
+                entity.Property(f => f.Nom)
+                      .IsRequired()
+                      .HasColumnType("varchar(100)");
+
+                // Telephone — VARCHAR(20) nullable
+                entity.Property(f => f.Telephone)
+                      .HasColumnType("varchar(20)");
+
+                // Adresse — VARCHAR(255) nullable
+                entity.Property(f => f.Adresse)
+                      .HasColumnType("varchar(255)");
+
+                // Mail — VARCHAR(150) nullable
+                entity.Property(f => f.Mail)
+                      .HasColumnType("varchar(150)");
             });
         }
     }

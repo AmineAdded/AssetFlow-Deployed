@@ -99,35 +99,30 @@ namespace WebApi.Controllers
         /// Réponse 201 Created + FournisseurReponseDto avec l'ID généré.
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<FournisseurReponseDto>> Ajouter(
-            [FromBody] CreerFournisseurDto dto)
-        {
-            // Validation : Nom obligatoire
-            if (string.IsNullOrWhiteSpace(dto.Nom))
-                return BadRequest(new FournisseurReponseDto
-                {
-                    Succes  = false,
-                    Message = "Le champ Nom est obligatoire."
-                });
+public async Task<ActionResult<FournisseurReponseDto>> Ajouter(CreerFournisseurDto dto)
+{
+    var entite = new Fournisseur
+    {
+        Nom = dto.Nom.Trim(),
+        Telephone = dto.Telephone?.Trim(),
+        Adresse = dto.Adresse?.Trim(),
+        Mail = dto.Mail?.Trim(),
 
-            // Mapper DTO → Entité Domain
-            var entite = new Fournisseur
-            {
-                Nom       = dto.Nom.Trim(),
-                Telephone = dto.Telephone?.Trim(),
-                Adresse   = dto.Adresse?.Trim(),
-                Mail      = dto.Mail?.Trim()
-            };
+        CommandesTotales = dto.CommandesTotales,
+        TauxLivraisonATemps = dto.TauxLivraisonATemps,
+        ScoreFiabilite = dto.ScoreFiabilite,
+        DerniereCommande = dto.DerniereCommande
+    };
 
-            var creee = await _service.AjouterAsync(entite);
+    var cree = await _service.AjouterAsync(entite);
 
-            return StatusCode(201, new FournisseurReponseDto
-            {
-                Succes        = true,
-                Message       = $"Fournisseur « {creee.Nom} » ajouté avec succès.",
-                IdFournisseur = creee.IdFournisseur
-            });
-        }
+    return Ok(new FournisseurReponseDto
+    {
+        Succes = true,
+        Message = "Fournisseur ajouté avec succès.",
+        IdFournisseur = cree.IdFournisseur
+    });
+}
 
         // ────────────────────────────────────────────────────────
         // PUT /api/fournisseurs/{id}
@@ -138,55 +133,32 @@ namespace WebApi.Controllers
         /// Modifie un fournisseur existant.
         /// Réponse 200 OK ou 404 Not Found.
         /// </summary>
-        [HttpPut("{id:int}")]
-        public async Task<ActionResult<FournisseurReponseDto>> Modifier(
-            int id,
-            [FromBody] ModifierFournisseurDto dto)
-        {
-            // Cohérence ID URL vs ID corps
-            if (id != dto.IdFournisseur)
-                return BadRequest(new FournisseurReponseDto
-                {
-                    Succes  = false,
-                    Message = "L'ID dans l'URL ne correspond pas à l'ID dans le corps."
-                });
+        [HttpPut]
+public async Task<ActionResult<FournisseurReponseDto>> Modifier(ModifierFournisseurDto dto)
+{
+    var entite = new Fournisseur
+    {
+        IdFournisseur = dto.IdFournisseur,
+        Nom = dto.Nom.Trim(),
+        Telephone = dto.Telephone?.Trim(),
+        Adresse = dto.Adresse?.Trim(),
+        Mail = dto.Mail?.Trim(),
 
-            if (string.IsNullOrWhiteSpace(dto.Nom))
-                return BadRequest(new FournisseurReponseDto
-                {
-                    Succes  = false,
-                    Message = "Le champ Nom est obligatoire."
-                });
+        CommandesTotales = dto.CommandesTotales,
+        TauxLivraisonATemps = dto.TauxLivraisonATemps,
+        ScoreFiabilite = dto.ScoreFiabilite,
+        DerniereCommande = dto.DerniereCommande
+    };
 
-            try
-            {
-                var entite = new Fournisseur
-                {
-                    IdFournisseur = dto.IdFournisseur,
-                    Nom           = dto.Nom.Trim(),
-                    Telephone     = dto.Telephone?.Trim(),
-                    Adresse       = dto.Adresse?.Trim(),
-                    Mail          = dto.Mail?.Trim()
-                };
+    await _service.ModifierAsync(entite);
 
-                await _service.ModifierAsync(entite);
-
-                return Ok(new FournisseurReponseDto
-                {
-                    Succes        = true,
-                    Message       = $"Fournisseur « {dto.Nom} » modifié avec succès.",
-                    IdFournisseur = dto.IdFournisseur
-                });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new FournisseurReponseDto
-                {
-                    Succes  = false,
-                    Message = ex.Message
-                });
-            }
-        }
+    return Ok(new FournisseurReponseDto
+    {
+        Succes = true,
+        Message = "Fournisseur modifié avec succès.",
+        IdFournisseur = dto.IdFournisseur
+    });
+}
 
         // ────────────────────────────────────────────────────────
         // DELETE /api/fournisseurs/{id}
@@ -228,13 +200,18 @@ namespace WebApi.Controllers
         /// Convertit une entité Domain en DTO de lecture.
         /// Centralise la logique de mapping dans le controller.
         /// </summary>
-        private static FournisseurDto MapToDto(Fournisseur f) => new()
-        {
-            IdFournisseur = f.IdFournisseur,
-            Nom           = f.Nom,
-            Telephone     = f.Telephone,
-            Adresse       = f.Adresse,
-            Mail          = f.Mail
-        };
+private static FournisseurDto MapToDto(Fournisseur f) => new()
+{
+    IdFournisseur = f.IdFournisseur,
+    Nom = f.Nom,
+    Telephone = f.Telephone,
+    Adresse = f.Adresse,
+    Mail = f.Mail,
+
+    CommandesTotales = f.CommandesTotales,
+    TauxLivraisonATemps = f.TauxLivraisonATemps,
+    ScoreFiabilite = f.ScoreFiabilite,
+    DerniereCommande = f.DerniereCommande
+};
     }
 }

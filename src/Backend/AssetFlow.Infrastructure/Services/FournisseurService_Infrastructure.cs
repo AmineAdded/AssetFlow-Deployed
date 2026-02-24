@@ -116,10 +116,15 @@ namespace AssetFlow.Infrastructure.Services
                     $"Fournisseur ID {fournisseur.IdFournisseur} introuvable.");
 
             // Mettre à jour uniquement les champs modifiables
-            existant.Nom       = fournisseur.Nom;
-            existant.Telephone = fournisseur.Telephone;
-            existant.Adresse   = fournisseur.Adresse;
-            existant.Mail      = fournisseur.Mail;
+existant.Nom = fournisseur.Nom;
+existant.Telephone = fournisseur.Telephone;
+existant.Adresse = fournisseur.Adresse;
+existant.Mail = fournisseur.Mail;
+
+existant.CommandesTotales = fournisseur.CommandesTotales;
+existant.TauxLivraisonATemps = fournisseur.TauxLivraisonATemps;
+existant.ScoreFiabilite = fournisseur.ScoreFiabilite;
+existant.DerniereCommande = fournisseur.DerniereCommande;
 
             await _context.SaveChangesAsync();
         }

@@ -586,8 +586,8 @@
         public string?   Adresse             { get; set; }
         public string?   Mail                { get; set; }
         public int       CommandesTotales    { get; set; }
-        public double    TauxLivraisonATemps { get; set; }
-        public double    ScoreFiabilite      { get; set; }
+        public decimal    TauxLivraisonATemps { get; set; }
+        public decimal    ScoreFiabilite      { get; set; }
         public DateTime? DerniereCommande    { get; set; }
         public bool      Expanded            { get; set; }
     }
@@ -600,8 +600,8 @@
         public string    Adresse             { get; set; } = string.Empty;
         public string    Mail                { get; set; } = string.Empty;
         public int       CommandesTotales    { get; set; }
-        public double    TauxLivraisonATemps { get; set; }
-        public double    ScoreFiabilite      { get; set; }
+        public decimal    TauxLivraisonATemps { get; set; }
+        public decimal    ScoreFiabilite      { get; set; }
         public DateTime? DerniereCommande    { get; set; }
     }
 
@@ -610,8 +610,8 @@
     private bool   _chargement    = true;
     private string _erreurGlobale = string.Empty;
     private int    _totalFournisseurs = 0;
-    private double _meilleurScore     = 0;
-    private double _scoreMoyen        = 0;
+    private decimal _meilleurScore     = 0;
+    private decimal _scoreMoyen        = 0;
     private string _termeRecherche = string.Empty;
     private string _filtreScore    = "all";
     private string _theme         = "dark";
@@ -672,10 +672,10 @@
                 Telephone           = d.Telephone,
                 Adresse             = d.Adresse,
                 Mail                = d.Mail,
-                //CommandesTotales    = d.CommandesTotales,
-                //TauxLivraisonATemps = d.TauxLivraisonATemps,
-                //ScoreFiabilite      = d.ScoreFiabilite,
-                //DerniereCommande    = d.DerniereCommande
+                CommandesTotales    = d.CommandesTotales,
+                TauxLivraisonATemps = d.TauxLivraisonATemps,
+                ScoreFiabilite      = d.ScoreFiabilite,
+                DerniereCommande    = d.DerniereCommande
             }).ToList();
             RecalculerStats();
             AppliquerFiltres();
@@ -687,7 +687,7 @@
     private void RecalculerStats()
     {
         _totalFournisseurs = _tousLesFournisseurs.Count;
-        _meilleurScore     = _tousLesFournisseurs.Any() ? _tousLesFournisseurs.Max(f => f.ScoreFiabilite) : 0;
+        _meilleurScore     =  _tousLesFournisseurs.Any() ? _tousLesFournisseurs.Max(f => f.ScoreFiabilite) : 0;
         _scoreMoyen        = _tousLesFournisseurs.Any() ? _tousLesFournisseurs.Average(f => f.ScoreFiabilite) : 0;
     }
 
@@ -751,6 +751,7 @@
                 CommandesTotales    = vm.CommandesTotales,
                 TauxLivraisonATemps = vm.TauxLivraisonATemps,
                 ScoreFiabilite      = vm.ScoreFiabilite,
+
                 DerniereCommande    = vm.DerniereCommande
             }
             : new FormulaireVm();
@@ -780,10 +781,10 @@
                     Telephone           = Vide(_form.Telephone),
                     Adresse             = Vide(_form.Adresse),
                     Mail                = Vide(_form.Mail),
-                    //CommandesTotales    = _form.CommandesTotales,
-                    //TauxLivraisonATemps = _form.TauxLivraisonATemps,
-                    //ScoreFiabilite      = _form.ScoreFiabilite,
-                    //DerniereCommande    = _form.DerniereCommande
+                    CommandesTotales    = _form.CommandesTotales,
+                    TauxLivraisonATemps = _form.TauxLivraisonATemps,
+                    ScoreFiabilite      = _form.ScoreFiabilite,
+                    DerniereCommande    = _form.DerniereCommande
                 };
                 var r = await FournisseurSvc.ModifierAsync(dto);
                 if (r.Succes)
@@ -812,10 +813,10 @@
                     Telephone           = Vide(_form.Telephone),
                     Adresse             = Vide(_form.Adresse),
                     Mail                = Vide(_form.Mail),
-                    //CommandesTotales    = _form.CommandesTotales,
-                    //TauxLivraisonATemps = _form.TauxLivraisonATemps,
-                    //ScoreFiabilite      = _form.ScoreFiabilite,
-                    //DerniereCommande    = _form.DerniereCommande
+                    CommandesTotales    = _form.CommandesTotales,
+                    TauxLivraisonATemps = _form.TauxLivraisonATemps,
+                    ScoreFiabilite      = _form.ScoreFiabilite,
+                    DerniereCommande    = _form.DerniereCommande
                 };
                 var r = await FournisseurSvc.AjouterAsync(dto);
                 if (r.Succes)
@@ -883,9 +884,9 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private static string RateClass(double r)      => r >= 80 ? "good" : r >= 60 ? "avg" : "bad";
-    private static string ScoreFillClass(double s)  => s >= 80 ? "green" : s >= 50 ? "amber" : "red";
-    private static string ScoreTextClass(double s)  => s >= 80 ? "good" : s >= 50 ? "avg" : "bad";
+    private static string RateClass(decimal r)      => r >= 80 ? "good" : r >= 60 ? "avg" : "bad";
+    private static string ScoreFillClass(decimal s)  => s >= 80 ? "green" : s >= 50 ? "amber" : "red";
+    private static string ScoreTextClass(decimal s)  => s >= 80 ? "good" : s >= 50 ? "avg" : "bad";
 
     private async void AfficherToast(string msg, string type)
     {

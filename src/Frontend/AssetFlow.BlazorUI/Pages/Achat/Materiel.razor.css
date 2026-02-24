@@ -39,12 +39,12 @@
     --t:             0.15s ease;
 
     display:    flex;
-    min-height: 100vh;
+    height: 100vh;
     background: var(--bg);
     color:      var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     position:   relative;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Dark mode */
@@ -145,7 +145,7 @@ html.dark .sk-shell {
    ═══════════════════════════════════════════════════════════ */
 .sk-main-wrap {
     flex: 1; display: flex; flex-direction: column;
-    min-width: 0; overflow-x: hidden;
+    min-width: 0; overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -565,7 +565,7 @@ html.dark .sk-shell {
 
 .sk-btn-danger {
     padding: 9px 20px; border-radius: var(--r-lg);
-    background: #f43f5e; color: #fff; font-size: 13px; font-weight: 700;
+    background: #f43f5e !important; color: #fff; font-size: 13px; font-weight: 700;
     transition: background var(--t);
 }
 .sk-btn-danger:hover { background: #e11d48; }

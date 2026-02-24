@@ -47,11 +47,11 @@
 
     /* Layout */
     display:     flex;
-    min-height:  100vh;
+    height:  100vh;
     background:  var(--bg);
     color:       var(--text-primary);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    overflow-x:  hidden;
+    overflow:  hidden;
     position:    relative;
 }
 
@@ -651,7 +651,7 @@ tbody tr:hover .supplier-avatar { color: #136dec; }
 .btn-modal-cancel:hover { background: var(--bg-row-hover); }
 .btn-modal-danger {
     padding: 10px 20px; border-radius: var(--radius-md);
-    background: #f43f5e; color: white; font-size: 13px; font-weight: 700;
+    background: #f43f5e !important; color: white; font-size: 13px; font-weight: 700;
     transition: background var(--t);
 }
 .btn-modal-danger:hover { background: #e11d48; }

@@ -48,7 +48,7 @@
 }
 
 /* Dark mode */
-.sk-shell[data-theme="dark"] {
+html.dark .sk-shell {
     --bg:            #101822;
     --surface:       #1c2533;
     --surface-2:     rgba(255,255,255,0.04);

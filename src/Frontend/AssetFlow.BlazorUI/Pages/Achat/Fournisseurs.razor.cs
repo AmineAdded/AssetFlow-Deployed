@@ -39,31 +39,28 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public DateTime? DerniereCommande { get; set; }
         }
 
-        private List<FournisseurVm> _tousLesFournisseurs = new();
+        private List<FournisseurVm> _tousLesFournisseurs  = new();
         private List<FournisseurVm> _fournisseursAffiches = new();
-        private bool _chargement = true;
-        private string _erreurGlobale = string.Empty;
-        private int _totalFournisseurs = 0;
-        private decimal _meilleurScore = 0;
-        private decimal _scoreMoyen = 0;
-        private string _termeRecherche = string.Empty;
-        private string _filtreScore = "all";
-        private string _theme = "dark";
-        private bool _sidebarOpen = false;
-        private bool _panneauOuvert = false;
-        private bool _modeModif = false;
-        private bool _sauvegarde = false;
-        private FormulaireVm _form = new();
+        private bool    _chargement        = true;
+        private string  _erreurGlobale     = string.Empty;
+        private int     _totalFournisseurs = 0;
+        private decimal _meilleurScore     = 0;
+        private decimal _scoreMoyen        = 0;
+        private string  _termeRecherche    = string.Empty;
+        private string  _filtreScore       = "all";
+        private bool    _sidebarOpen       = false;
+        private bool    _panneauOuvert     = false;
+        private bool    _modeModif         = false;
+        private bool    _sauvegarde        = false;
+        private FormulaireVm               _form    = new();
         private Dictionary<string, string> _erreurs = new();
         private FournisseurVm? _fournisseurASupprimer;
-        private string _toastMsg = string.Empty;
+        private string _toastMsg  = string.Empty;
         private string _toastType = "toast-success";
 
-        // ── Infos utilisateur courant (lues depuis localStorage) ──
         private string _currentUserName = "Administrateur";
         private string _currentUserRole = "Admin système";
 
-        /// <summary>Initiales pour l'avatar (max 2 caractères).</summary>
         private string CurrentUserInitials
         {
             get
@@ -77,18 +74,10 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            var isDark = await JS.InvokeAsync<bool>("eval",
-                "document.documentElement.classList.contains('dark')");
-            _theme = isDark ? "dark" : "light";
-
             await ChargerInfosUtilisateur();
             await ChargerFournisseurs();
         }
 
-        /// <summary>
-        /// Lit le nom et le rôle depuis localStorage et supprime les guillemets
-        /// éventuellement ajoutés par certains sérialiseurs JSON.
-        /// </summary>
         private async Task ChargerInfosUtilisateur()
         {
             try
@@ -98,53 +87,20 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 var role = await JS.InvokeAsync<string?>("eval",
                     "localStorage.getItem('user_role') || localStorage.getItem('currentUserRole')");
 
-                if (!string.IsNullOrWhiteSpace(nom))
-                    _currentUserName = SupprimerGuillemets(nom);
-
-                if (!string.IsNullOrWhiteSpace(role))
-                    _currentUserRole = SupprimerGuillemets(role);
+                if (!string.IsNullOrWhiteSpace(nom))  _currentUserName = SupprimerGuillemets(nom);
+                if (!string.IsNullOrWhiteSpace(role)) _currentUserRole = SupprimerGuillemets(role);
             }
-            catch
-            {
-                // Valeurs par défaut conservées si localStorage inaccessible
-            }
+            catch { }
         }
 
-        /// <summary>Enlève les guillemets doubles ou simples en début et fin de chaîne.</summary>
         private static string SupprimerGuillemets(string valeur)
         {
             valeur = valeur.Trim();
-            if (valeur.Length >= 2)
-            {
-                if ((valeur.StartsWith('"') && valeur.EndsWith('"')) ||
-                    (valeur.StartsWith('\'') && valeur.EndsWith('\'')))
-                {
-                    valeur = valeur[1..^1].Trim();
-                }
-            }
+            if (valeur.Length >= 2 &&
+                ((valeur.StartsWith('"') && valeur.EndsWith('"')) ||
+                 (valeur.StartsWith('\'') && valeur.EndsWith('\''))))
+                valeur = valeur[1..^1].Trim();
             return valeur;
-        }
-
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            if (!firstRender) return;
-
-            await JS.InvokeVoidAsync("eval", @"
-                window.__assetflowSetThemeRef = function(ref) {
-                    window.__blazorThemeRef = ref;
-                    window.__themeObserver && window.__themeObserver.disconnect();
-                    window.__themeObserver = new MutationObserver(function() {
-                        var isDark = document.documentElement.classList.contains('dark');
-                        window.__blazorThemeRef.invokeMethodAsync('OnThemeChanged', isDark);
-                    });
-                    window.__themeObserver.observe(document.documentElement, {
-                        attributes: true, attributeFilter: ['class']
-                    });
-                };
-            ");
-
-            var dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("__assetflowSetThemeRef", dotNetRef);
         }
 
         private async Task ChargerFournisseurs()
@@ -156,15 +112,15 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 var dtos = await FournisseurSvc.GetAllAsync();
                 _tousLesFournisseurs = dtos.Select(d => new FournisseurVm
                 {
-                    Id = d.IdFournisseur,
-                    Nom = d.Nom,
-                    Telephone = d.Telephone,
-                    Adresse = d.Adresse,
-                    Mail = d.Mail,
-                    CommandesTotales = d.CommandesTotales,
+                    Id                  = d.IdFournisseur,
+                    Nom                 = d.Nom,
+                    Telephone           = d.Telephone,
+                    Adresse             = d.Adresse,
+                    Mail                = d.Mail,
+                    CommandesTotales    = d.CommandesTotales,
                     TauxLivraisonATemps = d.TauxLivraisonATemps,
-                    ScoreFiabilite = d.ScoreFiabilite,
-                    DerniereCommande = d.DerniereCommande
+                    ScoreFiabilite      = d.ScoreFiabilite,
+                    DerniereCommande    = d.DerniereCommande
                 }).ToList();
                 RecalculerStats();
                 AppliquerFiltres();
@@ -209,8 +165,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 q = q.Where(f =>
                     f.Nom.ToLower().Contains(t) ||
                     (f.Telephone != null && f.Telephone.Contains(t)) ||
-                    (f.Mail     != null && f.Mail.ToLower().Contains(t)) ||
-                    (f.Adresse  != null && f.Adresse.ToLower().Contains(t)));
+                    (f.Mail      != null && f.Mail.ToLower().Contains(t)) ||
+                    (f.Adresse   != null && f.Adresse.ToLower().Contains(t)));
             }
             _fournisseursAffiches = q.ToList();
         }
@@ -227,15 +183,16 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private void OuvrirFormulaire(FournisseurVm? vm)
         {
             _erreurs.Clear();
-            _modeModif  = vm is not null;
+            _modeModif     = vm is not null;
             _panneauOuvert = true;
             _form = vm is not null
                 ? new FormulaireVm
                 {
-                    Id = vm.Id, Nom = vm.Nom,
-                    Telephone = vm.Telephone ?? string.Empty,
-                    Adresse   = vm.Adresse   ?? string.Empty,
-                    Mail      = vm.Mail      ?? string.Empty,
+                    Id                  = vm.Id,
+                    Nom                 = vm.Nom,
+                    Telephone           = vm.Telephone ?? string.Empty,
+                    Adresse             = vm.Adresse   ?? string.Empty,
+                    Mail                = vm.Mail      ?? string.Empty,
                     CommandesTotales    = vm.CommandesTotales,
                     TauxLivraisonATemps = vm.TauxLivraisonATemps,
                     ScoreFiabilite      = vm.ScoreFiabilite,
@@ -252,8 +209,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             if (string.IsNullOrWhiteSpace(_form.Nom)) _erreurs["Nom"] = "Le nom est obligatoire.";
             if (!string.IsNullOrWhiteSpace(_form.Mail) && !_form.Mail.Contains('@'))
                 _erreurs["Mail"] = "E-mail invalide.";
-            if (_form.ScoreFiabilite     < 0 || _form.ScoreFiabilite     > 100) _erreurs["Score"] = "Entre 0 et 100.";
-            if (_form.TauxLivraisonATemps < 0 || _form.TauxLivraisonATemps > 100) _erreurs["Taux"] = "Entre 0 et 100.";
+            if (_form.ScoreFiabilite      < 0 || _form.ScoreFiabilite      > 100) _erreurs["Score"] = "Entre 0 et 100.";
+            if (_form.TauxLivraisonATemps < 0 || _form.TauxLivraisonATemps > 100) _erreurs["Taux"]  = "Entre 0 et 100.";
             if (_erreurs.Any()) return;
 
             _sauvegarde = true;
@@ -281,10 +238,10 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         {
                             vm.Nom = _form.Nom.Trim(); vm.Telephone = Vide(_form.Telephone);
                             vm.Adresse = Vide(_form.Adresse); vm.Mail = Vide(_form.Mail);
-                            vm.CommandesTotales = _form.CommandesTotales;
+                            vm.CommandesTotales    = _form.CommandesTotales;
                             vm.TauxLivraisonATemps = _form.TauxLivraisonATemps;
-                            vm.ScoreFiabilite = _form.ScoreFiabilite;
-                            vm.DerniereCommande = _form.DerniereCommande;
+                            vm.ScoreFiabilite      = _form.ScoreFiabilite;
+                            vm.DerniereCommande    = _form.DerniereCommande;
                         }
                         RecalculerStats(); AppliquerFiltres(); FermerFormulaire();
                         AfficherToast($"« {_form.Nom} » mis à jour.", "toast-success");
@@ -309,12 +266,15 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     {
                         _tousLesFournisseurs.Insert(0, new FournisseurVm
                         {
-                            Id = r.IdFournisseur ?? 0, Nom = _form.Nom.Trim(),
-                            Telephone = Vide(_form.Telephone), Adresse = Vide(_form.Adresse),
-                            Mail = Vide(_form.Mail), CommandesTotales = _form.CommandesTotales,
+                            Id                  = r.IdFournisseur ?? 0,
+                            Nom                 = _form.Nom.Trim(),
+                            Telephone           = Vide(_form.Telephone),
+                            Adresse             = Vide(_form.Adresse),
+                            Mail                = Vide(_form.Mail),
+                            CommandesTotales    = _form.CommandesTotales,
                             TauxLivraisonATemps = _form.TauxLivraisonATemps,
-                            ScoreFiabilite = _form.ScoreFiabilite,
-                            DerniereCommande = _form.DerniereCommande
+                            ScoreFiabilite      = _form.ScoreFiabilite,
+                            DerniereCommande    = _form.DerniereCommande
                         });
                         RecalculerStats(); AppliquerFiltres(); FermerFormulaire();
                         AfficherToast($"« {_form.Nom} » ajouté.", "toast-success");
@@ -347,16 +307,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
-        [JSInvokable("OnThemeChanged")]
-        public void OnThemeChanged(bool isDark)
-        {
-            _theme = isDark ? "dark" : "light";
-            InvokeAsync(StateHasChanged);
-        }
-
-        private string RateClass(decimal r) => r >= 80 ? "good" : r >= 60 ? "avg" : "bad";
+        private string RateClass(decimal r)  => r >= 80 ? "good" : r >= 60 ? "avg" : "bad";
         private string ScoreFillClass(decimal s) => s >= 80 ? "green" : s >= 50 ? "amber" : "red";
-        private string ScoreTextClass(decimal s) => s >= 80 ? "good" : s >= 50 ? "avg" : "bad";
+        private string ScoreTextClass(decimal s) => s >= 80 ? "good"  : s >= 50 ? "avg"   : "bad";
 
         private async void AfficherToast(string msg, string type)
         {
@@ -365,6 +318,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _toastMsg = string.Empty; StateHasChanged();
         }
 
-        private static string? Vide(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+        private static string? Vide(string? v) =>
+            string.IsNullOrWhiteSpace(v) ? null : v.Trim();
     }
 }

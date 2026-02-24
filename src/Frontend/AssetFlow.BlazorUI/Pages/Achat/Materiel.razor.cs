@@ -51,7 +51,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         // ── État ──────────────────────────────────────────────────
         private List<MaterielVm>           _materiels        = new();
-        private List<MaterielVm>           _tousMateriels    = new(); // cache complet
+        private List<MaterielVm>           _tousMateriels    = new();
         private MaterielStatsDto           _stats            = new();
         private List<string>               _categories       = new();
         private int                        _totalCount       = 0;
@@ -60,7 +60,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string                     _termeRecherche   = string.Empty;
         private string                     _categorieFiltre  = "all";
         private string                     _etatFiltre       = "all";
-        private string                     _theme            = "dark";
         private bool                       _sidebarOpen      = false;
 
         // Formulaire
@@ -103,39 +102,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── Cycle de vie ──────────────────────────────────────────
         protected override async Task OnInitializedAsync()
         {
-            try
-            {
-                var isDark = await JS.InvokeAsync<bool>("eval",
-                    "document.documentElement.classList.contains('dark')");
-                _theme = isDark ? "dark" : "light";
-            }
-            catch { _theme = "dark"; }
-
             await ChargerInfosUtilisateur();
             await ChargerDonnees();
-        }
-
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            if (!firstRender) return;
-            try
-            {
-                await JS.InvokeVoidAsync("eval", @"
-                    window.__skSetThemeRef = function(ref) {
-                        window.__skThemeObs && window.__skThemeObs.disconnect();
-                        window.__skThemeObs = new MutationObserver(function() {
-                            var isDark = document.documentElement.classList.contains('dark');
-                            ref.invokeMethodAsync('OnThemeChanged', isDark);
-                        });
-                        window.__skThemeObs.observe(document.documentElement, {
-                            attributes: true, attributeFilter: ['class']
-                        });
-                    };
-                ");
-                var dotNetRef = DotNetObjectReference.Create(this);
-                await JS.InvokeVoidAsync("__skSetThemeRef", dotNetRef);
-            }
-            catch { }
         }
 
         // ── Chargement ────────────────────────────────────────────
@@ -144,7 +112,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _chargement = true; _erreur = string.Empty;
             try
             {
-                var statsTask    = MaterielSvc.GetStatsAsync();
+                var statsTask     = MaterielSvc.GetStatsAsync();
                 var materielsTask = MaterielSvc.GetAllAsync();
                 await Task.WhenAll(statsTask, materielsTask);
 
@@ -265,8 +233,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _imageMime        = null;
         }
 
-        // ── Upload image ─────────────────────────────────────────
-
+        // ── Upload image ──────────────────────────────────────────
         private async Task OnImageSelected(InputFileChangeEventArgs e)
         {
             _imageErreur = string.Empty;
@@ -289,16 +256,16 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 using var stream = file.OpenReadStream(2 * 1024 * 1024);
                 using var ms     = new MemoryStream();
                 await stream.CopyToAsync(ms);
-                var bytes     = ms.ToArray();
-                _imageBase64  = Convert.ToBase64String(bytes);
-                _imageMime    = file.ContentType;
-                _imagePreview = $"data:{_imageMime};base64,{_imageBase64}";
-                _form.ImageUrl = _imagePreview; // stocke en base64 (le backend peut sauvegarder)
+                var bytes      = ms.ToArray();
+                _imageBase64   = Convert.ToBase64String(bytes);
+                _imageMime     = file.ContentType;
+                _imagePreview  = $"data:{_imageMime};base64,{_imageBase64}";
+                _form.ImageUrl = _imagePreview;
             }
             catch (Exception ex) { _imageErreur = $"Erreur lecture image : {ex.Message}"; }
         }
 
-        private void OnDragOver() => _dragOver = true;
+        private void OnDragOver()  => _dragOver = true;
         private void OnDragLeave() => _dragOver = false;
 
         private void SupprimerImage()
@@ -389,7 +356,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             var id  = _aSupprimer.Id;
             _aSupprimer = null;
 
-            // Suppression cascade (affectations + incidents) — gérée côté service
             var result = await MaterielSvc.SupprimerAvecCascadeAsync(id);
             if (result.Succes)
             {
@@ -407,16 +373,14 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             try
             {
-                // Génère un CSV lisible par Excel (séparateur point-virgule pour fr)
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine("Référence;Désignation;Catégorie;Quantité;Seuil Min;Unité;Emplacement;État");
                 foreach (var m in _materiels)
-                {
                     sb.AppendLine($"{Csv(m.Reference)};{Csv(m.Designation)};{Csv(m.Categorie)};{m.QuantiteStock};{m.QuantiteMin};{Csv(m.Unite)};{Csv(m.Emplacement ?? "")};{Csv(StatusLabel(m.Etat))}");
-                }
-                var bytes   = System.Text.Encoding.UTF8.GetPreamble()
+
+                var bytes    = System.Text.Encoding.UTF8.GetPreamble()
                     .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-                var b64     = Convert.ToBase64String(bytes);
+                var b64      = Convert.ToBase64String(bytes);
                 var fileName = $"materiels_{DateTime.Now:yyyyMMdd_HHmm}.csv";
 
                 await JS.InvokeVoidAsync("eval", $@"
@@ -439,12 +403,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             try
             {
-                // Génère un HTML minimal et déclenche window.print()
                 var rows = new System.Text.StringBuilder();
                 foreach (var m in _materiels)
-                {
                     rows.AppendLine($"<tr><td>{HE(m.Reference)}</td><td>{HE(m.Designation)}</td><td>{HE(m.Categorie)}</td><td>{m.QuantiteStock}</td><td>{m.QuantiteMin}</td><td>{HE(m.Unite)}</td><td>{HE(m.Emplacement ?? "—")}</td><td>{HE(StatusLabel(m.Etat))}</td></tr>");
-                }
 
                 var html = $@"<!DOCTYPE html><html><head><meta charset='utf-8'/>
 <title>Catalogue Matériels</title>
@@ -479,14 +440,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             catch (Exception ex) { AfficherToast($"Erreur PDF : {ex.Message}", "toast-error"); }
         }
 
-        // ── Thème ─────────────────────────────────────────────────
-        [JSInvokable("OnThemeChanged")]
-        public void OnThemeChanged(bool isDark)
-        {
-            _theme = isDark ? "dark" : "light";
-            InvokeAsync(StateHasChanged);
-        }
-
+        // ── Sidebar ───────────────────────────────────────────────
         private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
         // ── Helpers affichage ─────────────────────────────────────
@@ -511,11 +465,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private static string CatBadgeClass(string cat) => cat.ToLower() switch
         {
             var c when c.Contains("électro") || c.Contains("electro") => "cat-blue",
-            var c when c.Contains("mobil") => "cat-amber",
-            var c when c.Contains("fourni") => "cat-slate",
-            var c when c.Contains("infor") => "cat-purple",
-            var c when c.Contains("périph") || c.Contains("periph") => "cat-teal",
-            _ => "cat-default"
+            var c when c.Contains("mobil")                            => "cat-amber",
+            var c when c.Contains("fourni")                           => "cat-slate",
+            var c when c.Contains("infor")                            => "cat-purple",
+            var c when c.Contains("périph") || c.Contains("periph")  => "cat-teal",
+            _                                                         => "cat-default"
         };
 
         private static string? Vide(string? v) =>

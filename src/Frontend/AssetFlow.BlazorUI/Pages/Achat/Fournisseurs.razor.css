@@ -56,7 +56,7 @@
 }
 
 /* ── Thème sombre ── */
-.layout-shell[data-theme="dark"] {
+html.dark .layout-shell {
     --bg:             #101822;
     --bg-panel:       #1a232e;
     --bg-header:      rgba(16, 24, 34, 0.92);
@@ -707,7 +707,7 @@ tbody tr:hover .supplier-avatar { color: #136dec; }
     font-size: 13px; color: var(--text-primary); font-family: inherit;
     outline: none; width: 100%; transition: border-color var(--t), box-shadow var(--t);
 }
-.layout-shell[data-theme="dark"] .form-inp { background: rgba(255,255,255,0.06); }
+html.dark .layout-shell .form-inp { background: rgba(255,255,255,0.06); }
 .form-inp::placeholder { color: var(--text-secondary); font-style: italic; }
 .form-inp:focus { border-color: #136dec; box-shadow: 0 0 0 3px rgba(19,109,236,0.18); }
 .form-textarea { resize: vertical; min-height: 68px; }

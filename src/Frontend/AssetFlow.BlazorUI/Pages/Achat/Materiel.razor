@@ -1,0 +1,468 @@
+@* ============================================================
+   Pages/Achat/Materiel.razor — v1
+   Page de gestion du stock matériel
+   Route : /achat/materiel
+   Design : inspiré StockIT — sidebar identique à Fournisseurs
+   ============================================================ *@
+
+@page "/achat/materiel"
+@using AssetFlow.BlazorUI.Pages.Achat
+
+<div class="mat-shell" data-theme="@_theme">
+
+    @* ── Overlay sidebar mobile ── *@
+    @if (_sidebarOpen)
+    {
+        <div class="mat-overlay" @onclick="ToggleSidebar"></div>
+    }
+
+    @* ══════════════════════════════════════════════════════════
+       SIDEBAR — identique à Fournisseurs
+    ══════════════════════════════════════════════════════════ *@
+    <aside class="mat-sidebar @(_sidebarOpen ? "open" : "")">
+
+        <div class="mat-sidebar-header">
+            <img src="images/logo.png" alt="AssetFlow" class="mat-logo" />
+        </div>
+
+        <nav class="mat-nav">
+            <a href="/statistiques" class="mat-nav-link">
+                <span class="mat-nav-icon">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                </span>
+                <span>Statistiques</span>
+            </a>
+            <a href="/achat/materiel" class="mat-nav-link active">
+                <span class="mat-nav-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                </span>
+                <span>Matériel</span>
+            </a>
+            <a href="/achat/fournisseurs" class="mat-nav-link">
+                <span class="mat-nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </span>
+                <span>Fournisseurs</span>
+            </a>
+            <a href="/demandes-achat" class="mat-nav-link">
+                <span class="mat-nav-icon">
+                    <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                </span>
+                <span>Demande d'achat</span>
+            </a>
+        </nav>
+
+        @* Profil utilisateur *@
+        <div class="mat-profile">
+            <div class="mat-profile-avatar">@CurrentUserInitials</div>
+            <div class="mat-profile-info">
+                <p class="mat-profile-name">@_currentUserName</p>
+                <p class="mat-profile-role">@_currentUserRole</p>
+            </div>
+        </div>
+
+        @* Support *@
+        <div class="mat-support">
+            <p class="mat-support-label">SUPPORT IT</p>
+            <p class="mat-support-text">Besoin d'aide ?</p>
+            <button class="mat-support-btn">Contact</button>
+        </div>
+    </aside>
+
+    @* ══════════════════════════════════════════════════════════
+       ZONE PRINCIPALE
+    ══════════════════════════════════════════════════════════ *@
+    <main class="mat-main">
+
+        @* ── En-tête de page — titre + bouton Nouvel Article ── *@
+        <header class="mat-page-header">
+            <button class="mat-menu-btn" @onclick="ToggleSidebar" aria-label="Menu">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="3" y1="6"  x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div>
+                <h2 class="mat-page-title">Consultation des Stocks</h2>
+                <p class="mat-page-sub">Gérez et suivez l'inventaire en temps réel.</p>
+            </div>
+            <button class="mat-btn-add" @onclick="() => OuvrirFormulaire(null)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5"  y1="12" x2="19" y2="12"/>
+                </svg>
+                Nouvel Article
+            </button>
+        </header>
+
+        @* ── CONTENU ── *@
+        <div class="mat-content">
+
+            @* ── KPI Cards (4 cards) — style StockIT ── *@
+            <div class="mat-kpi-grid">
+
+                @* Card 1 : Total Articles *@
+                <div class="mat-kpi-card">
+                    <div class="mat-kpi-top">
+                        <div class="mat-kpi-icon icon-blue">
+                            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        </div>
+                        <span class="mat-kpi-badge badge-emerald">
+                            <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            +5%
+                        </span>
+                    </div>
+                    <p class="mat-kpi-label">Total Articles</p>
+                    <p class="mat-kpi-value">@_stats.TotalArticles</p>
+                </div>
+
+                @* Card 2 : En Stock *@
+                <div class="mat-kpi-card">
+                    <div class="mat-kpi-top">
+                        <div class="mat-kpi-icon icon-emerald">
+                            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <span class="mat-kpi-badge badge-emerald">
+                            <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            +2%
+                        </span>
+                    </div>
+                    <p class="mat-kpi-label">En Stock</p>
+                    <p class="mat-kpi-value">@_stats.EnStock</p>
+                </div>
+
+                @* Card 3 : Seuil Minimum *@
+                <div class="mat-kpi-card">
+                    <div class="mat-kpi-top">
+                        <div class="mat-kpi-icon icon-amber">
+                            <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        </div>
+                        <span class="mat-kpi-badge badge-amber">
+                            <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                            -10%
+                        </span>
+                    </div>
+                    <p class="mat-kpi-label">Seuil Minimum Atteint</p>
+                    <p class="mat-kpi-value">@_stats.AlerteSeuil</p>
+                </div>
+
+                @* Card 4 : Rupture Critique *@
+                <div class="mat-kpi-card">
+                    <div class="mat-kpi-top">
+                        <div class="mat-kpi-icon icon-rose">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <span class="mat-kpi-badge badge-rose">
+                            <svg viewBox="0 0 24 24"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                            -4%
+                        </span>
+                    </div>
+                    <p class="mat-kpi-label">Rupture Critique</p>
+                    <p class="mat-kpi-value">@_stats.RuptureCritique</p>
+                </div>
+            </div>
+
+            @* ── TABLEAU de stock — style StockIT ── *@
+            <div class="mat-table-card">
+
+                @* Barre filtres *@
+                <div class="mat-filters">
+                    <div class="mat-search-wrap">
+                        <span class="mat-search-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <input class="mat-search-input" type="text"
+                               placeholder="Rechercher une référence ou un produit…"
+                               @oninput="OnRecherche" />
+                    </div>
+                    <div class="mat-filter-group">
+                        <label class="mat-filter-label">Filtrer par :</label>
+                        <select class="mat-select" @onchange="OnCategorieChange">
+                            <option value="all">Toutes les catégories</option>
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        </select>
+                        <select class="mat-select" @onchange="OnEtatChange">
+                            <option value="all">Tous les états</option>
+                            <option value="Disponible">Disponible</option>
+                            <option value="EnRupture">En rupture</option>
+                            <option value="EnCommande">En commande</option>
+                            <option value="HorsService">Hors service</option>
+                        </select>
+                    </div>
+                </div>
+
+                @* Erreur globale *@
+                @if (!string.IsNullOrEmpty(_erreur))
+                {
+                    <div class="mat-alert">@_erreur</div>
+                }
+
+                @* Table *@
+                <div class="mat-table-scroll">
+                    <table class="mat-table">
+                        <colgroup>
+                            <col style="width:12%" />
+                            <col style="width:22%" />
+                            <col style="width:12%" />
+                            <col style="width:9%"  />
+                            <col style="width:9%"  />
+                            <col style="width:9%"  />
+                            <col style="width:14%" />
+                            <col style="width:13%" />
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Référence</th>
+                                <th>Nom du produit</th>
+                                <th>Catégorie</th>
+                                <th>Quantité</th>
+                                <th>Seuil Min</th>
+                                <th>Emplacement</th>
+                                <th>Statut</th>
+                                <th class="th-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (_chargement)
+                            {
+                                <tr><td colspan="8" class="td-center">Chargement…</td></tr>
+                            }
+                            else if (!_materiels.Any())
+                            {
+                                <tr>
+                                    <td colspan="8" class="td-empty">
+                                        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                        Aucun matériel trouvé.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var m in _materiels)
+                                {
+                                    <tr class="mat-row">
+                                        @* Référence *@
+                                        <td class="td-ref">@m.Reference</td>
+
+                                        @* Désignation *@
+                                        <td class="td-name">
+                                            <div class="mat-name-cell">
+                                                <div class="mat-item-icon">
+                                                    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                                </div>
+                                                <div>
+                                                    <p class="td-name-main">@m.Designation</p>
+                                                    @if (!string.IsNullOrEmpty(m.Description))
+                                                    {
+                                                        <p class="td-name-sub">@m.Description</p>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        @* Catégorie *@
+                                        <td class="td-muted">@m.Categorie</td>
+
+                                        @* Quantité — colorée si faible *@
+                                        <td>
+                                            <span class="td-qty @(m.QuantiteStock == 0 ? "qty-zero" : m.QuantiteStock <= m.QuantiteMin ? "qty-low" : "qty-ok")">
+                                                @m.QuantiteStock <span class="td-unite">@m.Unite</span>
+                                            </span>
+                                        </td>
+
+                                        @* Seuil min *@
+                                        <td class="td-threshold">@m.QuantiteMin</td>
+
+                                        @* Emplacement *@
+                                        <td class="td-muted">@(m.Emplacement ?? "—")</td>
+
+                                        @* Statut — badge pill coloré *@
+                                        <td>
+                                            <span class="mat-badge @BadgeClass(m.Etat)">
+                                                @BadgeLabel(m.Etat)
+                                            </span>
+                                        </td>
+
+                                        @* Actions *@
+                                        <td class="td-actions">
+                                            <div class="mat-row-actions">
+                                                <button class="mat-act-btn mat-act-edit" title="Modifier"
+                                                        @onclick="() => OuvrirFormulaire(m)"
+                                                        @onclick:stopPropagation="true">
+                                                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                </button>
+                                                <button class="mat-act-btn mat-act-del" title="Supprimer"
+                                                        @onclick="() => DemanderSuppression(m)"
+                                                        @onclick:stopPropagation="true">
+                                                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @* Pied de table *@
+                <div class="mat-table-footer">
+                    <span>Affichage de @_materiels.Count sur @_totalCount articles</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    @* ══════════════════════════════════════════════════════════
+       MODALE SUPPRESSION
+    ══════════════════════════════════════════════════════════ *@
+    @if (_aSupprimer != null)
+    {
+        <div class="mat-modal-overlay" @onclick="AnnulerSuppression">
+            <div class="mat-modal" @onclick:stopPropagation="true">
+                <div class="mat-modal-icon">
+                    <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h3 class="mat-modal-title">Supprimer ce matériel ?</h3>
+                <p class="mat-modal-text">
+                    Vous allez supprimer <strong>@_aSupprimer.Designation</strong>
+                    (<em>@_aSupprimer.Reference</em>). Cette action est irréversible.
+                </p>
+                <div class="mat-modal-actions">
+                    <button class="mat-btn-cancel" @onclick="AnnulerSuppression">Annuler</button>
+                    <button class="mat-btn-danger" @onclick="ConfirmerSuppression">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ══════════════════════════════════════════════════════════
+       PANNEAU FORMULAIRE SLIDE-IN
+    ══════════════════════════════════════════════════════════ *@
+    @if (_panneauOuvert)
+    {
+        <div class="mat-form-overlay" @onclick="FermerFormulaire"></div>
+        <div class="mat-form-panel">
+            <div class="mat-form-header">
+                <div class="mat-form-header-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+                <h3>@(_modeModif ? "Modifier le matériel" : "Nouvel article")</h3>
+                <button class="mat-form-close" @onclick="FermerFormulaire">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <div class="mat-form-body">
+
+                @* Section — Identification *@
+                <p class="mat-form-section">Identification</p>
+
+                <div class="mat-form-row2">
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Référence <span class="req">*</span></label>
+                        <input class="mat-form-inp @(_erreurs.ContainsKey("Reference") ? "inp-err" : "")"
+                               type="text" placeholder="ex : SN-5592-X"
+                               @bind="_form.Reference" @bind:event="oninput" />
+                        @if (_erreurs.ContainsKey("Reference")) { <span class="inp-msg">@_erreurs["Reference"]</span> }
+                    </div>
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Catégorie <span class="req">*</span></label>
+                        <input class="mat-form-inp @(_erreurs.ContainsKey("Categorie") ? "inp-err" : "")"
+                               type="text" placeholder="ex : Informatique"
+                               list="cat-list"
+                               @bind="_form.Categorie" @bind:event="oninput" />
+                        <datalist id="cat-list">
+                            @foreach (var cat in _categories)
+                            {
+                                <option value="@cat" />
+                            }
+                        </datalist>
+                        @if (_erreurs.ContainsKey("Categorie")) { <span class="inp-msg">@_erreurs["Categorie"]</span> }
+                    </div>
+                </div>
+
+                <div class="mat-form-group">
+                    <label class="mat-form-lbl">Désignation <span class="req">*</span></label>
+                    <input class="mat-form-inp @(_erreurs.ContainsKey("Designation") ? "inp-err" : "")"
+                           type="text" placeholder="ex : Laptop Dell Latitude 5540"
+                           @bind="_form.Designation" @bind:event="oninput" />
+                    @if (_erreurs.ContainsKey("Designation")) { <span class="inp-msg">@_erreurs["Designation"]</span> }
+                </div>
+
+                <div class="mat-form-group">
+                    <label class="mat-form-lbl">Description</label>
+                    <textarea class="mat-form-inp mat-form-ta" rows="2"
+                              placeholder="Détails supplémentaires…"
+                              @bind="_form.Description" @bind:event="oninput"></textarea>
+                </div>
+
+                @* Section — Stock *@
+                <p class="mat-form-section" style="margin-top:6px">Stock</p>
+
+                <div class="mat-form-row3">
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Quantité <span class="req">*</span></label>
+                        <input class="mat-form-inp" type="number" min="0" placeholder="0"
+                               @bind="_form.QuantiteStock" @bind:event="oninput" />
+                    </div>
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Seuil min</label>
+                        <input class="mat-form-inp" type="number" min="0" placeholder="5"
+                               @bind="_form.QuantiteMin" @bind:event="oninput" />
+                    </div>
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Unité</label>
+                        <input class="mat-form-inp" type="text" placeholder="pièce"
+                               @bind="_form.Unite" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <div class="mat-form-row2">
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">Emplacement</label>
+                        <input class="mat-form-inp" type="text" placeholder="ex : Entrepôt A"
+                               @bind="_form.Emplacement" @bind:event="oninput" />
+                    </div>
+                    <div class="mat-form-group">
+                        <label class="mat-form-lbl">État</label>
+                        <select class="mat-form-inp" @bind="_form.Etat">
+                            <option value="Disponible">Disponible</option>
+                            <option value="EnRupture">En rupture</option>
+                            <option value="EnCommande">En commande</option>
+                            <option value="HorsService">Hors service</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mat-form-footer">
+                <button class="mat-btn-cancel" @onclick="FermerFormulaire">Annuler</button>
+                <button class="mat-btn-save" @onclick="Sauvegarder" disabled="@_sauvegarde">
+                    @if (_sauvegarde) { <span>Enregistrement…</span> }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24">
+                            @if (_modeModif) { <polyline points="20 6 9 17 4 12"/> }
+                            else { <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/> }
+                        </svg>
+                        <span>@(_modeModif ? "Mettre à jour" : "Enregistrer")</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+
+    @* Toast *@
+    @if (!string.IsNullOrEmpty(_toastMsg))
+    {
+        <div class="mat-toast @_toastType">@_toastMsg</div>
+    }
+
+</div>

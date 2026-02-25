@@ -243,8 +243,8 @@ html.dark .layout-shell {
    4. ZONE PRINCIPALE
    ============================================================ */
 .main-zone {
-    flex: 1; overflow-y: auto; min-width: 0;
-    display: flex; flex-direction: column;
+    flex: 1; overflow: hidden; min-width: 0;
+display: flex; flex-direction: column;
     background: var(--bg); transition: background var(--t);
 }
 
@@ -321,7 +321,7 @@ html.dark .layout-shell {
 /* ============================================================
    6. CONTENU PAGE
    ============================================================ */
-.page-content { padding: 30px 26px; flex: 1; }
+.page-content { padding: 30px 26px; flex: 1; overflow-y: auto; }
 
 .page-title          { margin-bottom: 26px; }
 .page-title h2 {

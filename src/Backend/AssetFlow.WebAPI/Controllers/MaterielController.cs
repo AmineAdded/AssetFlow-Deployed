@@ -35,7 +35,10 @@ namespace AssetFlow.WebAPI.Controllers
             [FromQuery] string? terme,
             [FromQuery] string? categorie,
             [FromQuery] string? etat)
-            => Ok(await _svc.SearchAsync(terme, categorie, etat));
+        {
+            var result = await _svc.SearchAsync(terme, categorie);
+            return Ok(result);
+        }
 
         // GET api/materiel/stats
         [HttpGet("stats")]

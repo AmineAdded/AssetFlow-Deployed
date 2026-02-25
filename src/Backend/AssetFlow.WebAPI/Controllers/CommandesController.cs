@@ -1,5 +1,5 @@
 // ============================================================
-// AssetFlow.WebAPI / Controllers / CommandesController.cs
+// AssetFlow.WebAPI / Controllers / CommandesController.cs — v3
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -15,17 +15,14 @@ namespace AssetFlow.WebAPI.Controllers
         private readonly ICommandeService _svc;
         public CommandesController(ICommandeService svc) => _svc = svc;
 
-        // GET api/commandes
         [HttpGet]
         public async Task<IActionResult> GetAll()
             => Ok(await _svc.GetAllAsync());
 
-        // GET api/commandes/materiel/{materielId}
         [HttpGet("materiel/{materielId:int}")]
         public async Task<IActionResult> GetByMateriel(int materielId)
             => Ok(await _svc.GetByMaterielAsync(materielId));
 
-        // GET api/commandes/{id}
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -33,17 +30,22 @@ namespace AssetFlow.WebAPI.Controllers
             return c is null ? NotFound() : Ok(c);
         }
 
-        // GET api/commandes/materiels-enrichis
-        [HttpGet("materiels-enrichis")]
-        public async Task<IActionResult> GetMaterielsEnrichis()
-            => Ok(await _svc.GetMaterielsAvecDerniereCommandeAsync());
+        /// <summary>
+        /// UNE LIGNE PAR COMMANDE — remplace /materiels-enrichis
+        /// Même produit peut apparaître plusieurs fois (une fois par commande).
+        /// </summary>
+        [HttpGet("lignes-commandes")]
+        public async Task<IActionResult> GetLignesCommandes()
+            => Ok(await _svc.GetLignesCommandesAsync());
 
-        // GET api/commandes/articles/{materielId}
         [HttpGet("articles/{materielId:int}")]
-        public async Task<IActionResult> GetArticles(int materielId)
+        public async Task<IActionResult> GetArticlesByMateriel(int materielId)
             => Ok(await _svc.GetArticlesByMaterielAsync(materielId));
 
-        // POST api/commandes
+        [HttpGet("{commandeId:int}/articles")]
+        public async Task<IActionResult> GetArticlesByCommande(int commandeId)
+            => Ok(await _svc.GetArticlesByCommandeAsync(commandeId));
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreerCommandeDto dto)
         {
@@ -51,7 +53,6 @@ namespace AssetFlow.WebAPI.Controllers
             return result.Succes ? Ok(result) : BadRequest(result);
         }
 
-        // DELETE api/commandes/{id}
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

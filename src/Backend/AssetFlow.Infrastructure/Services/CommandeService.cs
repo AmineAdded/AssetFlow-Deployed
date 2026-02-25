@@ -1,5 +1,6 @@
 // ============================================================
-// AssetFlow.Infrastructure / Services / CommandeService.cs
+// AssetFlow.Infrastructure / Services / CommandeService.cs — v3
+// GetLignesCommandesAsync : UNE LIGNE PAR COMMANDE
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -18,27 +19,27 @@ namespace AssetFlow.Infrastructure.Services
         // ── Helpers ───────────────────────────────────────────────
         private static ArticleDto ToArticleDto(ArticleIndividuel a) => new()
         {
-            Id            = a.Id,
-            NumeroSerie   = a.NumeroSerie,
-            Statut        = a.Statut.ToString(),
-            CommandeId    = a.CommandeId,
+            Id             = a.Id,
+            NumeroSerie    = a.NumeroSerie,
+            Statut         = a.Statut.ToString(),
+            CommandeId     = a.CommandeId,
             NumeroCommande = a.Commande?.NumeroCommande ?? string.Empty
         };
 
         private static CommandeDto ToCommandeDto(Commande c) => new()
         {
-            Id               = c.Id,
-            NumeroCommande   = c.NumeroCommande,
-            MaterielId       = c.MaterielId,
-            NomMateriel      = c.Materiel?.Designation ?? string.Empty,
-            ReferenceMateriel = c.Materiel?.Reference ?? string.Empty,
-            FournisseurId    = c.FournisseurId,
-            NomFournisseur   = c.Fournisseur?.Nom ?? string.Empty,
-            QuantiteAchetee  = c.QuantiteAchetee,
-            DateAchat        = c.DateAchat,
-            DateLivraison    = c.DateLivraison,
-            DateFinGarantie  = c.DateFinGarantie,
-            Articles         = c.Articles.Select(a => new ArticleDto
+            Id                = c.Id,
+            NumeroCommande    = c.NumeroCommande,
+            MaterielId        = c.MaterielId,
+            NomMateriel       = c.Materiel?.Designation ?? string.Empty,
+            ReferenceMateriel = c.Materiel?.Reference   ?? string.Empty,
+            FournisseurId     = c.FournisseurId,
+            NomFournisseur    = c.Fournisseur?.Nom ?? string.Empty,
+            QuantiteAchetee   = c.QuantiteAchetee,
+            DateAchat         = c.DateAchat,
+            DateLivraison     = c.DateLivraison,
+            DateFinGarantie   = c.DateFinGarantie,
+            Articles          = c.Articles.Select(a => new ArticleDto
             {
                 Id             = a.Id,
                 NumeroSerie    = a.NumeroSerie,
@@ -48,16 +49,12 @@ namespace AssetFlow.Infrastructure.Services
             }).ToList()
         };
 
-        // ── Lecture ───────────────────────────────────────────────
+        // ── Lecture basique ───────────────────────────────────────
         public async Task<IEnumerable<CommandeDto>> GetAllAsync()
         {
             var list = await _db.Commandes
-                .Include(c => c.Materiel)
-                .Include(c => c.Fournisseur)
-                .Include(c => c.Articles)
-                .OrderByDescending(c => c.DateAchat)
-                .AsNoTracking()
-                .ToListAsync();
+                .Include(c => c.Materiel).Include(c => c.Fournisseur).Include(c => c.Articles)
+                .OrderByDescending(c => c.DateAchat).AsNoTracking().ToListAsync();
             return list.Select(ToCommandeDto);
         }
 
@@ -65,106 +62,131 @@ namespace AssetFlow.Infrastructure.Services
         {
             var list = await _db.Commandes
                 .Where(c => c.MaterielId == materielId)
-                .Include(c => c.Materiel)
-                .Include(c => c.Fournisseur)
-                .Include(c => c.Articles)
-                .OrderByDescending(c => c.DateAchat)
-                .AsNoTracking()
-                .ToListAsync();
+                .Include(c => c.Materiel).Include(c => c.Fournisseur).Include(c => c.Articles)
+                .OrderByDescending(c => c.DateAchat).AsNoTracking().ToListAsync();
             return list.Select(ToCommandeDto);
         }
 
         public async Task<CommandeDto?> GetByIdAsync(int id)
         {
             var c = await _db.Commandes
-                .Include(x => x.Materiel)
-                .Include(x => x.Fournisseur)
-                .Include(x => x.Articles)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .Include(x => x.Materiel).Include(x => x.Fournisseur).Include(x => x.Articles)
+                .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             return c is null ? null : ToCommandeDto(c);
         }
 
         public async Task<IEnumerable<ArticleDto>> GetArticlesByMaterielAsync(int materielId)
         {
-            var articles = await _db.ArticlesIndividuels
+            var arts = await _db.ArticlesIndividuels
                 .Where(a => a.MaterielId == materielId)
-                .Include(a => a.Commande)
-                .AsNoTracking()
-                .ToListAsync();
-            return articles.Select(ToArticleDto);
+                .Include(a => a.Commande).AsNoTracking().ToListAsync();
+            return arts.Select(ToArticleDto);
         }
 
-        // ── Vue enrichie pour tableau Matériel ────────────────────
-        public async Task<IEnumerable<MaterielAvecCommandeDto>> GetMaterielsAvecDerniereCommandeAsync()
+        public async Task<IEnumerable<ArticleDto>> GetArticlesByCommandeAsync(int commandeId)
         {
-            var materiels = await _db.Materiels
+            var arts = await _db.ArticlesIndividuels
+                .Where(a => a.CommandeId == commandeId)
+                .Include(a => a.Commande).AsNoTracking().ToListAsync();
+            return arts.Select(ToArticleDto);
+        }
+
+        // ── Vue principale : UNE LIGNE PAR COMMANDE ───────────────
+        public async Task<IEnumerable<LigneCommandeMaterielDto>> GetLignesCommandesAsync()
+        {
+            // 1. Toutes les commandes avec leurs articles et leur matériel
+            var commandes = await _db.Commandes
+                .Include(c => c.Materiel)
+                .Include(c => c.Fournisseur)
+                .Include(c => c.Articles)
                 .AsNoTracking()
-                .OrderBy(m => m.Designation)
                 .ToListAsync();
 
-            var result = new List<MaterielAvecCommandeDto>();
+            // 2. Matériels sans aucune commande
+            var materielIdsAvecCommande = commandes.Select(c => c.MaterielId).Distinct().ToHashSet();
+            var materielsSeuls = await _db.Materiels
+                .Where(m => !materielIdsAvecCommande.Contains(m.Id))
+                .AsNoTracking().ToListAsync();
 
-            foreach (var m in materiels)
+            var result = new List<LigneCommandeMaterielDto>();
+
+            // 3. Une ligne par commande
+            foreach (var c in commandes)
             {
-                // Dernière commande pour ce matériel
-                var derniereCommande = await _db.Commandes
-                    .Where(c => c.MaterielId == m.Id)
-                    .Include(c => c.Fournisseur)
-                    .OrderByDescending(c => c.DateAchat)
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync();
-
-                // Stats articles
-                var nbArticles    = await _db.ArticlesIndividuels.CountAsync(a => a.MaterielId == m.Id);
-                var nbDisponibles = await _db.ArticlesIndividuels.CountAsync(a => a.MaterielId == m.Id && a.Statut == StatutArticle.Disponible);
-
-                result.Add(new MaterielAvecCommandeDto
+                var m = c.Materiel;
+                result.Add(new LigneCommandeMaterielDto
                 {
-                    Id               = m.Id,
-                    Reference        = m.Reference,
-                    Designation      = m.Designation,
-                    Description      = m.Description,
-                    Categorie        = m.Categorie,
-                    QuantiteStock    = m.QuantiteStock,
-                    QuantiteMin      = m.QuantiteMin,
-                    Unite            = m.Unite,
-                    Etat             = m.Etat.ToString(),
-                    ImageUrl         = m.ImageUrl,
-                    DateAjout        = m.DateAjout,
-                    NumeroCommande   = derniereCommande?.NumeroCommande,
-                    NomFournisseur   = derniereCommande?.Fournisseur?.Nom,
-                    FournisseurId    = derniereCommande?.FournisseurId,
-                    QuantiteAchetee  = derniereCommande?.QuantiteAchetee ?? 0,
-                    DateAchat        = derniereCommande?.DateAchat,
-                    DateLivraison    = derniereCommande?.DateLivraison,
-                    DateFinGarantie  = derniereCommande?.DateFinGarantie,
-                    NbArticles       = nbArticles,
-                    NbDisponibles    = nbDisponibles
+                    // Matériel
+                    MaterielId    = m.Id,
+                    Reference     = m.Reference,
+                    Designation   = m.Designation,
+                    Description   = m.Description,
+                    Categorie     = m.Categorie,
+                    QuantiteStock = m.QuantiteStock,
+                    QuantiteMin   = m.QuantiteMin,
+                    Unite         = m.Unite,
+                    ImageUrl      = m.ImageUrl,
+                    DateAjout     = m.DateAjout,
+                    // Commande
+                    CommandeId      = c.Id,
+                    NumeroCommande  = c.NumeroCommande,
+                    FournisseurId   = c.FournisseurId,
+                    NomFournisseur  = c.Fournisseur?.Nom ?? string.Empty,
+                    QuantiteAchetee = c.QuantiteAchetee,
+                    DateAchat       = c.DateAchat,
+                    DateLivraison   = c.DateLivraison,
+                    DateFinGarantie = c.DateFinGarantie,
+                    // Articles de CETTE commande
+                    NbArticles    = c.Articles.Count,
+                    NbDisponibles = c.Articles.Count(a => a.Statut == StatutArticle.Disponible)
                 });
             }
 
-            return result;
+            // 4. Une ligne pour les matériels sans commande
+            foreach (var m in materielsSeuls)
+            {
+                result.Add(new LigneCommandeMaterielDto
+                {
+                    MaterielId    = m.Id,
+                    Reference     = m.Reference,
+                    Designation   = m.Designation,
+                    Description   = m.Description,
+                    Categorie     = m.Categorie,
+                    QuantiteStock = m.QuantiteStock,
+                    QuantiteMin   = m.QuantiteMin,
+                    Unite         = m.Unite,
+                    ImageUrl      = m.ImageUrl,
+                    DateAjout     = m.DateAjout,
+                    CommandeId    = 0,
+                    NumeroCommande  = string.Empty,
+                    NomFournisseur  = string.Empty,
+                    QuantiteAchetee = 0,
+                    DateAchat       = DateTime.MinValue,
+                    NbArticles      = 0,
+                    NbDisponibles   = 0
+                });
+            }
+
+            // Trier : produit alphabétique, puis date achat décroissante
+            return result
+                .OrderBy(r => r.Designation)
+                .ThenByDescending(r => r.DateAchat);
         }
 
         // ── Création ───────────────────────────────────────────────
         public async Task<CommandeReponseDto> CreerAsync(CreerCommandeDto dto)
         {
-            // Vérifier matériel
             var materiel = await _db.Materiels.FindAsync(dto.MaterielId);
             if (materiel is null)
                 return new CommandeReponseDto { Succes = false, Message = "Matériel introuvable." };
 
-            // Vérifier fournisseur
             var fournisseur = await _db.Fournisseurs.FindAsync(dto.FournisseurId);
             if (fournisseur is null)
                 return new CommandeReponseDto { Succes = false, Message = "Fournisseur introuvable." };
 
-            // Vérifier unicité numéro de commande
             if (await _db.Commandes.AnyAsync(c => c.NumeroCommande == dto.NumeroCommande.Trim()))
                 return new CommandeReponseDto { Succes = false, Message = "Ce numéro de commande existe déjà." };
 
-            // Créer la commande
             var commande = new Commande
             {
                 NumeroCommande  = dto.NumeroCommande.Trim(),
@@ -176,9 +198,8 @@ namespace AssetFlow.Infrastructure.Services
                 DateFinGarantie = dto.DateFinGarantie
             };
             _db.Commandes.Add(commande);
-            await _db.SaveChangesAsync(); // On a besoin de l'ID de commande
+            await _db.SaveChangesAsync();
 
-            // Générer les articles individuels
             for (int i = 0; i < dto.QuantiteAchetee; i++)
             {
                 var ns = (i < dto.NumerosSerie.Count) ? dto.NumerosSerie[i] : null;
@@ -191,7 +212,6 @@ namespace AssetFlow.Infrastructure.Services
                 });
             }
 
-            // Mettre à jour QuantiteStock du matériel
             materiel.QuantiteStock += dto.QuantiteAchetee;
             await _db.SaveChangesAsync();
 
@@ -213,7 +233,6 @@ namespace AssetFlow.Infrastructure.Services
             if (commande is null)
                 return new CommandeReponseDto { Succes = false, Message = "Commande introuvable." };
 
-            // Décrémenter QuantiteStock
             var materiel = await _db.Materiels.FindAsync(commande.MaterielId);
             if (materiel is not null)
                 materiel.QuantiteStock = Math.Max(0, materiel.QuantiteStock - commande.QuantiteAchetee);
@@ -222,7 +241,7 @@ namespace AssetFlow.Infrastructure.Services
             _db.Commandes.Remove(commande);
             await _db.SaveChangesAsync();
 
-            return new CommandeReponseDto { Succes = true, Message = "Commande supprimée." };
+            return new CommandeReponseDto { Succes = true, Message = $"Commande {commande.NumeroCommande} supprimée." };
         }
     }
 }

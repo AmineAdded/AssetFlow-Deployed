@@ -37,9 +37,6 @@ namespace AssetFlow.Domain.Entities
         /// <summary>Emplacement physique du stock</summary>
         public string? Emplacement { get; set; }
 
-        /// <summary>État du matériel (Disponible, En rupture, etc.)</summary>
-        public EtatMateriel Etat { get; set; } = EtatMateriel.Disponible;
-
         /// <summary>URL de l'image du matériel (stockée localement)</summary>
         public string? ImageUrl { get; set; }
 

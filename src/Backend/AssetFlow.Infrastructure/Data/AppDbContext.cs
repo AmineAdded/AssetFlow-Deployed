@@ -44,7 +44,6 @@ namespace AssetFlow.Infrastructure.Data
                 entity.Property(m => m.Designation).IsRequired().HasMaxLength(200);
                 entity.Property(m => m.Categorie).IsRequired().HasMaxLength(100);
                 entity.Property(m => m.Unite).HasMaxLength(50);
-                entity.Property(m => m.Etat).HasConversion<string>().HasMaxLength(50);
                 entity.HasIndex(m => m.Reference).IsUnique();
             });
 

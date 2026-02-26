@@ -25,6 +25,8 @@ namespace AssetFlow.BlazorUI.Services
         public string   Statut           { get; set; } = string.Empty;
         public string   StatutBadgeColor { get; set; } = string.Empty;
         public string?  Observations     { get; set; }
+        public string? NumeroSerie  { get; set; }          // ← AJOUTER
+        public string  EtatArticle  { get; set; } = "Bon"; // ← AJOUTER
     }
 
     public class ArticleAffecteDto

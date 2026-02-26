@@ -47,10 +47,13 @@ namespace AssetFlow.Infrastructure.Services
         {
             var affectation = await _context.Affectations
                 .Include(a => a.Materiel)
+                .Include(a => a.Articles)
                 .FirstOrDefaultAsync(a => a.Id == affectationId);
 
             if (affectation == null) return null;
 
+            // Premier article lié à cette affectation
+            var premierArticle = affectation.Articles.FirstOrDefault();
             return new EquipementAffecteDto
             {
                 AffectationId    = affectation.Id,
@@ -61,7 +64,9 @@ namespace AssetFlow.Infrastructure.Services
                 ImageUrl         = affectation.Materiel.ImageUrl,
                 DateAffectation  = affectation.DateAffectation,
                 QuantiteAffectee = affectation.QuantiteAffectee,
-                Observations     = affectation.Observations
+                Observations     = affectation.Observations,
+                NumeroSerie      = premierArticle?.NumeroSerie,      // ← AJOUTER
+                EtatArticle      = premierArticle?.Etat.ToString() ?? "Bon"  // ← AJOUTER
             };
         }
 

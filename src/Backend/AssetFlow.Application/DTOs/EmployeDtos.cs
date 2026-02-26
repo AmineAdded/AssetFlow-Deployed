@@ -41,5 +41,7 @@ namespace AssetFlow.Application.DTOs
 
         /// <summary>Observations éventuelles</summary>
         public string? Observations { get; set; }
+        public string? NumeroSerie { get; set; }   // ← AJOUTER
+        public string EtatArticle { get; set; } = "Bon";  // ← AJOUTE
     }
 }

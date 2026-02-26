@@ -41,5 +41,6 @@ namespace AssetFlow.Domain.Entities
 
         /// <summary>Navigation : utilisateur qui reçoit le matériel</summary>
         public User Utilisateur { get; set; } = null!;
+        public List<ArticleIndividuel> Articles { get; set; } = new();
     }
 }

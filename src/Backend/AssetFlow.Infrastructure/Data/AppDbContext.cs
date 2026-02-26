@@ -130,7 +130,13 @@ namespace AssetFlow.Infrastructure.Data
                       .WithMany(c => c.Articles)
                       .HasForeignKey(a => a.CommandeId)
                       .OnDelete(DeleteBehavior.Cascade);
-            });
+                // Relation optionnelle vers Affectation
+                    entity.HasOne(a => a.Affectation)
+                        .WithMany(af => af.Articles)
+                        .HasForeignKey(a => a.AffectationId)
+                        .OnDelete(DeleteBehavior.SetNull)  // si affectation supprimée → null
+                        .IsRequired(false);
+                        });
         }
     }
 }

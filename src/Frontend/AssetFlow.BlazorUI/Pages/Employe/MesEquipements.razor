@@ -142,10 +142,10 @@
                             <div class="card-content">
                                 <div class="card-header">
                                     <h3 class="card-title">@materiel.Designation</h3>
-                                    <span class="status-badge" style="--badge-color: @materiel.StatutBadgeColor;">
+                                    @* <span class="status-badge" style="--badge-color: @materiel.StatutBadgeColor;">
                                         <span class="badge-dot"></span>
                                         @GetStatutLabel(materiel.StatutDominant)
-                                    </span>
+                                    </span> *@
                                 </div>
 
                                 <p class="card-reference">@materiel.Reference</p>
@@ -275,9 +275,10 @@
 
                                 @* Badge statut *@
                                 <div class="article-statut">
+                                    @* Badge état dans le modal *@
                                     <span class="statut-pill-sm" style="--pill-color: @article.StatutBadgeColor;">
                                         <span class="pill-dot"></span>
-                                        @GetStatutLabel(article.StatutAffectation)
+                                        @article.EtatArticle  @* ← était StatutAffectation *@
                                     </span>
                                 </div>
 

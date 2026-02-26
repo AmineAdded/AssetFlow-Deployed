@@ -5,6 +5,8 @@
 
 using System.Net.Http.Json;
 using Microsoft.JSInterop;
+using Blazored.LocalStorage;
+
 
 namespace AssetFlow.BlazorUI.Services
 {
@@ -32,6 +34,8 @@ namespace AssetFlow.BlazorUI.Services
         public string   NumeroSerie       { get; set; } = string.Empty;
         public string   StatutArticle     { get; set; } = string.Empty;
         public string   StatutAffectation { get; set; } = string.Empty;
+        public string   EtatArticle       { get; set; } = "Bon";  // ← AJOUTER
+
         public string   StatutBadgeColor  { get; set; } = string.Empty;
         public DateTime DateAffectation   { get; set; }
         public string?  Observations      { get; set; }
@@ -57,11 +61,13 @@ namespace AssetFlow.BlazorUI.Services
     {
         private readonly HttpClient  _http;
         private readonly IJSRuntime  _js;
+        private readonly ILocalStorageService _localStorage;
 
-        public EmployeService(HttpClient http, IJSRuntime js)
+        public EmployeService(HttpClient http, IJSRuntime js, ILocalStorageService localStorage)
         {
             _http = http;
             _js   = js;
+            _localStorage = localStorage;
         }
 
         // ── Récupère les matériels groupés (NOUVELLE méthode) ──
@@ -114,7 +120,7 @@ namespace AssetFlow.BlazorUI.Services
         {
             try
             {
-                var id = await _js.InvokeAsync<string>("localStorage.getItem", "userId");
+                var id = await _js.InvokeAsync<string>("localStorage.getItem", "user_id");
                 return int.TryParse(id, out var parsed) ? parsed : 1;
             }
             catch { return 1; }
@@ -124,7 +130,7 @@ namespace AssetFlow.BlazorUI.Services
         {
             try
             {
-                var name = await _js.InvokeAsync<string>("localStorage.getItem", "userName");
+                var name = await _localStorage.GetItemAsync<string>("user_name");
                 return string.IsNullOrEmpty(name) ? "Utilisateur" : name;
             }
             catch { return "Utilisateur"; }
@@ -134,7 +140,7 @@ namespace AssetFlow.BlazorUI.Services
         {
             try
             {
-                var role = await _js.InvokeAsync<string>("localStorage.getItem", "userRole");
+                var role = await _localStorage.GetItemAsync<string>("user_role");
                 return string.IsNullOrEmpty(role) ? "Employé" : role;
             }
             catch { return "Employé"; }

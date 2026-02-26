@@ -23,6 +23,9 @@ namespace AssetFlow.Domain.Entities
         public int CommandeId { get; set; }
         public Commande Commande { get; set; } = null!;
         public EtatArticle Etat { get; set; } = EtatArticle.Bon;  // ← AJOUTER
+        // ← NOUVEAU
+        public int? AffectationId { get; set; }
+        public Affectation? Affectation { get; set; }
 
     }
 

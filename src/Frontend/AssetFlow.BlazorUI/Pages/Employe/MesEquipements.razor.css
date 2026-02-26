@@ -197,6 +197,8 @@ html.dark .employe-header {
     font-size: 0.875rem;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    margin-right: 2.75rem; /* ← AJOUTER */
+
 }
 .search-input::placeholder { color: var(--text-faint); }
 .search-input:focus {

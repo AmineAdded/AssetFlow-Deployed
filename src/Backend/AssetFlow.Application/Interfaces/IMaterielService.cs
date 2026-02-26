@@ -11,7 +11,7 @@ namespace AssetFlow.Application.Interfaces
     {
         Task<IEnumerable<MaterielDto>> GetAllAsync();
         Task<MaterielDto?> GetByIdAsync(int id);
-        Task<IEnumerable<MaterielDto>> SearchAsync(string? terme, string? categorie, string? etat);
+        Task<IEnumerable<MaterielDto>> SearchAsync(string? terme, string? categorie);
         Task<MaterielResultDto> CreerAsync(CreerMaterielDto dto);
         Task<MaterielResultDto> ModifierAsync(ModifierMaterielDto dto);
         Task<MaterielResultDto> SupprimerAsync(int id);

@@ -35,8 +35,6 @@ namespace AssetFlow.Application.DTOs
         /// <summary>Quantité affectée</summary>
         public int QuantiteAffectee { get; set; }
 
-        /// <summary>Statut de l'affectation (EnCours, Retourne, etc.)</summary>
-        public string Statut { get; set; } = string.Empty;
 
         /// <summary>Badge de couleur selon le statut (pour l'UI)</summary>
         public string StatutBadgeColor { get; set; } = string.Empty;

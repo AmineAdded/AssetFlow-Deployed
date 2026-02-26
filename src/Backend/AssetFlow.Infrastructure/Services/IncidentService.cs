@@ -49,13 +49,6 @@ namespace AssetFlow.Infrastructure.Services
 
                 var numeroIncident = $"INC-{DateTime.UtcNow.Year}-{incident.Id:D3}";
 
-                if (request.TypeIncident.ToLower().Contains("vol") ||
-                    request.TypeIncident.ToLower().Contains("perte"))
-                    affectation.Statut = StatutAffectation.Perdu;
-                else if (request.TypeIncident.ToLower().Contains("casse") ||
-                         request.TypeIncident.ToLower().Contains("panne"))
-                    affectation.Statut = StatutAffectation.Endommage;
-
                 await _context.SaveChangesAsync();
 
                 return new SignalerIncidentResponseDto

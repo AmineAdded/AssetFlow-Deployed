@@ -4,6 +4,7 @@ using AssetFlow.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AssetFlow.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260226020905_AddAffectationIdToArticleIndividuel")]
+    partial class AddAffectationIdToArticleIndividuel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -145,53 +148,6 @@ namespace AssetFlow.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Commandes");
-                });
-
-            modelBuilder.Entity("AssetFlow.Domain.Entities.DemandeAchat", b =>
-                {
-                    b.Property<int>("IdDemande")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDemande"));
-
-                    b.Property<DateTime>("DateCreation")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<string>("DemandeurNom")
-                        .IsRequired()
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MotifRefus")
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("NomProduit")
-                        .IsRequired()
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<int>("Quantite")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<string>("Reference")
-                        .IsRequired()
-                        .HasColumnType("varchar(30)");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("en_attente");
-
-                    b.HasKey("IdDemande");
-
-                    b.ToTable("DemandeAchat", (string)null);
                 });
 
             modelBuilder.Entity("AssetFlow.Domain.Entities.Fournisseur", b =>
@@ -338,38 +294,6 @@ namespace AssetFlow.Infrastructure.Migrations
                     b.ToTable("Materiels");
                 });
 
-            modelBuilder.Entity("AssetFlow.Domain.Entities.OffreAchat", b =>
-                {
-                    b.Property<Guid>("IdOffre")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWID()");
-
-                    b.Property<byte[]>("ContenuPdf")
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<bool>("EstChoisie")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("IdDemande")
-                        .HasColumnType("int");
-
-                    b.Property<string>("NomFichier")
-                        .IsRequired()
-                        .HasColumnType("varchar(300)");
-
-                    b.Property<long>("Taille")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("IdOffre");
-
-                    b.HasIndex("IdDemande");
-
-                    b.ToTable("OffreAchat", (string)null);
-                });
-
             modelBuilder.Entity("AssetFlow.Domain.Entities.User", b =>
                 {
                     b.Property<int>("Id")
@@ -494,17 +418,6 @@ namespace AssetFlow.Infrastructure.Migrations
                     b.Navigation("Affectation");
                 });
 
-            modelBuilder.Entity("AssetFlow.Domain.Entities.OffreAchat", b =>
-                {
-                    b.HasOne("AssetFlow.Domain.Entities.DemandeAchat", "Demande")
-                        .WithMany("Offres")
-                        .HasForeignKey("IdDemande")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Demande");
-                });
-
             modelBuilder.Entity("AssetFlow.Domain.Entities.Affectation", b =>
                 {
                     b.Navigation("Articles");
@@ -513,11 +426,6 @@ namespace AssetFlow.Infrastructure.Migrations
             modelBuilder.Entity("AssetFlow.Domain.Entities.Commande", b =>
                 {
                     b.Navigation("Articles");
-                });
-
-            modelBuilder.Entity("AssetFlow.Domain.Entities.DemandeAchat", b =>
-                {
-                    b.Navigation("Offres");
                 });
 
             modelBuilder.Entity("AssetFlow.Domain.Entities.Materiel", b =>

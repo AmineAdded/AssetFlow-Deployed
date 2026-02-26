@@ -1,10 +1,10 @@
 // ============================================================
-// Pages/Achat/Materiel.razor.cs — v2
-// Code-behind : CRUD, image upload, export PDF/Excel, cascade delete
+// Pages/Achat/Materiel.razor.cs — v5
+// Adapté à LigneCommandeMaterielDto (une ligne par commande)
+// + ToggleDetails (bouton "i") + suppression Etat
 // ============================================================
 
 using AssetFlow.Application.DTOs;
-using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
@@ -13,27 +13,13 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 {
     public partial class Materiel : ComponentBase
     {
-        // ── Injections ────────────────────────────────────────────
-        [Inject] private AssetFlow.BlazorUI.Services.MaterielService MaterielSvc { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.MaterielService    MaterielSvc    { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.CommandeService    CommandeSvc    { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.FournisseurService FournisseurSvc { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.ArticleService     ArticleSvc     { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
 
-        // ── VM liste ──────────────────────────────────────────────
-        private class MaterielVm
-        {
-            public int      Id            { get; set; }
-            public string   Reference     { get; set; } = string.Empty;
-            public string   Designation   { get; set; } = string.Empty;
-            public string?  Description   { get; set; }
-            public string   Categorie     { get; set; } = string.Empty;
-            public int      QuantiteStock { get; set; }
-            public int      QuantiteMin   { get; set; }
-            public string   Unite         { get; set; } = "pièce";
-            public string?  Emplacement   { get; set; }
-            public string   Etat          { get; set; } = "Disponible";
-            public string?  ImageUrl      { get; set; }
-        }
-
-        // ── VM formulaire ─────────────────────────────────────────
+        // ── VM formulaire matériel ────────────────────────────────
         private class FormulaireVm
         {
             public int      Id            { get; set; }
@@ -41,26 +27,42 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public string   Designation   { get; set; } = string.Empty;
             public string?  Description   { get; set; }
             public string   Categorie     { get; set; } = string.Empty;
-            public int      QuantiteStock { get; set; }
             public int      QuantiteMin   { get; set; }
             public string   Unite         { get; set; } = "pièce";
-            public string?  Emplacement   { get; set; }
-            public string   Etat          { get; set; } = "Disponible";
             public string?  ImageUrl      { get; set; }
         }
 
-        // ── État ──────────────────────────────────────────────────
-        private List<MaterielVm>           _materiels        = new();
-        private List<MaterielVm>           _tousMateriels    = new();
-        private MaterielStatsDto           _stats            = new();
-        private List<string>               _categories       = new();
-        private int                        _totalCount       = 0;
-        private bool                       _chargement       = true;
-        private string                     _erreur           = string.Empty;
-        private string                     _termeRecherche   = string.Empty;
-        private string                     _categorieFiltre  = "all";
-        private string                     _etatFiltre       = "all";
-        private bool                       _sidebarOpen      = false;
+        // ── VM formulaire commande ────────────────────────────────
+        private class FormulaireCommandeVm
+        {
+            public string   NumeroCommande  { get; set; } = string.Empty;
+            public int      FournisseurId   { get; set; }
+            public int      QuantiteAchetee { get; set; } = 1;
+            public DateTime DateAchat       { get; set; } = DateTime.Today;
+            public DateTime? DateLivraison  { get; set; }
+            public DateTime? DateFinGarantie { get; set; }
+            public List<string?> NumerosSerie { get; set; } = new();
+        }
+
+        // ── État principal ────────────────────────────────────────
+        // Liste brute : une entrée par commande
+        private List<LigneCommandeMaterielDto> _toutesLignes  = new();
+        // Liste filtrée affichée
+        private List<LigneCommandeMaterielDto> _lignes        = new();
+        // Produits uniques pour la liste déroulante (un produit = un MaterielId distinct)
+        private List<LigneCommandeMaterielDto> _produitsUniques = new();
+
+        private List<string>               _categories      = new();
+        private List<FournisseurDto>       _fournisseurs    = new();
+        private int                        _totalCount      = 0;
+        private bool                       _chargement      = true;
+        private string                     _erreur          = string.Empty;
+        private string                     _termeRecherche  = string.Empty;
+        private string                     _categorieFiltre = "all";
+        private bool                       _sidebarOpen     = false;
+
+        // Clé de la ligne dont les détails sont ouverts : "{MaterielId}-{CommandeId}"
+        private string? _detailsOuverts = null;
 
         // Formulaire
         private bool                       _panneauOuvert    = false;
@@ -69,6 +71,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private FormulaireVm               _form             = new();
         private Dictionary<string, string> _erreurs          = new();
         private string                     _erreurFormulaire = string.Empty;
+        private bool                       _nouveauProduit   = false;
+        private bool                       _avecCommandeModif = false;
+
+        // Formulaire commande
+        private FormulaireCommandeVm       _formCommande    = new();
+        private Dictionary<string, string> _erreursCommande = new();
 
         // Image
         private string  _imagePreview = string.Empty;
@@ -77,8 +85,19 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string? _imageBase64  = null;
         private string? _imageMime    = null;
 
-        // Suppression
-        private MaterielVm? _aSupprimer = null;
+        // Suppression : on supprime une commande précise (par CommandeId)
+        private LigneCommandeMaterielDto? _aSupprimer = null;
+
+        // Panneau articles
+        private bool             _panneauArticlesOuvert = false;
+        private string           _panneauArticlesTitre  = string.Empty;
+        private List<ArticleDto> _articles              = new();
+        private bool             _chargementArticles    = false;
+        private string           _rechercheArticle      = string.Empty;
+
+        // Édition numéro de série
+        private int?   _editArticleId = null;
+        private string _editArticleNs = string.Empty;
 
         // Toast
         private string _toastMsg  = string.Empty;
@@ -99,11 +118,17 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
         }
 
+        private IEnumerable<ArticleDto> ArticlesFiltres =>
+            string.IsNullOrWhiteSpace(_rechercheArticle)
+                ? _articles
+                : _articles.Where(a => a.NumeroSerie != null &&
+                    a.NumeroSerie.Contains(_rechercheArticle, StringComparison.OrdinalIgnoreCase));
+
         // ── Cycle de vie ──────────────────────────────────────────
         protected override async Task OnInitializedAsync()
         {
             await ChargerInfosUtilisateur();
-            await ChargerDonnees();
+            await Task.WhenAll(ChargerDonnees(), ChargerFournisseurs());
         }
 
         // ── Chargement ────────────────────────────────────────────
@@ -112,33 +137,21 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _chargement = true; _erreur = string.Empty;
             try
             {
-                var statsTask     = MaterielSvc.GetStatsAsync();
-                var materielsTask = MaterielSvc.GetAllAsync();
-                await Task.WhenAll(statsTask, materielsTask);
+                // UNE LIGNE PAR COMMANDE
+                var liste = await CommandeSvc.GetLignesCommandesAsync();
+                _toutesLignes = liste;
+                _totalCount   = liste.Count;
 
-                _stats      = statsTask.Result ?? new();
-                _totalCount = materielsTask.Result.Count;
+                _categories = liste
+                    .Select(l => l.Categorie)
+                    .Distinct().OrderBy(c => c).ToList();
 
-                _categories = materielsTask.Result
-                    .Select(m => m.Categorie)
-                    .Distinct()
-                    .OrderBy(c => c)
+                // Produits uniques pour dropdown (un seul par MaterielId)
+                _produitsUniques = liste
+                    .GroupBy(l => l.MaterielId)
+                    .Select(g => g.First())
+                    .OrderBy(l => l.Designation)
                     .ToList();
-
-                _tousMateriels = materielsTask.Result.Select(d => new MaterielVm
-                {
-                    Id            = d.Id,
-                    Reference     = d.Reference,
-                    Designation   = d.Designation,
-                    Description   = d.Description,
-                    Categorie     = d.Categorie,
-                    QuantiteStock = d.QuantiteStock,
-                    QuantiteMin   = d.QuantiteMin,
-                    Unite         = d.Unite,
-                    Emplacement   = d.Emplacement,
-                    Etat          = d.Etat,
-                    ImageUrl      = d.ImageUrl
-                }).ToList();
 
                 AppliquerFiltres();
             }
@@ -146,24 +159,31 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             finally { _chargement = false; }
         }
 
+        private async Task ChargerFournisseurs()
+        {
+            try { _fournisseurs = await FournisseurSvc.GetAllAsync(); }
+            catch { }
+        }
+
         private void AppliquerFiltres()
         {
-            var q = _tousMateriels.AsEnumerable();
+            var q = _toutesLignes.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(_termeRecherche))
             {
                 var t = _termeRecherche.Trim().ToLower();
-                q = q.Where(m =>
-                    m.Designation.ToLower().Contains(t) ||
-                    m.Reference.ToLower().Contains(t)   ||
-                    (m.Description?.ToLower().Contains(t) ?? false));
+                q = q.Where(l =>
+                    l.Designation.ToLower().Contains(t)        ||
+                    l.Reference.ToLower().Contains(t)          ||
+                    (l.Description?.ToLower().Contains(t) ?? false) ||
+                    l.NumeroCommande.ToLower().Contains(t)     ||
+                    l.NomFournisseur.ToLower().Contains(t));
             }
-            if (_categorieFiltre != "all")
-                q = q.Where(m => m.Categorie.Equals(_categorieFiltre, StringComparison.OrdinalIgnoreCase));
-            if (_etatFiltre != "all")
-                q = q.Where(m => m.Etat.Equals(_etatFiltre, StringComparison.OrdinalIgnoreCase));
 
-            _materiels = q.ToList();
+            if (_categorieFiltre != "all")
+                q = q.Where(l => l.Categorie.Equals(_categorieFiltre, StringComparison.OrdinalIgnoreCase));
+
+            _lignes = q.ToList();
         }
 
         // ── Filtres ───────────────────────────────────────────────
@@ -179,308 +199,433 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             AppliquerFiltres();
         }
 
-        private void OnEtatChange(ChangeEventArgs e)
+        // ── Toggle ligne détails (bouton "i") ─────────────────────
+        private void ToggleDetails(string rowKey)
         {
-            _etatFiltre = e.Value?.ToString() ?? "all";
-            AppliquerFiltres();
+            _detailsOuverts = _detailsOuverts == rowKey ? null : rowKey;
         }
 
-        // ── Formulaire ────────────────────────────────────────────
-        private void OuvrirFormulaire(MaterielVm? vm)
+        // ── Sélection produit existant dans formulaire ────────────
+        private void OnProduitExistantChange(ChangeEventArgs e)
         {
-            _erreurs.Clear();
-            _erreurFormulaire = string.Empty;
-            _imageErreur      = string.Empty;
-            _modeModif        = vm is not null;
-            _panneauOuvert    = true;
-
-            if (vm is not null)
+            if (int.TryParse(e.Value?.ToString(), out var id) && id > 0)
             {
-                _form = new FormulaireVm
+                var lg = _produitsUniques.FirstOrDefault(p => p.MaterielId == id);
+                if (lg != null)
                 {
-                    Id            = vm.Id,
-                    Reference     = vm.Reference,
-                    Designation   = vm.Designation,
-                    Description   = vm.Description,
-                    Categorie     = vm.Categorie,
-                    QuantiteStock = vm.QuantiteStock,
-                    QuantiteMin   = vm.QuantiteMin,
-                    Unite         = vm.Unite,
-                    Emplacement   = vm.Emplacement,
-                    Etat          = vm.Etat,
-                    ImageUrl      = vm.ImageUrl
-                };
-                _imagePreview = vm.ImageUrl ?? string.Empty;
-                _imageBase64  = null;
-                _imageMime    = null;
+                    _form = new FormulaireVm
+                    {
+                        Id          = lg.MaterielId,
+                        Reference   = lg.Reference,
+                        Designation = lg.Designation,
+                        Description = lg.Description,
+                        Categorie   = lg.Categorie,
+                        QuantiteMin = lg.QuantiteMin,
+                        Unite       = lg.Unite,
+                        ImageUrl    = lg.ImageUrl
+                    };
+                    _imagePreview = lg.ImageUrl ?? string.Empty;
+                }
             }
             else
             {
-                _form         = new FormulaireVm();
+                _form = new FormulaireVm();
                 _imagePreview = string.Empty;
-                _imageBase64  = null;
-                _imageMime    = null;
+            }
+        }
+
+        // ── Formulaire ────────────────────────────────────────────
+        private void OuvrirFormulaire(LigneCommandeMaterielDto? lg)
+        {
+            _erreurs.Clear(); _erreursCommande.Clear();
+            _erreurFormulaire = string.Empty;
+            _imageErreur      = string.Empty;
+            _modeModif        = lg is not null;
+            _panneauOuvert    = true;
+            _nouveauProduit   = false;
+            _avecCommandeModif = false;
+            _formCommande     = new FormulaireCommandeVm();
+
+            if (lg is not null)
+            {
+                _form = new FormulaireVm
+                {
+                    Id          = lg.MaterielId,
+                    Reference   = lg.Reference,
+                    Designation = lg.Designation,
+                    Description = lg.Description,
+                    Categorie   = lg.Categorie,
+                    QuantiteMin = lg.QuantiteMin,
+                    Unite       = lg.Unite,
+                    ImageUrl    = lg.ImageUrl
+                };
+                _imagePreview = lg.ImageUrl ?? string.Empty;
+                _imageBase64 = null; _imageMime = null;
+            }
+            else
+            {
+                _form = new FormulaireVm();
+                _imagePreview = string.Empty;
+                _imageBase64 = null; _imageMime = null;
             }
         }
 
         private void FermerFormulaire()
         {
-            _panneauOuvert    = false;
-            _erreurs.Clear();
+            _panneauOuvert = false;
+            _erreurs.Clear(); _erreursCommande.Clear();
             _erreurFormulaire = string.Empty;
-            _imagePreview     = string.Empty;
-            _imageBase64      = null;
-            _imageMime        = null;
+            _imagePreview = string.Empty; _imageBase64 = null; _imageMime = null;
+            _nouveauProduit = false; _avecCommandeModif = false;
         }
 
-        // ── Upload image ──────────────────────────────────────────
-        private async Task OnImageSelected(InputFileChangeEventArgs e)
+        private void AjusterArticles()
         {
-            _imageErreur = string.Empty;
-            var file = e.File;
-            if (file == null) return;
-
-            if (file.Size > 2 * 1024 * 1024)
-            {
-                _imageErreur = "L'image ne doit pas dépasser 2 Mo.";
-                return;
-            }
-            if (!new[] { "image/jpeg", "image/png", "image/webp" }.Contains(file.ContentType))
-            {
-                _imageErreur = "Format non supporté. Utilisez JPG ou PNG.";
-                return;
-            }
-
-            try
-            {
-                using var stream = file.OpenReadStream(2 * 1024 * 1024);
-                using var ms     = new MemoryStream();
-                await stream.CopyToAsync(ms);
-                var bytes      = ms.ToArray();
-                _imageBase64   = Convert.ToBase64String(bytes);
-                _imageMime     = file.ContentType;
-                _imagePreview  = $"data:{_imageMime};base64,{_imageBase64}";
-                _form.ImageUrl = _imagePreview;
-            }
-            catch (Exception ex) { _imageErreur = $"Erreur lecture image : {ex.Message}"; }
+            var qte = _formCommande.QuantiteAchetee;
+            while (_formCommande.NumerosSerie.Count < qte)
+                _formCommande.NumerosSerie.Add(null);
+            while (_formCommande.NumerosSerie.Count > qte)
+                _formCommande.NumerosSerie.RemoveAt(_formCommande.NumerosSerie.Count - 1);
         }
 
-        private void OnDragOver()  => _dragOver = true;
-        private void OnDragLeave() => _dragOver = false;
-
-        private void SupprimerImage()
+        private void OnQuantiteAcheteeChange(ChangeEventArgs e)
         {
-            _imagePreview  = string.Empty;
-            _imageBase64   = null;
-            _imageMime     = null;
-            _form.ImageUrl = null;
+            if (int.TryParse(e.Value?.ToString(), out var q) && q >= 0)
+                _formCommande.QuantiteAchetee = q;
+            AjusterArticles();
         }
 
         // ── Sauvegarde ────────────────────────────────────────────
         private async Task Sauvegarder()
         {
-            _erreurs.Clear();
+            _erreurs.Clear(); _erreursCommande.Clear();
             _erreurFormulaire = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(_form.Designation))
-                _erreurs["Designation"] = "La désignation est obligatoire.";
-            if (string.IsNullOrWhiteSpace(_form.Reference))
-                _erreurs["Reference"]   = "La référence est obligatoire.";
-            if (string.IsNullOrWhiteSpace(_form.Categorie))
-                _erreurs["Categorie"]   = "La catégorie est obligatoire.";
-            if (_erreurs.Any()) return;
+            if (_modeModif)
+            {
+                if (string.IsNullOrWhiteSpace(_form.Designation)) _erreurs["Designation"] = "Obligatoire.";
+                if (string.IsNullOrWhiteSpace(_form.Reference))   _erreurs["Reference"]   = "Obligatoire.";
+                if (string.IsNullOrWhiteSpace(_form.Categorie))   _erreurs["Categorie"]   = "Obligatoire.";
+
+                if (_avecCommandeModif)
+                {
+                    if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
+                        _erreursCommande["NumeroCommande"] = "Obligatoire.";
+                    if (_formCommande.FournisseurId == 0)
+                        _erreursCommande["Fournisseur"] = "Sélectionnez un fournisseur.";
+                    if (_formCommande.QuantiteAchetee <= 0)
+                        _erreursCommande["Quantite"] = "La quantité doit être > 0.";
+                }
+            }
+            else
+            {
+                if (_nouveauProduit)
+                {
+                    if (string.IsNullOrWhiteSpace(_form.Designation)) _erreurs["Designation"] = "Obligatoire.";
+                    if (string.IsNullOrWhiteSpace(_form.Reference))   _erreurs["Reference"]   = "Obligatoire.";
+                    if (string.IsNullOrWhiteSpace(_form.Categorie))   _erreurs["Categorie"]   = "Obligatoire.";
+                }
+                else
+                {
+                    if (_form.Id == 0) _erreurs["Produit"] = "Sélectionnez un produit existant.";
+                }
+
+                // Commande obligatoire en création
+                if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
+                    _erreursCommande["NumeroCommande"] = "Obligatoire.";
+                if (_formCommande.FournisseurId == 0)
+                    _erreursCommande["Fournisseur"] = "Sélectionnez un fournisseur.";
+                if (_formCommande.QuantiteAchetee <= 0)
+                    _erreursCommande["Quantite"] = "La quantité doit être > 0.";
+            }
+
+            if (_erreurs.Any() || _erreursCommande.Any()) return;
 
             _sauvegarde = true;
             try
             {
-                MaterielResultDto result;
+                int materielId;
+
                 if (_modeModif)
                 {
-                    result = await MaterielSvc.ModifierAsync(new ModifierMaterielDto
+                    var currentQty = _toutesLignes
+                        .FirstOrDefault(l => l.MaterielId == _form.Id)?.QuantiteStock ?? 0;
+
+                    var result = await MaterielSvc.ModifierAsync(new ModifierMaterielDto
                     {
                         Id            = _form.Id,
                         Reference     = _form.Reference.Trim(),
                         Designation   = _form.Designation.Trim(),
                         Description   = Vide(_form.Description),
                         Categorie     = _form.Categorie.Trim(),
-                        QuantiteStock = _form.QuantiteStock,
+                        QuantiteStock = currentQty,
                         QuantiteMin   = _form.QuantiteMin,
                         Unite         = (_form.Unite ?? "pièce").Trim(),
-                        Emplacement   = Vide(_form.Emplacement),
-                        Etat          = _form.Etat,
-                        ImageUrl      = Vide(_form.ImageUrl)
+                        Emplacement   = null,
+                        ImageUrl      = string.IsNullOrEmpty(_imagePreview) ? Vide(_form.ImageUrl) : _imagePreview
                     });
+
+                    if (!result.Succes) { _erreurFormulaire = result.Message; return; }
+                    materielId = _form.Id;
+
+                    if (_avecCommandeModif)
+                    {
+                        AjusterArticles();
+                        var cmd = await CommandeSvc.CreerAsync(new CreerCommandeDto
+                        {
+                            NumeroCommande  = _formCommande.NumeroCommande.Trim(),
+                            MaterielId      = materielId,
+                            FournisseurId   = _formCommande.FournisseurId,
+                            QuantiteAchetee = _formCommande.QuantiteAchetee,
+                            DateAchat       = _formCommande.DateAchat,
+                            DateLivraison   = _formCommande.DateLivraison,
+                            DateFinGarantie = _formCommande.DateFinGarantie,
+                            NumerosSerie    = _formCommande.NumerosSerie
+                        });
+                        if (!cmd.Succes) { _erreurFormulaire = cmd.Message; return; }
+                    }
+
+                    AfficherToast($"« {_form.Designation} » mis à jour.", "toast-success");
                 }
                 else
                 {
-                    result = await MaterielSvc.AjouterAsync(new CreerMaterielDto
+                    if (_nouveauProduit)
                     {
-                        Reference     = _form.Reference.Trim(),
-                        Designation   = _form.Designation.Trim(),
-                        Description   = Vide(_form.Description),
-                        Categorie     = _form.Categorie.Trim(),
-                        QuantiteStock = _form.QuantiteStock,
-                        QuantiteMin   = _form.QuantiteMin,
-                        Unite         = (_form.Unite ?? "pièce").Trim(),
-                        Emplacement   = Vide(_form.Emplacement),
-                        Etat          = _form.Etat,
-                        ImageUrl      = Vide(_form.ImageUrl)
+                        var result = await MaterielSvc.AjouterAsync(new CreerMaterielDto
+                        {
+                            Reference     = _form.Reference.Trim(),
+                            Designation   = _form.Designation.Trim(),
+                            Description   = Vide(_form.Description),
+                            Categorie     = _form.Categorie.Trim(),
+                            QuantiteStock = 0,
+                            QuantiteMin   = _form.QuantiteMin,
+                            Unite         = (_form.Unite ?? "pièce").Trim(),
+                            Emplacement   = null,
+                            ImageUrl      = string.IsNullOrEmpty(_imagePreview) ? null : _imagePreview
+                        });
+                        if (!result.Succes) { _erreurFormulaire = result.Message; return; }
+                        materielId = result.IdMateriel!.Value;
+                    }
+                    else
+                    {
+                        materielId = _form.Id;
+                    }
+
+                    AjusterArticles();
+                    var cmd = await CommandeSvc.CreerAsync(new CreerCommandeDto
+                    {
+                        NumeroCommande  = _formCommande.NumeroCommande.Trim(),
+                        MaterielId      = materielId,
+                        FournisseurId   = _formCommande.FournisseurId,
+                        QuantiteAchetee = _formCommande.QuantiteAchetee,
+                        DateAchat       = _formCommande.DateAchat,
+                        DateLivraison   = _formCommande.DateLivraison,
+                        DateFinGarantie = _formCommande.DateFinGarantie,
+                        NumerosSerie    = _formCommande.NumerosSerie
                     });
+                    if (!cmd.Succes) { _erreurFormulaire = cmd.Message; return; }
+
+                    AfficherToast($"Commande {_formCommande.NumeroCommande} ajoutée.", "toast-success");
                 }
 
-                if (result.Succes)
-                {
-                    FermerFormulaire();
-                    AfficherToast(
-                        _modeModif ? $"« {_form.Designation} » mis à jour." : $"« {_form.Designation} » ajouté.",
-                        "toast-success");
-                    await ChargerDonnees();
-                }
-                else
-                {
-                    _erreurFormulaire = result.Message;
-                }
+                FermerFormulaire();
+                await ChargerDonnees();
             }
             catch (Exception ex) { _erreurFormulaire = ex.Message; }
             finally { _sauvegarde = false; }
         }
 
-        // ── Suppression cascade ───────────────────────────────────
-        private void DemanderSuppression(MaterielVm vm) => _aSupprimer = vm;
+        // ── Panneau articles (bouton ···) — tous articles du matériel ──
+        private async Task OuvrirArticlesMateriel(LigneCommandeMaterielDto lg)
+        {
+            _panneauArticlesTitre  = $"{lg.Reference} — {lg.Designation}";
+            _panneauArticlesOuvert = true;
+            _chargementArticles    = true;
+            _articles              = new();
+            _rechercheArticle      = string.Empty;
+            _editArticleId         = null;
+            StateHasChanged();
+            try
+            {
+                _articles = await CommandeSvc.GetArticlesByMaterielAsync(lg.MaterielId);
+            }
+            catch { }
+            finally { _chargementArticles = false; }
+        }
+
+        // ── Panneau articles (badge) — articles d'une commande précise ──
+        private async Task OuvrirArticlesParCommande(LigneCommandeMaterielDto lg)
+        {
+            _panneauArticlesTitre  = $"{lg.NumeroCommande} — {lg.Designation}";
+            _panneauArticlesOuvert = true;
+            _chargementArticles    = true;
+            _articles              = new();
+            _rechercheArticle      = string.Empty;
+            _editArticleId         = null;
+            StateHasChanged();
+            try
+            {
+                _articles = await CommandeSvc.GetArticlesByCommandeAsync(lg.CommandeId);
+            }
+            catch { }
+            finally { _chargementArticles = false; }
+        }
+
+        private void FermerArticles()
+        {
+            _panneauArticlesOuvert = false;
+            _editArticleId = null;
+        }
+
+        // ── Édition numéro de série ───────────────────────────────
+        private void OuvrirEditArticle(ArticleDto art)
+        {
+            _editArticleId = art.Id;
+            _editArticleNs = art.NumeroSerie ?? string.Empty;
+        }
+
+        private void AnnulerEditArticle()
+        {
+            _editArticleId = null;
+            _editArticleNs = string.Empty;
+        }
+
+        private async Task SauvegarderNumeroSerie(int articleId)
+        {
+            try
+            {
+                var result = await ArticleSvc.UpdateNumeroSerieAsync(articleId, _editArticleNs);
+                if (result)
+                {
+                    var art = _articles.FirstOrDefault(a => a.Id == articleId);
+                    if (art != null)
+                        art.NumeroSerie = string.IsNullOrWhiteSpace(_editArticleNs) ? null : _editArticleNs.Trim();
+                    AfficherToast("Numéro de série mis à jour.", "toast-success");
+                }
+                else
+                    AfficherToast("Erreur lors de la mise à jour.", "toast-error");
+            }
+            catch (Exception ex) { AfficherToast($"Erreur : {ex.Message}", "toast-error"); }
+            finally { _editArticleId = null; _editArticleNs = string.Empty; }
+        }
+
+        // ── Suppression commande précise ──────────────────────────
+        private void DemanderSuppression(LigneCommandeMaterielDto lg)
+        {
+            if (lg.CommandeId == 0)
+            {
+                AfficherToast("Aucune commande à supprimer.", "toast-error");
+                return;
+            }
+            _aSupprimer = lg;
+        }
+
         private void AnnulerSuppression() => _aSupprimer = null;
 
         private async Task ConfirmerSuppression()
         {
             if (_aSupprimer is null) return;
-            var nom = _aSupprimer.Designation;
-            var id  = _aSupprimer.Id;
+            var lg = _aSupprimer;
             _aSupprimer = null;
 
-            var result = await MaterielSvc.SupprimerAvecCascadeAsync(id);
-            if (result.Succes)
+            try
             {
-                AfficherToast($"« {nom} » supprimé.", "toast-success");
-                await ChargerDonnees();
+                // Supprimer directement la commande dont on connaît l'ID
+                var result = await CommandeSvc.SupprimerAsync(lg.CommandeId);
+                if (result.Succes)
+                {
+                    AfficherToast($"Commande {lg.NumeroCommande} supprimée.", "toast-success");
+                    _detailsOuverts = null;
+                    await ChargerDonnees();
+                }
+                else
+                    AfficherToast(result.Message, "toast-error");
             }
-            else
-            {
-                _erreur = result.Message;
-            }
+            catch (Exception ex) { AfficherToast($"Erreur : {ex.Message}", "toast-error"); }
         }
 
-        // ── Export Excel ──────────────────────────────────────────
+        // ── Export ────────────────────────────────────────────────
         private async Task ExporterExcel()
         {
             try
             {
                 var sb = new System.Text.StringBuilder();
-                sb.AppendLine("Référence;Désignation;Catégorie;Quantité;Seuil Min;Unité;Emplacement;État");
-                foreach (var m in _materiels)
-                    sb.AppendLine($"{Csv(m.Reference)};{Csv(m.Designation)};{Csv(m.Categorie)};{m.QuantiteStock};{m.QuantiteMin};{Csv(m.Unite)};{Csv(m.Emplacement ?? "")};{Csv(StatusLabel(m.Etat))}");
+                sb.AppendLine("Référence;Désignation;Catégorie;Stock actuel;N° Commande;Fournisseur;Qté achetée;Date achat;Date livraison;Date fin garantie");
+                foreach (var l in _lignes)
+                    sb.AppendLine($"{Csv(l.Reference)};{Csv(l.Designation)};{Csv(l.Categorie)};{l.QuantiteStock};{Csv(l.NumeroCommande)};{Csv(l.NomFournisseur)};{l.QuantiteAchetee};{(l.CommandeId > 0 ? l.DateAchat.ToString("dd/MM/yyyy") : "")};{l.DateLivraison?.ToString("dd/MM/yyyy") ?? ""};{l.DateFinGarantie?.ToString("dd/MM/yyyy") ?? ""}");
 
-                var bytes    = System.Text.Encoding.UTF8.GetPreamble()
-                    .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+                var bytes    = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
                 var b64      = Convert.ToBase64String(bytes);
                 var fileName = $"materiels_{DateTime.Now:yyyyMMdd_HHmm}.csv";
-
-                await JS.InvokeVoidAsync("eval", $@"
-                    (function(){{
-                        var a = document.createElement('a');
-                        a.href = 'data:text/csv;base64,{b64}';
-                        a.download = '{fileName}';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                    }})();
-                ");
-                AfficherToast("Export Excel téléchargé.", "toast-success");
+                await JS.InvokeVoidAsync("eval", $@"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{b64}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);}})();");
+                AfficherToast("Export téléchargé.", "toast-success");
             }
-            catch (Exception ex) { AfficherToast($"Erreur export : {ex.Message}", "toast-error"); }
+            catch (Exception ex) { AfficherToast($"Erreur : {ex.Message}", "toast-error"); }
         }
 
-        // ── Export PDF ────────────────────────────────────────────
         private async Task ExporterPdf()
         {
             try
             {
                 var rows = new System.Text.StringBuilder();
-                foreach (var m in _materiels)
-                    rows.AppendLine($"<tr><td>{HE(m.Reference)}</td><td>{HE(m.Designation)}</td><td>{HE(m.Categorie)}</td><td>{m.QuantiteStock}</td><td>{m.QuantiteMin}</td><td>{HE(m.Unite)}</td><td>{HE(m.Emplacement ?? "—")}</td><td>{HE(StatusLabel(m.Etat))}</td></tr>");
-
-                var html = $@"<!DOCTYPE html><html><head><meta charset='utf-8'/>
-<title>Catalogue Matériels</title>
-<style>
-  body{{font-family:Arial,sans-serif;font-size:11px;margin:20px;}}
-  h1{{font-size:16px;margin-bottom:4px;}}
-  p{{color:#666;margin-bottom:12px;font-size:10px;}}
-  table{{width:100%;border-collapse:collapse;}}
-  th{{background:#136dec;color:#fff;padding:7px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;}}
-  td{{padding:6px 8px;border-bottom:1px solid #eee;font-size:10px;}}
-  tr:nth-child(even){{background:#f8fafc;}}
-  @media print{{@page{{margin:1cm;}}}}
-</style></head><body>
-<h1>Catalogue Matériels</h1>
-<p>Exporté le {DateTime.Now:dd/MM/yyyy à HH:mm} — {_materiels.Count} article(s)</p>
-<table><thead><tr>
-<th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Qté</th><th>Seuil</th><th>Unité</th><th>Emplacement</th><th>État</th>
-</tr></thead><tbody>{rows}</tbody></table>
-</body></html>";
-
-                await JS.InvokeVoidAsync("eval", $@"
-                    (function(){{
-                        var w = window.open('','_blank','width=900,height=700');
-                        w.document.write({System.Text.Json.JsonSerializer.Serialize(html)});
-                        w.document.close();
-                        w.focus();
-                        setTimeout(function(){{ w.print(); }}, 400);
-                    }})();
-                ");
-                AfficherToast("PDF ouvert pour impression.", "toast-success");
+                foreach (var l in _lignes)
+                    rows.AppendLine($"<tr><td>{HE(l.Reference)}</td><td>{HE(l.Designation)}</td><td>{HE(l.Categorie)}</td><td>{l.QuantiteStock}</td><td>{HE(l.NumeroCommande)}</td><td>{HE(l.NomFournisseur)}</td><td>{l.QuantiteAchetee}</td><td>{(l.CommandeId > 0 ? l.DateAchat.ToString("dd/MM/yyyy") : "—")}</td></tr>");
+                var html = $@"<!DOCTYPE html><html><head><meta charset='utf-8'/><title>Matériels</title><style>body{{font-family:Arial;font-size:11px;margin:20px}}table{{width:100%;border-collapse:collapse}}th{{background:#136dec;color:#fff;padding:7px 8px;font-size:10px;text-transform:uppercase}}td{{padding:6px 8px;border-bottom:1px solid #eee;font-size:10px}}tr:nth-child(even){{background:#f8fafc}}</style></head><body><h2>Catalogue Matériels</h2><p>Exporté le {DateTime.Now:dd/MM/yyyy HH:mm}</p><table><thead><tr><th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Stock</th><th>N° Commande</th><th>Fournisseur</th><th>Qté achetée</th><th>Date achat</th></tr></thead><tbody>{rows}</tbody></table></body></html>";
+                await JS.InvokeVoidAsync("eval", $@"(function(){{var w=window.open('','_blank','width=900,height=700');w.document.write({System.Text.Json.JsonSerializer.Serialize(html)});w.document.close();w.focus();setTimeout(function(){{w.print();}},400);}})();");
+                AfficherToast("PDF ouvert.", "toast-success");
             }
-            catch (Exception ex) { AfficherToast($"Erreur PDF : {ex.Message}", "toast-error"); }
+            catch (Exception ex) { AfficherToast($"Erreur : {ex.Message}", "toast-error"); }
         }
 
         // ── Sidebar ───────────────────────────────────────────────
         private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
-        // ── Helpers affichage ─────────────────────────────────────
-        private static string StatusClass(string etat) => etat switch
+        // ── Upload image ──────────────────────────────────────────
+        private async Task OnImageSelected(InputFileChangeEventArgs e)
         {
-            "Disponible"  => "status-ok",
-            "EnRupture"   => "status-rupture",
-            "EnCommande"  => "status-commande",
-            "HorsService" => "status-hors",
-            _             => "status-ok"
-        };
+            _imageErreur = string.Empty;
+            var file = e.File;
+            if (file is null) return;
+            if (file.Size > 2 * 1024 * 1024) { _imageErreur = "Max 2 Mo."; return; }
+            if (!new[] { "image/jpeg", "image/png", "image/webp" }.Contains(file.ContentType))
+            { _imageErreur = "Format non supporté."; return; }
+            try
+            {
+                using var stream = file.OpenReadStream(2 * 1024 * 1024);
+                using var ms     = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var bytes     = ms.ToArray();
+                _imageBase64  = Convert.ToBase64String(bytes);
+                _imageMime    = file.ContentType;
+                _imagePreview = $"data:{_imageMime};base64,{_imageBase64}";
+                _form.ImageUrl = _imagePreview;
+            }
+            catch (Exception ex) { _imageErreur = ex.Message; }
+        }
+        private void OnDragOver()  => _dragOver = true;
+        private void OnDragLeave() => _dragOver = false;
+        private void SupprimerImage() { _imagePreview = string.Empty; _imageBase64 = null; _imageMime = null; _form.ImageUrl = null; }
 
-        private static string StatusLabel(string etat) => etat switch
+        // ── Helpers ───────────────────────────────────────────────
+        private static string StatutArticleClass(string s) => s switch
         {
-            "Disponible"  => "Disponible",
-            "EnRupture"   => "Rupture",
-            "EnCommande"  => "En commande",
-            "HorsService" => "Hors service",
-            _             => etat
+            "Disponible"   => "art-disponible",
+            "Affecte"      => "art-affecte",
+            "HorsService"  => "art-hors",
+            "EnReparation" => "art-rep",
+            _              => "art-disponible"
         };
-
         private static string CatBadgeClass(string cat) => cat.ToLower() switch
         {
+            var c when c.Contains("périph") || c.Contains("periph") => "cat-teal",
+            var c when c.Contains("infor")                          => "cat-purple",
+            var c when c.Contains("mobil")                          => "cat-amber",
             var c when c.Contains("électro") || c.Contains("electro") => "cat-blue",
-            var c when c.Contains("mobil")                            => "cat-amber",
-            var c when c.Contains("fourni")                           => "cat-slate",
-            var c when c.Contains("infor")                            => "cat-purple",
-            var c when c.Contains("périph") || c.Contains("periph")  => "cat-teal",
-            _                                                         => "cat-default"
+            _                                                        => "cat-default"
         };
-
-        private static string? Vide(string? v) =>
-            string.IsNullOrWhiteSpace(v) ? null : v.Trim();
-
-        private static string Csv(string v) =>
-            v.Contains(';') || v.Contains('"') || v.Contains('\n')
-                ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
-
-        private static string HE(string v) =>
-            v.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+        private static string? Vide(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+        private static string Csv(string v) => v.Contains(';') || v.Contains('"') ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
+        private static string HE(string v) => v.Replace("&","&amp;").Replace("<","&lt;").Replace(">","&gt;");
 
         private async void AfficherToast(string msg, string type)
         {
@@ -489,7 +634,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _toastMsg = string.Empty; StateHasChanged();
         }
 
-        // ── Utilisateur ───────────────────────────────────────────
         private async Task ChargerInfosUtilisateur()
         {
             try
@@ -501,13 +645,10 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
             catch { }
         }
-
         private static string Nettoy(string v)
         {
             v = v.Trim();
-            if (v.Length >= 2 &&
-                ((v.StartsWith('"') && v.EndsWith('"')) ||
-                 (v.StartsWith('\'') && v.EndsWith('\''))))
+            if (v.Length >= 2 && ((v.StartsWith('"') && v.EndsWith('"')) || (v.StartsWith('\'') && v.EndsWith('\''))))
                 v = v[1..^1].Trim();
             return v;
         }

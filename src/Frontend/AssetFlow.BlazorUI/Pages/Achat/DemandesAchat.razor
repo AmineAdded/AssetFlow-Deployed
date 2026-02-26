@@ -118,17 +118,12 @@
                             @_demandes.Count(d => d.Statut != "traite" && d.Statut != "refuse")
                         </span>
                     </button>
-                    <button class="status-tab @(_tabActive == "nouveau"    ? "tab-active" : "")"
-                            @onclick='() => SetTab("nouveau")'>
-                        Nouveau
+                    <button class="status-tab @(_tabActive == "en_attente" ? "tab-active" : "")"
+                            @onclick='() => SetTab("en_attente")'>
+                        En attente
                         <span class="tab-count tab-count-nouveau">
-                            @_demandes.Count(d => d.Statut == "nouveau")
+                            @_demandes.Count(d => d.Statut == "en_attente")
                         </span>
-                    </button>
-                    <button class="status-tab @(_tabActive == "en_cours"   ? "tab-active" : "")"
-                            @onclick='() => SetTab("en_cours")'>
-                        En cours
-                        <span class="tab-count">@_demandes.Count(d => d.Statut == "en_cours")</span>
                     </button>
                     <button class="status-tab @(_tabActive == "commande"   ? "tab-active" : "")"
                             @onclick='() => SetTab("commande")'>
@@ -145,7 +140,13 @@
                 </div>
 
                 <div class="demand-list">
-                    @if (!DemandesFiltrees.Any())
+                    @if (_chargement)
+                    {
+                        <div class="list-empty">
+                            <span>Chargement…</span>
+                        </div>
+                    }
+                    else if (!DemandesFiltrees.Any())
                     {
                         <div class="list-empty">
                             <svg viewBox="0 0 24 24">
@@ -165,17 +166,17 @@
                                     <span class="card-ref">@d.Reference</span>
                                     <span class="card-date">@FormatDateCarte(d.DateCreation)</span>
                                 </div>
-                                <p class="card-titre">@d.Titre</p>
+                                <p class="card-titre">@d.NomProduit</p>
                                 <div class="card-bottom">
                                     <div class="card-demandeur">
-                                        <div class="mini-avatar">@d.DemandeurInitiales</div>
+                                        <div class="mini-avatar">@d.Initiales</div>
                                         <span>@d.DemandeurNom</span>
                                     </div>
                                     <span class="status-pill status-@d.Statut">
                                         @LibelleStatut(d.Statut)
                                     </span>
                                 </div>
-                                @if (d.OffreChoisieId != null)
+                                @if (d.Offres.Any(o => o.EstChoisie))
                                 {
                                     <div class="card-offre-flag">
                                         <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -214,18 +215,16 @@
                                 <span class="status-pill status-@dem.Statut status-pill-lg">
                                     @LibelleStatut(dem.Statut)
                                 </span>
-                                @if (dem.Statut == "nouveau")
+                                @if (dem.Statut == "en_attente")
                                 {
-                                    <span class="nouveau-badge">NOUVEAU</span>
+                                    <span class="nouveau-badge">EN ATTENTE</span>
                                 }
                             </div>
                             <div class="detail-meta">
                                 <div class="meta-demandeur">
-                                    <div class="meta-avatar">@dem.DemandeurInitiales</div>
+                                    <div class="meta-avatar">@dem.Initiales</div>
                                     <span class="meta-name">@dem.DemandeurNom</span>
                                 </div>
-                                <span class="meta-sep">·</span>
-                                <span class="meta-role">@dem.DemandeurRole</span>
                                 <span class="meta-sep">·</span>
                                 <span class="meta-date">
                                     Créée le @dem.DateCreation.ToString("dd MMMM yyyy")
@@ -248,7 +247,7 @@
                             <p class="section-text">@dem.Description</p>
                         </section>
 
-                        @* ── ARTICLES ── *@
+                        @* ── DÉTAIL PRODUIT ── *@
                         <section class="detail-section">
                             <h3 class="section-title">
                                 <svg viewBox="0 0 24 24">
@@ -259,45 +258,57 @@
                                     <line x1="3" y1="12" x2="3.01" y2="12"/>
                                     <line x1="3" y1="18" x2="3.01" y2="18"/>
                                 </svg>
-                                Articles demandés
+                                Détail de la commande
                             </h3>
                             <div class="articles-table">
                                 <div class="articles-head">
-                                    <span>Désignation</span>
-                                    <span>Catégorie</span>
+                                    <span>Référence</span>
+                                    <span>Produit</span>
                                     <span class="col-qty">Quantité</span>
                                 </div>
-                                @foreach (var a in dem.Articles)
-                                {
-                                    <div class="article-row">
-                                        <div class="article-name">
-                                            <div class="article-ico">
-                                                <svg viewBox="0 0 24 24">
-                                                    <rect x="3"  y="3"  width="7" height="7"/>
-                                                    <rect x="14" y="3"  width="7" height="7"/>
-                                                    <rect x="14" y="14" width="7" height="7"/>
-                                                    <rect x="3"  y="14" width="7" height="7"/>
-                                                </svg>
-                                            </div>
-                                            @a.Designation
+                                <div class="article-row">
+                                    <div class="article-name">
+                                        <div class="article-ico">
+                                            <svg viewBox="0 0 24 24">
+                                                <rect x="3"  y="3"  width="7" height="7"/>
+                                                <rect x="14" y="3"  width="7" height="7"/>
+                                                <rect x="14" y="14" width="7" height="7"/>
+                                                <rect x="3"  y="14" width="7" height="7"/>
+                                            </svg>
                                         </div>
-                                        <span class="article-cat">@a.Categorie</span>
-                                        <span class="article-qty col-qty">@a.Quantite</span>
+                                        @dem.Reference
                                     </div>
-                                }
+                                    <span class="article-cat">@dem.NomProduit</span>
+                                    <span class="article-qty col-qty">@dem.Quantite</span>
+                                </div>
                             </div>
                         </section>
 
-                        @* ── PIÈCES JOINTES & OFFRES ── *@
+                        @* ── OFFRES PDF ── *@
                         <section class="detail-section">
                             <div class="section-title-row">
                                 <h3 class="section-title">
                                     <svg viewBox="0 0 24 24">
                                         <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                                     </svg>
-                                    Pièces jointes & Offres
+                                    Offres attachées
                                 </h3>
+                                @if (dem.Statut != "traite" && dem.Statut != "refuse")
+                                {
+                                    <label class="btn-attach" for="@($"file-{dem.Id}")">
+                                        <svg viewBox="0 0 24 24">
+                                            <line x1="12" y1="5" x2="12" y2="19" />
+                                            <line x1="5" y1="12" x2="19" y2="12" />
+                                        </svg>
+                                        Ajouter une offre
+                                    </label>
 
+                                    <InputFile id="@($"file-{dem.Id}")"
+                                            class="file-hidden"
+                                            accept=".pdf"
+                                            multiple
+                                            OnChange="e => AjouterOffres(e, dem.Id)" />
+                             }
                             </div>
 
                             @if (!dem.Offres.Any())
@@ -310,9 +321,9 @@
                                             <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
                                         </svg>
                                     </div>
-                                    <span class="drop-title">Glisser le PDF ici</span>
+                                    <span class="drop-title">Aucune offre attachée</span>
                                     <span class="drop-sub">
-                                        ou cliquez « Ajouter une offre » (Max. 10 Mo)
+                                        Cliquez « Ajouter une offre » pour joindre un PDF (max. 10 Mo)
                                     </span>
                                 </div>
                             }
@@ -321,8 +332,7 @@
                                 <div class="offres-list">
                                     @foreach (var o in dem.Offres)
                                     {
-                                        bool isChoisie = dem.OffreChoisieId == o.Id;
-                                        <div class="offre-item @(isChoisie ? "offre-choisie" : "")">
+                                        <div class="offre-item @(o.EstChoisie ? "offre-choisie" : "")">
                                             <div class="offre-pdf-ico">
                                                 <svg viewBox="0 0 24 24">
                                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -333,7 +343,7 @@
                                                 <span class="offre-nom">@o.NomFichier</span>
                                                 <span class="offre-taille">@FormatTaille(o.Taille)</span>
                                             </div>
-                                            @if (isChoisie)
+                                            @if (o.EstChoisie)
                                             {
                                                 <span class="offre-choisie-badge">
                                                     <svg viewBox="0 0 24 24">
@@ -364,18 +374,6 @@
                                         </div>
                                     }
                                 </div>
-
-                                @if (dem.Statut != "traite" && dem.Statut != "refuse"
-                                     && dem.Offres.Any(o => o.EstNouvelle))
-                                {
-                                    <button class="btn-envoyer" @onclick="() => EnvoyerOffres(dem.Id)">
-                                        <svg viewBox="0 0 24 24">
-                                            <line x1="22" y1="2"  x2="11" y2="13"/>
-                                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                                        </svg>
-                                        Envoyer les offres à l'IT
-                                    </button>
-                                }
                             }
                         </section>
 
@@ -392,12 +390,12 @@
                                 </h3>
                                 <div class="gestion-grid">
                                     <div class="gestion-block">
-                                        <p class="gestion-label">Statut de la commande</p>
+                                        <p class="gestion-label">Changer le statut</p>
                                         <div class="statut-btns">
-                                            <button class="btn-statut btn-statut-en_cours @(dem.Statut == "en_cours" ? "statut-actif" : "")"
-                                                    @onclick='() => ChangerStatut(dem.Id, "en_cours")'
-                                                    disabled="@(dem.Statut == "en_cours")">
-                                                En cours
+                                            <button class="btn-statut btn-statut-en_cours @(dem.Statut == "en_attente" ? "statut-actif" : "")"
+                                                    @onclick='() => ChangerStatut(dem.Id, "en_attente")'
+                                                    disabled="@(dem.Statut == "en_attente")">
+                                                En attente
                                             </button>
                                             <button class="btn-statut btn-statut-commande @(dem.Statut == "commande" ? "statut-actif" : "")"
                                                     @onclick='() => ChangerStatut(dem.Id, "commande")'
@@ -431,7 +429,7 @@
                             </section>
                         }
 
-                        @* ── BANNIÈRES ── *@
+                        @* ── BANNIÈRES HISTORIQUE ── *@
                         @if (dem.Statut == "refuse" && !string.IsNullOrEmpty(dem.MotifRefus))
                         {
                             <div class="refus-banner">
@@ -468,7 +466,7 @@
         </div>
     </main>
 
-    @* ══════ MODALE PDF ══════ *@
+    @* ══════ MODALE APERÇU PDF ══════ *@
     @if (_offrePreview != null)
     {
         <div class="modal-overlay" @onclick="FermerPreview">
@@ -489,9 +487,9 @@
                     </button>
                 </div>
                 <div class="modal-pdf-body">
-                    @if (_offrePreview.DataUrl != null)
+                    @if (!string.IsNullOrEmpty(_offrePreview.PdfUrl))
                     {
-                        <iframe src="@_offrePreview.DataUrl" title="Aperçu PDF"></iframe>
+                        <iframe src="@_offrePreview.PdfUrl" title="Aperçu PDF"></iframe>
                     }
                     else
                     {
@@ -509,7 +507,7 @@
         </div>
     }
 
-    @* Toast *@
+    @* ══════ TOAST ══════ *@
     @if (!string.IsNullOrEmpty(_toastMsg))
     {
         <div class="toast @_toastType">@_toastMsg</div>

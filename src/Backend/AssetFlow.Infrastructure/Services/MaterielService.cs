@@ -28,13 +28,9 @@ namespace AssetFlow.Infrastructure.Services
             QuantiteMin   = m.QuantiteMin,
             Unite         = m.Unite,
             Emplacement   = m.Emplacement,
-            Etat          = m.Etat.ToString(),
             ImageUrl      = m.ImageUrl,
             DateAjout     = m.DateAjout
         };
-
-        private static EtatMateriel ParseEtat(string etat) =>
-            Enum.TryParse<EtatMateriel>(etat, true, out var e) ? e : EtatMateriel.Disponible;
 
         // ── Lecture ───────────────────────────────────────────────
         public async Task<IEnumerable<MaterielDto>> GetAllAsync()
@@ -49,7 +45,7 @@ namespace AssetFlow.Infrastructure.Services
             return m is null ? null : ToDto(m);
         }
 
-        public async Task<IEnumerable<MaterielDto>> SearchAsync(string? terme, string? categorie, string? etat)
+        public async Task<IEnumerable<MaterielDto>> SearchAsync(string? terme, string? categorie)
         {
             var q = _db.Materiels.AsNoTracking().AsQueryable();
             if (!string.IsNullOrWhiteSpace(terme))
@@ -62,11 +58,6 @@ namespace AssetFlow.Infrastructure.Services
             }
             if (!string.IsNullOrWhiteSpace(categorie) && categorie != "all")
                 q = q.Where(m => m.Categorie.ToLower() == categorie.ToLower());
-            if (!string.IsNullOrWhiteSpace(etat) && etat != "all")
-            {
-                var etatEnum = ParseEtat(etat);
-                q = q.Where(m => m.Etat == etatEnum);
-            }
             var list = await q.OrderBy(m => m.Designation).ToListAsync();
             return list.Select(ToDto);
         }
@@ -77,12 +68,9 @@ namespace AssetFlow.Infrastructure.Services
             return new MaterielStatsDto
             {
                 TotalArticles   = all.Count,
-                EnStock         = all.Count(m => m.Etat == EtatMateriel.Disponible),
                 AlerteSeuil     = all.Count(m =>
-                    m.Etat != EtatMateriel.EnRupture &&
                     m.QuantiteStock <= m.QuantiteMin * 2 &&
                     m.QuantiteStock > 0),
-                RuptureCritique = all.Count(m => m.Etat == EtatMateriel.EnRupture || m.QuantiteStock == 0)
             };
         }
 
@@ -102,7 +90,6 @@ namespace AssetFlow.Infrastructure.Services
                 QuantiteMin   = dto.QuantiteMin,
                 Unite         = dto.Unite.Trim(),
                 Emplacement   = dto.Emplacement?.Trim(),
-                Etat          = ParseEtat(dto.Etat),
                 ImageUrl      = dto.ImageUrl?.Trim(),
                 DateAjout     = DateTime.UtcNow
             };
@@ -130,7 +117,6 @@ namespace AssetFlow.Infrastructure.Services
             materiel.QuantiteMin   = dto.QuantiteMin;
             materiel.Unite         = dto.Unite.Trim();
             materiel.Emplacement   = dto.Emplacement?.Trim();
-            materiel.Etat          = ParseEtat(dto.Etat);
             materiel.ImageUrl      = dto.ImageUrl?.Trim();
 
             await _db.SaveChangesAsync();

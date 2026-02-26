@@ -27,7 +27,6 @@ namespace AssetFlow.Application.DTOs
         public int      QuantiteMin   { get; set; }
         public string   Unite         { get; set; } = "pièce";
         public string?  Emplacement   { get; set; }
-        public string   Etat          { get; set; } = "Disponible";
         public string?  ImageUrl      { get; set; }
         public DateTime DateAjout     { get; set; }
     }
@@ -44,7 +43,6 @@ namespace AssetFlow.Application.DTOs
         public int      QuantiteMin   { get; set; }
         public string   Unite         { get; set; } = "pièce";
         public string?  Emplacement   { get; set; }
-        public string   Etat          { get; set; } = "Disponible";
         public string?  ImageUrl      { get; set; }
     }
 
@@ -61,7 +59,6 @@ namespace AssetFlow.Application.DTOs
         public int      QuantiteMin   { get; set; }
         public string   Unite         { get; set; } = "pièce";
         public string?  Emplacement   { get; set; }
-        public string   Etat          { get; set; } = "Disponible";
         public string?  ImageUrl      { get; set; }
     }
         public class MaterielStatsDto

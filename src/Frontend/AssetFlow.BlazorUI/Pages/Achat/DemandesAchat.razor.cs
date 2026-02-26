@@ -1,73 +1,72 @@
 // ============================================================
 // FICHIER  : Pages/Achat/DemandesAchat.razor.cs
-// RÔLE     : Code-behind de la page Agent Achat — Demandes d'achat
-// PATTERN  : partial class, même structure que Fournisseurs.razor.cs
+// RÔLE     : Code-behind — VERSION BRANCHÉE SUR L'API
+//            Remplace la version avec ChargerDonneesMock()
 // ============================================================
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
+using AssetFlow.Application.DTOs;
+using AssetFlow.BlazorUI.Services;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
     public partial class DemandesAchat : ComponentBase
     {
-        [Inject] private IJSRuntime JS { get; set; } = default!;
+        [Inject] private IJSRuntime          JS              { get; set; } = default!;
+        [Inject] private DemandeAchatService DemandeAchatSvc { get; set; } = default!;
 
-        // ─── Modèles internes ────────────────────────────────────
+        // ─── ViewModels locaux ───────────────────────────────────
+        // Séparés des DTOs car OffreVm inclut PdfUrl (string)
+        // pour l'aperçu iframe sans passer le binaire dans la mémoire Blazor
 
         private class OffreVm
         {
-            public Guid    Id          { get; set; } = Guid.NewGuid();
-            public string  NomFichier  { get; set; } = string.Empty;
-            public long    Taille      { get; set; }
-            public string? DataUrl     { get; set; }   // base64 pour l'aperçu iframe
-            public bool    EstNouvelle { get; set; } = true;
-        }
-
-        private class ArticleVm
-        {
-            public string Designation { get; set; } = string.Empty;
-            public string Categorie   { get; set; } = string.Empty;
-            public int    Quantite    { get; set; }
+            public Guid   Id         { get; set; }
+            public int    IdDemande  { get; set; }
+            public string NomFichier { get; set; } = string.Empty;
+            public long   Taille     { get; set; }
+            public bool   EstChoisie { get; set; }
+            // URL directe vers /api/demandes/{id}/offres/{offreId}/pdf
+            // Chargée à la demande quand l'utilisateur clique "Aperçu"
+            public string? PdfUrl    { get; set; }
         }
 
         private class DemandeVm
         {
-            public int              Id                 { get; set; }
-            public string           Reference          { get; set; } = string.Empty;
-            public string           Titre              { get; set; } = string.Empty;
-            public string           Description        { get; set; } = string.Empty;
-            // Statuts : nouveau | en_cours | commande | traite | refuse
-            public string           Statut             { get; set; } = "nouveau";
-            public DateTime         DateCreation       { get; set; }
-            public string           DemandeurNom       { get; set; } = string.Empty;
-            public string           DemandeurInitiales { get; set; } = string.Empty;
-            public string           DemandeurRole      { get; set; } = string.Empty;
-            public string?          MotifRefus         { get; set; }
-            public Guid?            OffreChoisieId     { get; set; }
-            public List<ArticleVm>  Articles           { get; set; } = new();
-            public List<OffreVm>    Offres             { get; set; } = new();
+            public int           Id           { get; set; }
+            public string        Reference    { get; set; } = string.Empty;
+            public string        NomProduit   { get; set; } = string.Empty;
+            public int           Quantite     { get; set; }
+            public string?       Description  { get; set; }
+            public string        Statut       { get; set; } = "en_attente";
+            public DateTime      DateCreation { get; set; }
+            public string        DemandeurNom { get; set; } = string.Empty;
+            public string        Initiales    { get; set; } = string.Empty;
+            public string?       MotifRefus   { get; set; }
+            public List<OffreVm> Offres       { get; set; } = new();
         }
 
-        // ─── État de la page ─────────────────────────────────────
+        // ─── État ────────────────────────────────────────────────
 
         private string _theme           = "dark";
         private bool   _sidebarOpen     = false;
         private string _nomUtilisateur  = "Agent Achat";
         private string _roleUtilisateur = "Service Achat";
         private string _initiales       = "AA";
+        private bool   _chargement      = true;
 
         private List<DemandeVm> _demandes            = new();
         private DemandeVm?      _demandeSelectionnee = null;
         private string          _tabActive           = "tous";
         private string          _recherche           = string.Empty;
         private string          _motifRefus          = string.Empty;
-        private OffreVm?        _offrePreview        = null;
+        private OffreVm?        _offrePreview        = null;  // null = modale fermée
         private string          _toastMsg            = string.Empty;
         private string          _toastType           = "toast-success";
 
-        // ─── Propriété calculée — demandes filtrées ──────────────
+        // ─── Computed ────────────────────────────────────────────
 
         private IEnumerable<DemandeVm> DemandesFiltrees
         {
@@ -77,8 +76,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
                 q = _tabActive switch
                 {
-                    "nouveau"    => q.Where(d => d.Statut == "nouveau"),
-                    "en_cours"   => q.Where(d => d.Statut == "en_cours"),
+                    "en_attente" => q.Where(d => d.Statut == "en_attente"),
                     "commande"   => q.Where(d => d.Statut == "commande"),
                     "historique" => q.Where(d => d.Statut == "traite" || d.Statut == "refuse"),
                     _            => q.Where(d => d.Statut != "traite" && d.Statut != "refuse")
@@ -89,7 +87,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     var t = _recherche.Trim().ToLower();
                     q = q.Where(d =>
                         d.Reference.ToLower().Contains(t)    ||
-                        d.Titre.ToLower().Contains(t)        ||
+                        d.NomProduit.ToLower().Contains(t)   ||
                         d.DemandeurNom.ToLower().Contains(t));
                 }
 
@@ -101,28 +99,21 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            // Lire le thème actuel depuis html.dark
             try
             {
                 var isDark = await JS.InvokeAsync<bool>("eval",
                     "document.documentElement.classList.contains('dark')");
                 _theme = isDark ? "dark" : "light";
             }
-            catch { /* ignore si JS non disponible */ }
+            catch { }
 
-            // Charger l'utilisateur depuis le localStorage (même pattern que Fournisseurs)
             await ChargerInfosUtilisateur();
-
-            // Données mock — remplacer par appel API quand le backend est prêt
-            ChargerDonneesMock();
+            await ChargerDemandesAsync();
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (!firstRender) return;
-
-            // MutationObserver : écoute html.dark pour synchroniser le thème
-            // même mécanisme que Fournisseurs, nom de variable différent pour éviter conflits
             try
             {
                 await JS.InvokeVoidAsync("eval", @"
@@ -153,6 +144,20 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             InvokeAsync(StateHasChanged);
         }
 
+        // ─── Chargement depuis l'API ──────────────────────────────
+
+        private async Task ChargerDemandesAsync()
+        {
+            _chargement = true;
+            StateHasChanged();
+
+            var dtos = await DemandeAchatSvc.GetAllAsync();
+            _demandes = dtos.Select(d => MapDtoVersVm(d)).ToList();
+
+            _chargement = false;
+            StateHasChanged();
+        }
+
         // ─── Chargement utilisateur ──────────────────────────────
 
         private async Task ChargerInfosUtilisateur()
@@ -169,122 +174,19 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
                 if (!string.IsNullOrWhiteSpace(nom))
                 {
-                    _nomUtilisateur = SupprimerGuillemets(nom);
+                    _nomUtilisateur = Nettoyer(nom);
                     var parts = _nomUtilisateur.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    if (parts.Length >= 2)
-                        _initiales = $"{parts[0][0]}{parts[1][0]}".ToUpper();
-                    else if (parts.Length == 1 && parts[0].Length >= 2)
-                        _initiales = parts[0][..2].ToUpper();
+                    _initiales = parts.Length >= 2
+                        ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+                        : _nomUtilisateur[..Math.Min(2, _nomUtilisateur.Length)].ToUpper();
                 }
                 if (!string.IsNullOrWhiteSpace(role))
-                    _roleUtilisateur = SupprimerGuillemets(role);
+                    _roleUtilisateur = Nettoyer(role);
             }
             catch { }
         }
 
-        private static string SupprimerGuillemets(string valeur)
-        {
-            valeur = valeur.Trim();
-            if (valeur.Length >= 2 &&
-                ((valeur.StartsWith('"') && valeur.EndsWith('"')) ||
-                 (valeur.StartsWith('\'') && valeur.EndsWith('\''))))
-                valeur = valeur[1..^1].Trim();
-            return valeur;
-        }
-
-        // ─── Données mock ────────────────────────────────────────
-
-        private void ChargerDonneesMock()
-        {
-            _demandes = new List<DemandeVm>
-            {
-                new DemandeVm
-                {
-                    Id = 1, Reference = "#PR-2024-042",
-                    Titre = "Upgrade RAM Serveur Principal",
-                    Description = "Le serveur SRV-DB-01 sature sa mémoire lors des pics de charge de l'après-midi. " +
-                                  "Une extension de 128 Go (4×32 Go) est nécessaire pour maintenir les performances " +
-                                  "de l'application ERP. Modèle compatible : DDR4 ECC 3200MHz.",
-                    Statut        = "nouveau",
-                    DateCreation  = DateTime.Now.AddHours(-2),
-                    DemandeurNom  = "Marc Lefebvre", DemandeurInitiales = "ML",
-                    DemandeurRole = "Infrastructure Engineer",
-                    Articles = new List<ArticleVm>
-                    {
-                        new ArticleVm { Designation = "RAM 32GB DDR4-3200 ECC RDIMM",  Categorie = "Hardware",    Quantite = 4 },
-                        new ArticleVm { Designation = "Kit d'installation Serveur Rack", Categorie = "Accessoires", Quantite = 1 }
-                    }
-                },
-                new DemandeVm
-                {
-                    Id = 2, Reference = "#PR-2024-039",
-                    Titre = "MacBook Pro 14 M3 Max",
-                    Description = "Remplacement du MacBook Pro 2019 arrivé en fin de vie. " +
-                                  "Configuration : 36 Go RAM, 1 To SSD, nécessaire pour développement iOS et rendu vidéo.",
-                    Statut        = "en_cours",
-                    DateCreation  = DateTime.Now.AddDays(-1),
-                    DemandeurNom  = "Sophie Martin", DemandeurInitiales = "SM",
-                    DemandeurRole = "Développeuse Mobile",
-                    Articles = new List<ArticleVm>
-                    {
-                        new ArticleVm { Designation = "MacBook Pro 14\" M3 Max 36Go/1To", Categorie = "Informatique", Quantite = 1 }
-                    },
-                    Offres = new List<OffreVm>
-                    {
-                        new OffreVm { NomFichier = "offre_apple_store.pdf", Taille = 245_000, EstNouvelle = false },
-                        new OffreVm { NomFichier = "offre_ldlc_pro.pdf",   Taille = 198_000, EstNouvelle = false }
-                    }
-                },
-                new DemandeVm
-                {
-                    Id = 3, Reference = "#PR-2024-035",
-                    Titre = "Écran Dell UltraSharp 32\"",
-                    Description = "Écran 4K 32 pouces pour le poste du designer. " +
-                                  "Dell UltraSharp U3223QE avec hub USB-C intégré.",
-                    Statut        = "traite",
-                    DateCreation  = DateTime.Parse("2024-10-24"),
-                    DemandeurNom  = "Thomas Bernard", DemandeurInitiales = "TB",
-                    DemandeurRole = "Designer UX",
-                    Articles = new List<ArticleVm>
-                    {
-                        new ArticleVm { Designation = "Dell UltraSharp 32\" U3223QE", Categorie = "Périphériques", Quantite = 1 }
-                    }
-                },
-                new DemandeVm
-                {
-                    Id = 4, Reference = "#PR-2024-031",
-                    Titre = "Kit Clavier & Souris sans fil",
-                    Description = "Renouvellement du matériel pour 5 postes de travail en open space. " +
-                                  "Modèle : Logitech MK470.",
-                    Statut        = "refuse",
-                    DateCreation  = DateTime.Parse("2024-10-20"),
-                    DemandeurNom  = "Léa Dubois", DemandeurInitiales = "LD",
-                    DemandeurRole = "Assistante RH",
-                    MotifRefus    = "Budget épuisé pour ce trimestre. Reporter au Q1 2025.",
-                    Articles = new List<ArticleVm>
-                    {
-                        new ArticleVm { Designation = "Logitech MK470 Kit clavier+souris", Categorie = "Périphériques", Quantite = 5 }
-                    }
-                },
-                new DemandeVm
-                {
-                    Id = 5, Reference = "#PR-2024-028",
-                    Titre = "Switch réseau 48 ports",
-                    Description = "Extension du réseau pour le nouveau plateau. " +
-                                  "Switch manageable 48 ports Gigabit avec PoE+.",
-                    Statut        = "commande",
-                    DateCreation  = DateTime.Parse("2024-10-18"),
-                    DemandeurNom  = "Marc Lefebvre", DemandeurInitiales = "ML",
-                    DemandeurRole = "Infrastructure Engineer",
-                    Articles = new List<ArticleVm>
-                    {
-                        new ArticleVm { Designation = "Cisco Catalyst 1300-48P-4X", Categorie = "Réseau", Quantite = 1 }
-                    }
-                }
-            };
-        }
-
-        // ─── Actions utilisateur ─────────────────────────────────
+        // ─── Actions ────────────────────────────────────────────
 
         private void SelectionnerDemande(DemandeVm d)
         {
@@ -317,95 +219,200 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     continue;
                 }
 
-                // Lire le fichier pour affichage dans la modale iframe
-                string? dataUrl = null;
+                // Lire les octets
+                byte[] bytes;
                 try
                 {
                     using var stream = fichier.OpenReadStream(maxTaille);
-                    var bytes = new byte[fichier.Size];
+                    bytes = new byte[fichier.Size];
                     _ = await stream.ReadAsync(bytes);
-                    dataUrl = $"data:application/pdf;base64,{Convert.ToBase64String(bytes)}";
                 }
-                catch { /* pas d'aperçu si erreur lecture */ }
-
-                demande.Offres.Add(new OffreVm
+                catch
                 {
-                    NomFichier  = fichier.Name,
-                    Taille      = fichier.Size,
-                    DataUrl     = dataUrl,
-                    EstNouvelle = true
-                });
+                    AfficherToast($"Erreur lecture « {fichier.Name} ».", "toast-error");
+                    continue;
+                }
+
+                // Affichage local optimiste immédiat
+                var offreVm = new OffreVm
+                {
+                    Id         = Guid.NewGuid(),  // remplacé par vrai ID après réponse API
+                    IdDemande  = demandeId,
+                    NomFichier = fichier.Name,
+                    Taille     = fichier.Size,
+                    EstChoisie = false
+                };
+                demande.Offres.Add(offreVm);
+                StateHasChanged();
+
+                // Appel API
+                var reponse = await DemandeAchatSvc.AjouterOffreAsync(
+                    demandeId, fichier.Name, bytes);
+
+                if (reponse.Succes)
+                {
+                    // Recharger pour avoir le vrai GUID de l'offre depuis la BDD
+                    var demandeActualisee = await DemandeAchatSvc.GetByIdAsync(demandeId);
+                    if (demandeActualisee != null)
+                    {
+                        var idx = _demandes.FindIndex(d => d.Id == demandeId);
+                        if (idx >= 0)
+                        {
+                            var vm = MapDtoVersVm(demandeActualisee);
+                            _demandes[idx] = vm;
+                            if (_demandeSelectionnee?.Id == demandeId)
+                                _demandeSelectionnee = vm;
+                        }
+                    }
+                    AfficherToast($"Offre « {fichier.Name} » ajoutée.", "toast-success");
+                }
+                else
+                {
+                    // Rollback local
+                    demande.Offres.Remove(offreVm);
+                    AfficherToast($"Erreur : {reponse.Message}", "toast-error");
+                }
             }
 
             StateHasChanged();
         }
 
-        private void SupprimerOffre(int demandeId, Guid offreId)
-        {
-            var demande = _demandes.FirstOrDefault(d => d.Id == demandeId);
-            demande?.Offres.RemoveAll(o => o.Id == offreId);
-        }
-
-        private async Task EnvoyerOffres(int demandeId)
+        private async Task SupprimerOffre(int demandeId, Guid offreId)
         {
             var demande = _demandes.FirstOrDefault(d => d.Id == demandeId);
             if (demande == null) return;
 
-            // Marquer toutes les nouvelles offres comme envoyées
-            demande.Offres.ForEach(o => o.EstNouvelle = false);
+            // Rollback prêt
+            var offre = demande.Offres.FirstOrDefault(o => o.Id == offreId);
+            demande.Offres.RemoveAll(o => o.Id == offreId);
+            StateHasChanged();
 
-            // TODO: appel API — POST /api/demandes/{id}/offres pour persister les PDF
-            AfficherToast("Offres envoyées à l'IT avec succès.", "toast-success");
-            await Task.CompletedTask;
-        }
-
-        private void ChangerStatut(int demandeId, string nouveauStatut)
-        {
-            var demande = _demandes.FirstOrDefault(d => d.Id == demandeId);
-            if (demande == null) return;
-
-            demande.Statut = nouveauStatut;
-            AfficherToast($"Statut mis à jour : {LibelleStatut(nouveauStatut)}", "toast-success");
-
-            // Si traitée → basculer vers l'onglet Historique
-            if (nouveauStatut == "traite")
+            var reponse = await DemandeAchatSvc.SupprimerOffreAsync(demandeId, offreId);
+            if (!reponse.Succes)
             {
-                _demandeSelectionnee = null;
-                _tabActive           = "historique";
+                if (offre != null) demande.Offres.Add(offre);
+                AfficherToast($"Erreur : {reponse.Message}", "toast-error");
             }
         }
 
-        private void RefuserDemande(int demandeId)
+        private async Task ChangerStatut(int demandeId, string nouveauStatut)
+        {
+            var demande = _demandes.FirstOrDefault(d => d.Id == demandeId);
+            if (demande == null) return;
+
+            var ancien     = demande.Statut;
+            demande.Statut = nouveauStatut;
+            StateHasChanged();
+
+            var reponse = await DemandeAchatSvc
+                .ChangerStatutAsync(demandeId, nouveauStatut);
+
+            if (reponse.Succes)
+            {
+                AfficherToast(
+                    $"Statut mis à jour : {LibelleStatut(nouveauStatut)}", "toast-success");
+
+                if (nouveauStatut == "traite")
+                {
+                    _demandeSelectionnee = null;
+                    _tabActive           = "historique";
+                }
+            }
+            else
+            {
+                demande.Statut = ancien;
+                AfficherToast($"Erreur : {reponse.Message}", "toast-error");
+            }
+        }
+
+        private async Task RefuserDemande(int demandeId)
         {
             if (string.IsNullOrWhiteSpace(_motifRefus)) return;
 
             var demande = _demandes.FirstOrDefault(d => d.Id == demandeId);
             if (demande == null) return;
 
-            demande.Statut     = "refuse";
-            demande.MotifRefus = _motifRefus.Trim();
+            var reponse = await DemandeAchatSvc.ChangerStatutAsync(
+                demandeId, "refuse", _motifRefus.Trim());
 
-            // TODO: appel API — PUT /api/demandes/{id}/refus
-            AfficherToast("Demande refusée et archivée.", "toast-error");
-            _motifRefus          = string.Empty;
-            _demandeSelectionnee = null;
-            _tabActive           = "historique";
+            if (reponse.Succes)
+            {
+                demande.Statut     = "refuse";
+                demande.MotifRefus = _motifRefus.Trim();
+                AfficherToast("Demande refusée et archivée.", "toast-error");
+                _motifRefus          = string.Empty;
+                _demandeSelectionnee = null;
+                _tabActive           = "historique";
+            }
+            else
+            {
+                AfficherToast($"Erreur : {reponse.Message}", "toast-error");
+            }
         }
 
-        private void PrevisualiserOffre(OffreVm o) => _offrePreview = o;
-        private void FermerPreview()               => _offrePreview = null;
-        private void ToggleSidebar()               => _sidebarOpen  = !_sidebarOpen;
+        private void PrevisualiserOffre(OffreVm o)
+        {
+            // Construire l'URL du PDF pour l'iframe
+            o.PdfUrl       = DemandeAchatSvc.GetPdfUrl(o.IdDemande, o.Id);
+            _offrePreview  = o;
+        }
+
+        private void FermerPreview()  => _offrePreview = null;
+        private void ToggleSidebar()  => _sidebarOpen  = !_sidebarOpen;
+
+        // ─── Mapper DTO → ViewModel ──────────────────────────────
+
+        private static DemandeVm MapDtoVersVm(DemandeAchatDto dto)
+        {
+            var parts     = dto.DemandeurNom.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var initiales = parts.Length >= 2
+                ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
+                : dto.DemandeurNom.Length > 0
+                    ? dto.DemandeurNom[..Math.Min(2, dto.DemandeurNom.Length)].ToUpper()
+                    : "??";
+
+            return new DemandeVm
+            {
+                Id           = dto.IdDemande,
+                Reference    = dto.Reference,
+                NomProduit   = dto.NomProduit,
+                Quantite     = dto.Quantite,
+                Description  = dto.Description,
+                Statut       = dto.Statut,
+                DateCreation = dto.DateCreation.ToLocalTime(),
+                DemandeurNom = dto.DemandeurNom,
+                Initiales    = initiales,
+                MotifRefus   = dto.MotifRefus,
+                Offres = dto.Offres.Select(o => new OffreVm
+                {
+                    Id         = o.IdOffre,
+                    IdDemande  = dto.IdDemande,
+                    NomFichier = o.NomFichier,
+                    Taille     = o.Taille,
+                    EstChoisie = o.EstChoisie
+                }).ToList()
+            };
+        }
 
         // ─── Helpers ─────────────────────────────────────────────
 
-        private static string LibelleStatut(string statut) => statut switch
+        private static string Nettoyer(string v)
         {
-            "nouveau"  => "NOUVEAU",
-            "en_cours" => "EN COURS",
-            "commande" => "COMMANDÉE",
-            "traite"   => "TRAITÉE",
-            "refuse"   => "REFUSÉE",
-            _          => statut.ToUpper()
+            v = v.Trim();
+            if (v.Length >= 2 &&
+                ((v.StartsWith('"') && v.EndsWith('"')) ||
+                 (v.StartsWith('\'') && v.EndsWith('\''))))
+                v = v[1..^1].Trim();
+            return v;
+        }
+
+        private static string LibelleStatut(string s) => s switch
+        {
+            "en_attente" => "EN ATTENTE",
+            "commande"   => "COMMANDÉE",
+            "traite"     => "TRAITÉE",
+            "refuse"     => "REFUSÉE",
+            _            => s.ToUpper()
         };
 
         private static string FormatDateCarte(DateTime d)
@@ -413,14 +420,14 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             var diff = DateTime.Now - d;
             if (diff.TotalMinutes < 60) return $"Il y a {(int)diff.TotalMinutes} min";
             if (diff.TotalHours   < 24) return $"Il y a {(int)diff.TotalHours} h";
-            if (diff.TotalDays    < 2)  return "Hier";
+            if (diff.TotalDays    <  2) return "Hier";
             return d.ToString("dd MMM");
         }
 
         private static string FormatTaille(long bytes)
         {
-            if (bytes < 1024)       return $"{bytes} o";
-            if (bytes < 1024*1024)  return $"{bytes / 1024} Ko";
+            if (bytes < 1024)      return $"{bytes} o";
+            if (bytes < 1024*1024) return $"{bytes / 1024} Ko";
             return $"{bytes / 1024 / 1024:0.0} Mo";
         }
 

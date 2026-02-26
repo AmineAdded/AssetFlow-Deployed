@@ -32,9 +32,6 @@ namespace AssetFlow.Infrastructure.Services
             DateAjout     = m.DateAjout
         };
 
-        private static EtatMateriel ParseEtat(string etat) =>
-            Enum.TryParse<EtatMateriel>(etat, true, out var e) ? e : EtatMateriel.Disponible;
-
         // ── Lecture ───────────────────────────────────────────────
         public async Task<IEnumerable<MaterielDto>> GetAllAsync()
         {

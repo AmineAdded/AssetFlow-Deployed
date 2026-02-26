@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AssetFlow.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260225162402_RemoveEtatFromMateriel")]
-    partial class RemoveEtatFromMateriel
+    [Migration("20260226005149_SyncModel")]
+    partial class SyncModel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -50,11 +50,6 @@ namespace AssetFlow.Infrastructure.Migrations
 
                     b.Property<int>("QuantiteRetournee")
                         .HasColumnType("int");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("UtilisateurId")
                         .HasColumnType("int");

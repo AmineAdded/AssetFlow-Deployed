@@ -25,7 +25,6 @@ namespace AssetFlow.Infrastructure.Migrations
                     QuantiteMin = table.Column<int>(type: "int", nullable: false),
                     Unite = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Emplacement = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Etat = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DateAjout = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -44,7 +43,6 @@ namespace AssetFlow.Infrastructure.Migrations
                     QuantiteAffectee = table.Column<int>(type: "int", nullable: false),
                     QuantiteRetournee = table.Column<int>(type: "int", nullable: false),
                     DateRetour = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Statut = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Observations = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     MaterielId = table.Column<int>(type: "int", nullable: false),
                     UtilisateurId = table.Column<int>(type: "int", nullable: false)

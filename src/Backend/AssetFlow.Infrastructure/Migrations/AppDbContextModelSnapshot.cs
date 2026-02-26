@@ -48,11 +48,6 @@ namespace AssetFlow.Infrastructure.Migrations
                     b.Property<int>("QuantiteRetournee")
                         .HasColumnType("int");
 
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<int>("UtilisateurId")
                         .HasColumnType("int");
 

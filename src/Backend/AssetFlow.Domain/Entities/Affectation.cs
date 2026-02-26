@@ -25,9 +25,6 @@ namespace AssetFlow.Domain.Entities
         /// <summary>Date de retour effectif (null si toujours affecté)</summary>
         public DateTime? DateRetour { get; set; }
 
-        /// <summary>Statut de l'affectation</summary>
-        public StatutAffectation Statut { get; set; } = StatutAffectation.EnCours;
-
         /// <summary>Observations ou notes sur l'affectation</summary>
         public string? Observations { get; set; }
 
@@ -44,16 +41,5 @@ namespace AssetFlow.Domain.Entities
 
         /// <summary>Navigation : utilisateur qui reçoit le matériel</summary>
         public User Utilisateur { get; set; } = null!;
-    }
-
-    /// <summary>
-    /// Statuts possibles d'une affectation
-    /// </summary>
-    public enum StatutAffectation
-    {
-        EnCours,      // Matériel toujours affecté
-        Retourne,     // Matériel retourné
-        Perdu,        // Matériel perdu
-        Endommage     // Matériel endommagé
     }
 }

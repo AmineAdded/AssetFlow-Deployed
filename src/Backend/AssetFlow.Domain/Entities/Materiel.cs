@@ -46,15 +46,4 @@ namespace AssetFlow.Domain.Entities
         /// <summary>Navigation : affectations de ce matériel</summary>
         public ICollection<Affectation> Affectations { get; set; } = new List<Affectation>();
     }
-
-    /// <summary>
-    /// États possibles d'un matériel
-    /// </summary>
-    public enum EtatMateriel
-    {
-        Disponible,
-        EnRupture,
-        EnCommande,
-        HorsService
-    }
 }

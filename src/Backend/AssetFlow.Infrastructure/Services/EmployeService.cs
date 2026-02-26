@@ -39,8 +39,6 @@ namespace AssetFlow.Infrastructure.Services
                 ImageUrl         = a.Materiel.ImageUrl,
                 DateAffectation  = a.DateAffectation,
                 QuantiteAffectee = a.QuantiteAffectee,
-                Statut           = a.Statut.ToString(),
-                StatutBadgeColor = GetStatutColor(a.Statut),
                 Observations     = a.Observations
             }).ToList();
         }
@@ -63,8 +61,6 @@ namespace AssetFlow.Infrastructure.Services
                 ImageUrl         = affectation.Materiel.ImageUrl,
                 DateAffectation  = affectation.DateAffectation,
                 QuantiteAffectee = affectation.QuantiteAffectee,
-                Statut           = affectation.Statut.ToString(),
-                StatutBadgeColor = GetStatutColor(affectation.Statut),
                 Observations     = affectation.Observations
             };
         }
@@ -87,7 +83,7 @@ namespace AssetFlow.Infrastructure.Services
             // 1. Charger toutes les affectations actives de l'employé
             var affectations = await _context.Affectations
                 .Include(a => a.Materiel)
-                .Where(a => a.UtilisateurId == utilisateurId && a.Statut == StatutAffectation.EnCours)
+                .Where(a => a.UtilisateurId == utilisateurId)
                 .OrderByDescending(a => a.DateAffectation)
                 .ToListAsync();
 
@@ -107,7 +103,6 @@ namespace AssetFlow.Infrastructure.Services
                 .Select(g =>
                 {
                     var premiereMat = g.First().Materiel;
-                    var statutDominant = GetStatutDominant(g.Select(a => a.Statut).ToList());
 
                     // Articles individuels pour ce matériel
                     var articlesMatériel = articles
@@ -131,8 +126,6 @@ namespace AssetFlow.Infrastructure.Services
                             NumeroSerie      = article?.NumeroSerie
                                                ?? $"S/N non renseigné — Aff. #{affectation.Id}",
                             StatutArticle    = article?.Statut.ToString() ?? "Affecte",
-                            StatutAffectation = affectation.Statut.ToString(),
-                            StatutBadgeColor = GetStatutColor(affectation.Statut),
                             DateAffectation  = affectation.DateAffectation,
                             Observations     = affectation.Observations
                         });
@@ -146,8 +139,6 @@ namespace AssetFlow.Infrastructure.Services
                         Categorie           = premiereMat.Categorie,
                         ImageUrl            = premiereMat.ImageUrl,
                         NombreArticles      = g.Count(),
-                        StatutDominant      = statutDominant.ToString(),
-                        StatutBadgeColor    = GetStatutColor(statutDominant),
                         DerniereAffectation = g.Max(a => a.DateAffectation),
                         Articles            = articlesDto
                     };
@@ -159,22 +150,6 @@ namespace AssetFlow.Infrastructure.Services
         }
 
         // ── Helpers ────────────────────────────────────────────
-        private StatutAffectation GetStatutDominant(List<StatutAffectation> statuts)
-        {
-            // Priorité : Endommage > Perdu > EnCours > Retourne
-            if (statuts.Any(s => s == StatutAffectation.Endommage)) return StatutAffectation.Endommage;
-            if (statuts.Any(s => s == StatutAffectation.Perdu))     return StatutAffectation.Perdu;
-            if (statuts.Any(s => s == StatutAffectation.EnCours))   return StatutAffectation.EnCours;
-            return StatutAffectation.Retourne;
-        }
 
-        private string GetStatutColor(StatutAffectation statut) => statut switch
-        {
-            StatutAffectation.EnCours  => "#10B981",
-            StatutAffectation.Retourne => "#94A3B8",
-            StatutAffectation.Perdu    => "#EF4444",
-            StatutAffectation.Endommage => "#F59E0B",
-            _ => "#6B7280"
-        };
     }
 }

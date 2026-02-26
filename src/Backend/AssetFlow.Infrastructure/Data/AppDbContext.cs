@@ -51,7 +51,6 @@ namespace AssetFlow.Infrastructure.Data
             modelBuilder.Entity<Affectation>(entity =>
             {
                 entity.HasKey(a => a.Id);
-                entity.Property(a => a.Statut).HasConversion<string>().HasMaxLength(50);
                 entity.HasOne(a => a.Materiel)
                       .WithMany(m => m.Affectations)
                       .HasForeignKey(a => a.MaterielId)

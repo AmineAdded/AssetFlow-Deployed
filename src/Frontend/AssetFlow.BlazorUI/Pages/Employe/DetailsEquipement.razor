@@ -4,6 +4,7 @@
    ============================================================ *@
 @namespace AssetFlow.BlazorUI.Pages.Employe
 @page "/employe/equipement/{AffectationId:int}"
+@page "/employe/equipement/{AffectationId:int}/article/{ArticleId:int}"
 @using AssetFlow.BlazorUI.Services
 
 <div class="employe-layout">
@@ -108,11 +109,11 @@
                         <div class="equip-heading">
                             <div>
                                 <h2 class="equip-title">@Equipement.Designation</h2>
-                                <p class="equip-ref">Identifiant Unique : @Equipement.Reference</p>
+                                <p class="equip-ref">Référence : @Equipement.Reference</p>
                             </div>
-                            <span class="statut-pill statut-@Equipement.Statut.ToLower()">
+                            <span class="statut-pill statut-@Equipement.EtatArticle.ToLower()">
                                 <span class="statut-dot"></span>
-                                @GetStatutLabel(Equipement.Statut)
+                                @GetStatutLabel(Equipement.EtatArticle)
                             </span>
                         </div>
 
@@ -152,7 +153,11 @@
                                     </tr>
                                     <tr>
                                         <td class="spec-lbl">Numéro de série</td>
-                                        <td class="spec-val spec-mono">@Equipement.Reference</td>
+                                        <td class="spec-val spec-mono">
+                                            @(string.IsNullOrEmpty(Equipement.NumeroSerie) 
+                                                ? "Non renseigné" 
+                                                : Equipement.NumeroSerie)
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="spec-lbl">Catégorie</td>
@@ -161,8 +166,8 @@
                                     <tr>
                                         <td class="spec-lbl">État</td>
                                         <td class="spec-val">
-                                            <span class="etat-tag etat-@Equipement.Statut.ToLower()">
-                                                @GetStatutLabel(Equipement.Statut)
+                                            <span class="etat-tag etat-@(Equipement.EtatArticle?.ToLower() ?? "bon")">
+                                                @(Equipement.EtatArticle == "Panne" ? "⚠ En panne" : "✓ Bon état")
                                             </span>
                                         </td>
                                     </tr>
@@ -171,10 +176,6 @@
                                         <td class="spec-val">
                                             @Equipement.DateAffectation.ToString("dd MMMM yyyy")
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="spec-lbl">Quantité affectée</td>
-                                        <td class="spec-val">@Equipement.QuantiteAffectee pièce(s)</td>
                                     </tr>
                                     @if (!string.IsNullOrEmpty(Equipement.Observations))
                                     {

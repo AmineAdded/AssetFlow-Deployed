@@ -20,6 +20,8 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         // ── Paramètre URL ──────────────────────────────────────
         [Parameter] public int AffectationId { get; set; }
+        [Parameter] public int ArticleId { get; set; } = 0;
+
 
         // ── Données équipement ─────────────────────────────────
         private EquipementAffecteDto? Equipement    { get; set; }
@@ -34,7 +36,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private string UserRole { get; set; } = "Employé";
 
         // ── QR Code ────────────────────────────────────────────
-        private string FicheUrl => $"{Navigation.BaseUri}fiche/{AffectationId}";
+        private string FicheUrl => $"{Navigation.BaseUri}fiche/{AffectationId}/article/{ArticleId}";
         private string QrSvg    { get; set; } = string.Empty;
 
         // ── Init ───────────────────────────────────────────────
@@ -61,7 +63,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             IsLoading = true;
             try
             {
-                Equipement = await EmployeService.GetEquipementDetailAsync(AffectationId);
+                Equipement = await EmployeService.GetEquipementDetailAsync(AffectationId, ArticleId);
             }
             catch
             {
@@ -94,7 +96,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         // ── Navigation ─────────────────────────────────────────
         private void NaviguerVersSignalement()
         {
-            Navigation.NavigateTo($"/employe/incident/{AffectationId}");
+            Navigation.NavigateTo($"/employe/incident/{AffectationId}/article/{ArticleId}");
         }
 
         // ── Helpers UI ─────────────────────────────────────────
@@ -141,7 +143,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private async Task ImprimerQR()
         {
             var designation = Equipement?.Designation ?? "Équipement";
-            var reference   = Equipement?.Reference   ?? "";
+            var reference   = Equipement?.NumeroSerie   ?? "";
 
             var printHtml = $@"<!DOCTYPE html>
 <html lang=""fr"">
@@ -167,7 +169,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 <body>
   {QrSvg}
   <h2>{designation}</h2>
-  <p>Référence : {reference}</p>
+  <p>Numéro de série : {reference}</p>
   <code>{FicheUrl}</code>
   <script>window.onload = () => window.print();<\/script>
 </body>

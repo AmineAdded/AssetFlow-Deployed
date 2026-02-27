@@ -320,5 +320,117 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         private static string? Vide(string? v) =>
             string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+    
+    // ─── Export Excel ────────────────────────────────────────
+// Génère un CSV téléchargeable (compatible Excel).
+private async Task ExporterExcel()
+{
+    try
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Nom;Téléphone;Adresse;Email;Commandes totales;Taux livraison (%);Score fiabilité (%);Dernière commande");
+
+        foreach (var f in _tousLesFournisseurs)
+        {
+            var derniereCommande = f.DerniereCommande.HasValue 
+                ? f.DerniereCommande.Value.ToString("dd/MM/yyyy") 
+                : "";
+            
+            sb.AppendLine(
+                $"{f.Nom.Replace(";", ",")};" +
+                $"{f.Telephone?.Replace(";", ",") ?? ""};" +
+                $"{f.Adresse?.Replace(";", ",") ?? ""};" +
+                $"{f.Mail?.Replace(";", ",") ?? ""};" +
+                $"{f.CommandesTotales};" +
+                $"{f.TauxLivraisonATemps:0.0};" +
+                $"{f.ScoreFiabilite:0.0};" +
+                $"{derniereCommande}");
+        }
+
+        var bytes   = System.Text.Encoding.UTF8.GetPreamble()
+                      .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
+                      .ToArray();
+        var base64  = Convert.ToBase64String(bytes);
+        var nom     = $"fournisseurs-{DateTime.Now:yyyyMMdd-HHmm}.csv";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            (function(){{
+                var a = document.createElement('a');
+                a.href = 'data:text/csv;base64,{base64}';
+                a.download = '{nom}';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }})();
+        ");
+        AfficherToast("Export Excel téléchargé.", "toast-success");
+    }
+    catch (Exception ex)
+    {
+        AfficherToast($"Erreur export : {ex.Message}", "toast-error");
+    }
+}
+
+// ─── Export PDF ──────────────────────────────────────────
+// Ouvre une fenêtre d'impression navigateur avec un tableau HTML.
+        private async Task ExporterPdf()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.Append(@"<html><head><meta charset='utf-8'/>
+                    <style>
+                        body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
+                        h2   { font-size: 16px; margin-bottom: 10px; }
+                        p    { font-size: 11px; color: #666; margin-bottom: 14px; }
+                        table{ border-collapse: collapse; width: 100%; }
+                        th   { background: #1e293b; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }
+                        td   { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+                        tr:nth-child(even) td { background: #f8fafc; }
+                        .good { color: #10b981; font-weight: 600; }
+                        .avg  { color: #f59e0b; font-weight: 600; }
+                        .bad  { color: #f43f5e; font-weight: 600; }
+                    </style></head><body>");
+                sb.Append($"<h2>Liste des fournisseurs</h2>");
+                sb.Append($"<p>Exporté le {DateTime.Now:dd/MM/yyyy à HH:mm} — {_tousLesFournisseurs.Count} fournisseur(s)</p>");
+                sb.Append("<table><thead><tr><th>Nom</th><th>Commandes</th><th>Taux livraison</th><th>Score fiabilité</th><th>Dernière commande</th><th>Contact</th></tr></thead><tbody>");
+
+                foreach (var f in _tousLesFournisseurs)
+                {
+                    var tauxClass = RateClass(f.TauxLivraisonATemps);
+                    var scoreClass = ScoreTextClass(f.ScoreFiabilite);
+                    var contact = !string.IsNullOrEmpty(f.Mail) ? f.Mail : 
+                                (!string.IsNullOrEmpty(f.Telephone) ? f.Telephone : "—");
+                    var derniereCommande = f.DerniereCommande.HasValue 
+                        ? f.DerniereCommande.Value.ToString("dd/MM/yyyy") 
+                        : "—";
+
+                    sb.Append($"<tr>" +
+                            $"<td>{f.Nom}</td>" +
+                            $"<td>{f.CommandesTotales}</td>" +
+                            $"<td class='{tauxClass}'>{f.TauxLivraisonATemps:0.0}%</td>" +
+                            $"<td class='{scoreClass}'>{f.ScoreFiabilite:0.0}%</td>" +
+                            $"<td>{derniereCommande}</td>" +
+                            $"<td>{contact}</td>" +
+                            $"</tr>");
+                }
+                sb.Append("</tbody></table></body></html>");
+
+                var html   = sb.ToString().Replace("'", "\\'").Replace("\r\n", "").Replace("\n", "");
+                await JS.InvokeVoidAsync("eval", $@"
+                    (function(){{
+                        var w = window.open('','_blank','width=900,height=700');
+                        w.document.write('{html}');
+                        w.document.close();
+                        setTimeout(function(){{ w.print(); }}, 400);
+                    }})();
+                ");
+                AfficherToast("Fenêtre d'impression ouverte.", "toast-success");
+            }
+            catch (Exception ex)
+            {
+                AfficherToast($"Erreur export : {ex.Message}", "toast-error");
+            }
+        }
     }
 }

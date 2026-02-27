@@ -25,6 +25,8 @@ namespace AssetFlow.BlazorUI.Services
         public string   Statut           { get; set; } = string.Empty;
         public string   StatutBadgeColor { get; set; } = string.Empty;
         public string?  Observations     { get; set; }
+        public string? NumeroSerie  { get; set; }          // ← AJOUTER
+        public string  EtatArticle  { get; set; } = "Bon"; // ← AJOUTER
     }
 
     public class ArticleAffecteDto
@@ -102,17 +104,10 @@ namespace AssetFlow.BlazorUI.Services
             }
         }
 
-        public async Task<EquipementAffecteDto?> GetEquipementDetailAsync(int affectationId)
+        public async Task<EquipementAffecteDto?> GetEquipementDetailAsync(int affectationId, int articleId = 0)
         {
-            try
-            {
-                return await _http.GetFromJsonAsync<EquipementAffecteDto>(
-                    $"api/employe/equipements/detail/{affectationId}");
-            }
-            catch
-            {
-                return null;
-            }
+            return await _http.GetFromJsonAsync<EquipementAffecteDto>(
+                $"api/employe/equipements/detail/{affectationId}?articleId={articleId}");
         }
 
         // ── Helpers localStorage ───────────────────────────────

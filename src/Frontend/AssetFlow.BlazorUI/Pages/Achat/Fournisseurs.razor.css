@@ -755,7 +755,53 @@ html.dark .layout-shell .form-inp { background: rgba(255,255,255,0.06); }
     flex-shrink: 0;
 }
 .btn-form-save span { color: #ffffff !important; }
+/* ============================================================
+   BOUTONS EXPORT (ajoutés)
+   ============================================================ */
+.topbar-export-btns {
+    display:    flex;
+    gap:        6px;
+    margin-left: 0;
+    flex-shrink: 0;
+}
 
+.btn-export {
+    display:         flex;
+    align-items:     center;
+    gap:             6px;
+    padding:         6px 12px;
+    border:          1px solid var(--border);
+    border-radius:   var(--radius-sm);
+    background:      var(--bg-panel);
+    color:           var(--text-secondary);
+    font-size:       13px;
+    font-weight:     500;
+    cursor:          pointer;
+    transition:      all var(--t);
+    white-space:     nowrap;
+}
+
+.btn-export svg {
+    width:          14px;
+    height:         14px;
+    stroke:         currentColor;
+    stroke-width:   2;
+    fill:           none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink:    0;
+}
+
+.btn-export:hover {
+    background: var(--bg-row-hover);
+    border-color: var(--primary);
+    color:        var(--primary);
+}
+
+.btn-export-pdf:hover {
+    border-color: #ef4444;
+    color:        #ef4444;
+}
 
 /* ============================================================
    12. TOAST

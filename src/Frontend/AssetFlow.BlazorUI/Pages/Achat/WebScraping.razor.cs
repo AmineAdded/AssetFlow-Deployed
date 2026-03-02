@@ -10,13 +10,15 @@
 //   · Si la page est ouverte sans paramètre (depuis le sidebar),
 //     l'utilisateur saisit lui-même le produit.
 //
-// LIAISON PYTHON (à venir) :
-//   La méthode LancerRecherche() appellera le service Python
-//   via HttpClient. Pour l'instant elle simule des résultats mock.
+// LIAISON PYTHON :
+//   La méthode LancerRecherche() appelle le service Python
+//   via HttpClient sur http://localhost:5000/scrape?q=...
 // ============================================================
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
@@ -25,11 +27,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── Injection ───────────────────────────────────────────
         [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private NavigationManager Nav { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
 
         // ── Modèle d'un résultat de scraping ────────────────────
         /// <summary>
         /// Représente un résultat renvoyé par le scraper Python.
-        /// Sera mappé depuis le JSON de l'API Python plus tard.
+        /// Sera mappé depuis le JSON de l'API Python.
         /// </summary>
         private class ResultatScraping
         {
@@ -40,6 +43,46 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public string Livraison { get; set; } = "Non précisé";
             public string Garantie { get; set; } = "Non précisée";
             public string Url { get; set; } = string.Empty;
+        }
+
+        // ── Classes pour désérialiser la réponse JSON du script Python ──
+        private class ReponseScraping
+        {
+            public bool succes { get; set; }
+            public string article { get; set; } = string.Empty;
+            public string date_recherche { get; set; } = string.Empty;
+            public int nombre_resultats { get; set; }
+            public List<ResultatPython> resultats { get; set; } = new();
+            public MeilleurPrix? meilleur_prix { get; set; }
+            public Recommandation? recommandation { get; set; }
+        }
+
+        private class ResultatPython
+        {
+            public string site { get; set; } = string.Empty;
+            public string nom_produit { get; set; } = string.Empty;
+            public decimal prix { get; set; }
+            public string devise { get; set; } = string.Empty;
+            public string stock { get; set; } = string.Empty;
+            public string url { get; set; } = string.Empty;
+            public string date_scraping { get; set; } = string.Empty;
+        }
+
+        private class MeilleurPrix
+        {
+            public string site { get; set; } = string.Empty;
+            public string nom_produit { get; set; } = string.Empty;
+            public decimal prix { get; set; }
+            public string stock { get; set; } = string.Empty;
+            public string url { get; set; } = string.Empty;
+        }
+
+        private class Recommandation
+        {
+            public string? site { get; set; }
+            public decimal? prix { get; set; }
+            public string? url { get; set; }
+            public string message { get; set; } = string.Empty;
         }
 
         // ── État ────────────────────────────────────────────────
@@ -53,8 +96,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         // Recherche
         private string _recherche = string.Empty; // valeur du champ
-        private string? _nomRecherche = null;         // dernier terme soumis
-        private string? _derniereRecherche = null;        // null = pas encore cherché
+        private string? _nomRecherche = null;     // dernier terme soumis
+        private string? _derniereRecherche = null; // null = pas encore cherché
         private bool _chargement = false;
 
         // Résultats et filtre
@@ -199,8 +242,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         /// <summary>
         /// Lance la recherche de prix.
-        /// Pour l'instant : données mock simulant un appel Python.
-        /// Plus tard : appel HTTP vers le service Python de scraping.
+        /// Appelle le service Python via HTTP sur http://localhost:5000/scrape?q=...
         /// </summary>
         private async Task LancerRecherche()
         {
@@ -213,77 +255,48 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _filtreActif = "prix";
             StateHasChanged();
 
-            // ──────────────────────────────────────────────────────
-            // TODO : Remplacer ce bloc mock par l'appel à l'API Python
-            //
-            // Exemple d'intégration future :
-            //   var response = await Http.GetFromJsonAsync<List<ResultatScraping>>(
-            //       $"http://localhost:8000/scrape?q={Uri.EscapeDataString(_nomRecherche)}");
-            //   _resultats = response ?? new();
-            //
-            // ──────────────────────────────────────────────────────
-            await Task.Delay(1800); // Simule la latence du scraping
-
-            _resultats = GenererResultatsMock(_nomRecherche);
-
-            _chargement = false;
-            StateHasChanged();
-        }
-
-        /// <summary>
-        /// Génère des données mock réalistes pour tester l'UI
-        /// avant que l'API Python soit branchée.
-        /// </summary>
-        private static List<ResultatScraping> GenererResultatsMock(string produit)
-        {
-            return new List<ResultatScraping>
+            try
             {
-                new() {
-                    Site       = "Mytek",
-                    NomProduit = produit,
-                    Prix       = 299.000m,
-                    EnStock    = true,
-                    Livraison  = "Livraison en 24/48h",
-                    Garantie   = "Garantie 1 an Mytek",
-                    Url        = "https://www.mytek.tn"
-                },
-                new() {
-                    Site       = "Tunisianet",
-                    NomProduit = produit,
-                    Prix       = 315.000m,
-                    EnStock    = false,
-                    Livraison  = "Indisponible",
-                    Garantie   = "Garantie 1 an Tunisianet",
-                    Url        = "https://www.tunisianet.com.tn"
-                },
-                new() {
-                    Site       = "Electrotounes",
-                    NomProduit = produit,
-                    Prix       = 289.000m,
-                    EnStock    = true,
-                    Livraison  = "Livraison express (24h)",
-                    Garantie   = "Garantie 1 an ET",
-                    Url        = "https://www.electrotounes.tn"
-                },
-                new() {
-                    Site       = "Wiki",
-                    NomProduit = produit,
-                    Prix       = 305.000m,
-                    EnStock    = true,
-                    Livraison  = "Livraison 3-5 jours",
-                    Garantie   = "Garantie 6 mois",
-                    Url        = "https://www.wiki.tn"
-                },
-                new() {
-                    Site       = "SpaceNet",
-                    NomProduit = produit,
-                    Prix       = 320.000m,
-                    EnStock    = false,
-                    Livraison  = "Indisponible",
-                    Garantie   = "Garantie 1 an SpaceNet",
-                    Url        = "https://www.spacenet.tn"
+                // Appel à l'API Python Flask
+                var url = $"http://localhost:5000/scrape?q={Uri.EscapeDataString(_nomRecherche)}";
+                var reponse = await Http.GetFromJsonAsync<ReponseScraping>(url);
+
+                if (reponse?.succes == true && reponse.resultats != null && reponse.resultats.Any())
+                {
+                    _resultats = reponse.resultats.Select(r => new ResultatScraping
+                    {
+                        Site = r.site,
+                        NomProduit = r.nom_produit,
+                        Prix = r.prix,
+                        // Adapter selon le texte exact de 'stock' (ex: "En stock", "Épuisé", "Non indiqué")
+                        EnStock = r.stock?.Contains("stock", StringComparison.OrdinalIgnoreCase) == true ||
+                                  r.stock?.Contains("En stock", StringComparison.OrdinalIgnoreCase) == true,
+                        Livraison = "Non précisé", // Le script ne fournit pas encore ces infos
+                        Garantie = "Non précisée", // Le script ne fournit pas encore ces infos
+                        Url = r.url
+                    }).ToList();
+
+                    AfficherToast($"{_resultats.Count} résultat(s) trouvé(s)", "ws-toast-success");
                 }
-            };
+                else
+                {
+                    _resultats = new();
+                    AfficherToast("Aucun résultat trouvé", "ws-toast-warning");
+                }
+            }
+            catch (HttpRequestException)
+            {
+                AfficherToast("Impossible de contacter le service Python. Vérifiez que le serveur est lancé sur http://localhost:5000", "ws-toast-error");
+            }
+            catch (Exception ex)
+            {
+                AfficherToast($"Erreur : {ex.Message}", "ws-toast-error");
+            }
+            finally
+            {
+                _chargement = false;
+                StateHasChanged();
+            }
         }
 
         // ── Export CSV ──────────────────────────────────────────

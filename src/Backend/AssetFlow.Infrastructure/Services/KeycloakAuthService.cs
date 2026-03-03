@@ -70,6 +70,9 @@ namespace AssetFlow.Infrastructure.Services
             // Si l'utilisateur n'existe pas en base (ne devrait pas arriver)
             if (user == null)
                 return null;
+            // ===== VÉRIFIER LE RÔLE =====
+            if (!string.Equals(user.Role, request.Role, StringComparison.OrdinalIgnoreCase))
+                return null; // Rôle incorrect → login refusé
 
             return new LoginResponseDto
             {

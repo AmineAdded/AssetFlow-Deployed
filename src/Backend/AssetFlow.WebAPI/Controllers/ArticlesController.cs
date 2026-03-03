@@ -6,11 +6,13 @@
 using AssetFlow.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/articles")]
+    [Authorize(Policy = "EquipeAchatOnly")]
     public class ArticlesController : ControllerBase
     {
         private readonly AppDbContext _db;

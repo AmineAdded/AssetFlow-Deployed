@@ -5,11 +5,13 @@
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/commandes")]
+    [Authorize(Policy = "EquipeAchatOnly")]
     public class CommandesController : ControllerBase
     {
         private readonly ICommandeService _svc;

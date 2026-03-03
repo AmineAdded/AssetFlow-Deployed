@@ -6,11 +6,13 @@
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/materiel")]
+    [Authorize(Policy = "EquipeAchatOnly")]
     public class MaterielController : ControllerBase
     {
         private readonly IMaterielService _svc;

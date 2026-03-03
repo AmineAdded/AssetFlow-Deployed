@@ -10,6 +10,7 @@ using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using AssetFlow.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebApi.Controllers
 {
@@ -19,6 +20,8 @@ namespace WebApi.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "EquipeAchatOnly")]
+
     public class FournisseursController : ControllerBase
     {
         // IFournisseurService injecté — jamais la classe concrète directement

@@ -6,11 +6,13 @@
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "EmployeOnly")]
     public class IncidentController : ControllerBase
     {
         private readonly IIncidentService _incidentService;

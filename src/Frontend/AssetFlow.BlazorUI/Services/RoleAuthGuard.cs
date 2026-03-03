@@ -21,7 +21,7 @@ namespace AssetFlow.BlazorUI.Services
             var isAuth = await AuthService.IsAuthenticatedAsync();
             if (!isAuth)
             {
-                Navigation.NavigateTo("/login");
+                Navigation.NavigateTo("/");
                 return;
             }
 

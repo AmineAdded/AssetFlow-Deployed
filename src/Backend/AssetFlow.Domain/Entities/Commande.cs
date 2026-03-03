@@ -17,8 +17,8 @@ namespace AssetFlow.Domain.Entities
         public Materiel Materiel { get; set; } = null!;
 
         /// <summary>FK → Fournisseur</summary>
-        public int FournisseurId { get; set; }
-        public Fournisseur Fournisseur { get; set; } = null!;
+        public int? FournisseurId { get; set; }
+        public Fournisseur? Fournisseur { get; set; }
 
         /// <summary>Quantité achetée dans cette commande</summary>
         public int QuantiteAchetee { get; set; }

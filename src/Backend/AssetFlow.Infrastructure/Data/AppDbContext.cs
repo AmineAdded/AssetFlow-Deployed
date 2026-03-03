@@ -113,7 +113,7 @@ namespace AssetFlow.Infrastructure.Data
                 entity.HasOne(c => c.Fournisseur)
                       .WithMany()
                       .HasForeignKey(c => c.FournisseurId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // === ARTICLE INDIVIDUEL ===

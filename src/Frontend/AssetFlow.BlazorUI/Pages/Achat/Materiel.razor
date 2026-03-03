@@ -482,11 +482,14 @@
                             </div>
                             <div class="sk-field">
                                 <label class="sk-label">Fournisseur <span class="req">*</span></label>
-                                <select class="sk-inp @(_erreursCommande.ContainsKey("Fournisseur") ? "inp-err" : "")"
-                                        @bind="_formCommande.FournisseurId">
-                                    <option value="0">— Sélectionner —</option>
-                                    @foreach (var f in _fournisseurs) { <option value="@f.IdFournisseur">@f.Nom</option> }
-                                </select>
+                                <input class="sk-inp @(_erreursCommande.ContainsKey("Fournisseur") ? "inp-err" : "")"
+                                    type="text" placeholder="Nom ou sélectionner…"
+                                    list="fournisseurs-list"
+                                    @bind="_formCommande.NomFournisseurLibre"
+                                    @oninput="OnFournisseurInput" />
+                                <datalist id="fournisseurs-list">
+                                    @foreach (var f in _fournisseurs) { <option value="@f.Nom" /> }
+                                </datalist>
                                 @if (_erreursCommande.ContainsKey("Fournisseur")) { <span class="sk-err-msg">@_erreursCommande["Fournisseur"]</span> }
                             </div>
                             <div class="sk-field-row">
@@ -626,11 +629,14 @@
                                 </div>
                                 <div class="sk-field">
                                     <label class="sk-label">Fournisseur <span class="req">*</span></label>
-                                    <select class="sk-inp @(_erreursCommande.ContainsKey("Fournisseur") ? "inp-err" : "")"
-                                            @bind="_formCommande.FournisseurId">
-                                        <option value="0">— Sélectionner —</option>
-                                        @foreach (var f in _fournisseurs) { <option value="@f.IdFournisseur">@f.Nom</option> }
-                                    </select>
+                                    <input class="sk-inp @(_erreursCommande.ContainsKey("Fournisseur") ? "inp-err" : "")"
+                                        type="text" placeholder="Nom ou sélectionner…"
+                                        list="fournisseurs-list"
+                                        @bind="_formCommande.NomFournisseurLibre"
+                                        @oninput="OnFournisseurInput" />
+                                    <datalist id="fournisseurs-list">
+                                        @foreach (var f in _fournisseurs) { <option value="@f.Nom" /> }
+                                    </datalist>
                                     @if (_erreursCommande.ContainsKey("Fournisseur")) { <span class="sk-err-msg">@_erreursCommande["Fournisseur"]</span> }
                                 </div>
                                 <div class="sk-field-row">

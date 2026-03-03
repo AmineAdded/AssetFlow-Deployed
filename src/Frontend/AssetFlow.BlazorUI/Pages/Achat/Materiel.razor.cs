@@ -42,6 +42,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public DateTime? DateLivraison  { get; set; }
             public DateTime? DateFinGarantie { get; set; }
             public List<string?> NumerosSerie { get; set; } = new();
+            public string   NomFournisseurLibre { get; set; } = string.Empty;
         }
 
         // ── État principal ────────────────────────────────────────
@@ -54,6 +55,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         private List<string>               _categories      = new();
         private List<FournisseurDto>       _fournisseurs    = new();
+        public string NomFournisseurLibre { get; set; } = string.Empty;
         private int                        _totalCount      = 0;
         private bool                       _chargement      = true;
         private string                     _erreur          = string.Empty;
@@ -157,6 +159,14 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
             catch (Exception ex) { _erreur = $"Erreur de chargement : {ex.Message}"; }
             finally { _chargement = false; }
+        }
+        private void OnFournisseurInput(ChangeEventArgs e)
+        {
+            var val = e.Value?.ToString() ?? string.Empty;
+            _formCommande.NomFournisseurLibre = val;
+            var match = _fournisseurs.FirstOrDefault(f =>
+                f.Nom.Equals(val, StringComparison.OrdinalIgnoreCase));
+            _formCommande.FournisseurId = match?.IdFournisseur ?? 0;
         }
 
         private async Task ChargerFournisseurs()
@@ -311,8 +321,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 {
                     if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
                         _erreursCommande["NumeroCommande"] = "Obligatoire.";
-                    if (_formCommande.FournisseurId == 0)
-                        _erreursCommande["Fournisseur"] = "Sélectionnez un fournisseur.";
+                    if (string.IsNullOrWhiteSpace(_formCommande.NomFournisseurLibre))
+                        _erreursCommande["Fournisseur"] = "Le fournisseur est obligatoire.";
                     if (_formCommande.QuantiteAchetee <= 0)
                         _erreursCommande["Quantite"] = "La quantité doit être > 0.";
                 }
@@ -333,10 +343,25 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 // Commande obligatoire en création
                 if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
                     _erreursCommande["NumeroCommande"] = "Obligatoire.";
-                if (_formCommande.FournisseurId == 0)
-                    _erreursCommande["Fournisseur"] = "Sélectionnez un fournisseur.";
+                if (string.IsNullOrWhiteSpace(_formCommande.NomFournisseurLibre))
+                    _erreursCommande["Fournisseur"] = "Le fournisseur est obligatoire.";
                 if (_formCommande.QuantiteAchetee <= 0)
                     _erreursCommande["Quantite"] = "La quantité doit être > 0.";
+            }
+            // Si fournisseur libre (non existant), le créer automatiquement
+            if (_formCommande.FournisseurId == 0 && !string.IsNullOrWhiteSpace(_formCommande.NomFournisseurLibre))
+            {
+                var nouveauF = await FournisseurSvc.AjouterAsync(new CreerFournisseurDto
+                {
+                    Nom = _formCommande.NomFournisseurLibre.Trim()
+                });
+                if (nouveauF.Succes && nouveauF.IdFournisseur.HasValue)
+                    _formCommande.FournisseurId = nouveauF.IdFournisseur.Value;
+                else
+                {
+                    _erreurFormulaire = "Impossible de créer le fournisseur.";
+                    return;
+                }
             }
 
             if (_erreurs.Any() || _erreursCommande.Any()) return;

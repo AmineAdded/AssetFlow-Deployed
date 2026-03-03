@@ -33,7 +33,7 @@ namespace AssetFlow.Infrastructure.Services
             MaterielId        = c.MaterielId,
             NomMateriel       = c.Materiel?.Designation ?? string.Empty,
             ReferenceMateriel = c.Materiel?.Reference   ?? string.Empty,
-            FournisseurId     = c.FournisseurId,
+            FournisseurId     = c.FournisseurId ?? 0,
             NomFournisseur    = c.Fournisseur?.Nom ?? string.Empty,
             QuantiteAchetee   = c.QuantiteAchetee,
             DateAchat         = c.DateAchat,
@@ -130,7 +130,7 @@ namespace AssetFlow.Infrastructure.Services
                     // Commande
                     CommandeId      = c.Id,
                     NumeroCommande  = c.NumeroCommande,
-                    FournisseurId   = c.FournisseurId,
+                    FournisseurId   = c.FournisseurId ?? 0,
                     NomFournisseur  = c.Fournisseur?.Nom ?? string.Empty,
                     QuantiteAchetee = c.QuantiteAchetee,
                     DateAchat       = c.DateAchat,

@@ -74,6 +74,7 @@ builder.Services.AddScoped<IFournisseurService, FournisseurService>();
 builder.Services.AddScoped<IMaterielService,  MaterielService>();
 builder.Services.AddScoped<ICommandeService,  CommandeService>(); // ← NOUVEAU
 builder.Services.AddScoped<IDemandeAchatService, DemandeAchatService>();
+builder.Services.AddScoped<IStatistiquesService, StatistiquesService>();
 
 // === CORS ===
 builder.Services.AddCors(options =>

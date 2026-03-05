@@ -49,5 +49,6 @@ builder.Services.AddScoped<CommandeService>();
 builder.Services.AddScoped<ArticleService>();
 builder.Services.AddScoped<DemandeAchatService>();
 builder.Services.AddScoped<StatistiquesService>();
+builder.Services.AddScoped<AffectationClientService>();
 
 await builder.Build().RunAsync();

@@ -435,16 +435,7 @@
                                 </datalist>
                                 @if (_erreurs.ContainsKey("Categorie")) { <span class="sk-err-msg">@_erreurs["Categorie"]</span> }
                             </div>
-                            <div class="sk-field-row">
-                                <div class="sk-field">
-                                    <label class="sk-label">Seuil d'alerte</label>
-                                    <input class="sk-inp" type="number" min="0" @bind="_form.QuantiteMin" @bind:event="oninput" />
-                                </div>
-                                <div class="sk-field">
-                                    <label class="sk-label">Unité</label>
-                                    <input class="sk-inp" type="text" placeholder="pièce" @bind="_form.Unite" @bind:event="oninput" />
-                                </div>
-                            </div>
+                           
                             <div class="sk-field">
                                 <label class="sk-label">Description</label>
                                 <textarea class="sk-inp sk-textarea" rows="2" placeholder="Détails…"
@@ -577,16 +568,7 @@
                             </datalist>
                             @if (_erreurs.ContainsKey("Categorie")) { <span class="sk-err-msg">@_erreurs["Categorie"]</span> }
                         </div>
-                        <div class="sk-field-row">
-                            <div class="sk-field">
-                                <label class="sk-label">Seuil d'alerte</label>
-                                <input class="sk-inp" type="number" min="0" @bind="_form.QuantiteMin" @bind:event="oninput" />
-                            </div>
-                            <div class="sk-field">
-                                <label class="sk-label">Unité</label>
-                                <input class="sk-inp" type="text" @bind="_form.Unite" @bind:event="oninput" />
-                            </div>
-                        </div>
+                        
                         <div class="sk-field">
                             <label class="sk-label">Description</label>
                             <textarea class="sk-inp sk-textarea" rows="2"

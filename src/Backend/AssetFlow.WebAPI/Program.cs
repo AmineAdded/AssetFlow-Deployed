@@ -64,6 +64,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("EmployeOnly",    p => p.RequireRole("Employe"));
     options.AddPolicy("ITOrAdmin",      p => p.RequireRole("IT", "Admin"));
     options.AddPolicy("AchatOrAdmin",   p => p.RequireRole("EquipeAchat", "Admin"));
+    options.AddPolicy("ITOrAchat",   p => p.RequireRole("IT", "EquipeAchat"));
 });
 
 // === INJECTION DES SERVICES ===

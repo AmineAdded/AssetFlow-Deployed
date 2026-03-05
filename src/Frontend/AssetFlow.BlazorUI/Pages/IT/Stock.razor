@@ -1,0 +1,280 @@
+@page "/it/inventaire"
+@using AssetFlow.BlazorUI.Services
+@using AssetFlow.BlazorUI.Components
+
+<RoleAuthGuard AllowedRoles="@(new[]{"IT"})">
+<div class="stk-layout">
+
+    @* ── SIDEBAR (même structure que Incidents) ── *@
+    <aside class="stk-sidebar">
+        <div class="sidebar-logo-wrap">
+            <img src="images/logo.png" alt="AssetFlow" class="stk-sidebar-logo" />
+        </div>
+        <nav class="stk-sidebar-nav">
+            <a href="/dashboard/it"   class="stk-nav-link"><svg class="stk-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+            <a href="/it/employes"    class="stk-nav-link"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Employés</span></a>
+            <a href="/it/affectation" class="stk-nav-link"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Affectations</span></a>
+            <a href="/it/incidents"   class="stk-nav-link"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span>Incidents</span></a>
+            <a href="/it/inventaire"       class="stk-nav-link active"><svg class="stk-nav-icon" viewBox="0 0 24 24">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>
+                </svg><span>Inventaire</span></a>
+            <a href="/it/rapports"    class="stk-nav-link"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg><span>Rapports</span></a>
+        </nav>
+        <div class="stk-sidebar-profile">
+            <div class="stk-profile-avatar">@GetInitials()</div>
+            <div><p class="stk-profile-name">@UserName</p><p class="stk-profile-role">IT</p></div>
+        </div>
+        <LogoutButton />
+    </aside>
+
+    @* ── OVERLAY MENU MOBILE ── *@
+    @if (_menuOpen)
+    {
+        <div class="stk-menu-overlay" @onclick="() => _menuOpen = false">
+            <div class="stk-menu-drawer" @onclick:stopPropagation="true">
+                <div class="stk-menu-drawer-logo">
+                    <img src="images/logo.png" alt="AssetFlow" class="stk-sidebar-logo" />
+                </div>
+                <nav class="stk-menu-drawer-nav">
+                    <a href="/dashboard/it"   class="stk-nav-link" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+                    <a href="/it/employes"    class="stk-nav-link" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+                    <a href="/it/affectation" class="stk-nav-link" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Affectations</span></a>
+                    <a href="/it/incidents"   class="stk-nav-link" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span>Incidents</span></a>
+                    <a href="/it/stock"       class="stk-nav-link active" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Inventaire</span></a>
+                    <a href="/it/rapports"    class="stk-nav-link" @onclick="() => _menuOpen = false"><svg class="stk-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg><span>Rapports</span></a>
+                </nav>
+                <div class="stk-sidebar-profile">
+                    <div class="stk-profile-avatar">@GetInitials()</div>
+                    <div><p class="stk-profile-name">@UserName</p><p class="stk-profile-role">IT</p></div>
+                </div>
+                <LogoutButton />
+            </div>
+        </div>
+    }
+
+    @* ── MAIN ── *@
+    <main class="stk-main">
+        <header class="stk-header">
+            <button class="stk-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="stk-header-left">
+                <h1 class="stk-page-title">Consultation des Stocks</h1>
+                <p class="stk-page-sub">Visualisez l'inventaire et configurez les seuils d'alerte</p>
+            </div>
+            <div class="stk-header-controls">
+                <div class="stk-search-wrap">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" placeholder="Rechercher un matériel..." value="@Search" @oninput="OnSearchInput" />
+                </div>
+                <select class="stk-select" @bind="CategorieFiltre" @bind:after="AppliquerFiltres">
+                    <option value="">Toutes les catégories</option>
+                    @foreach (var cat in Categories)
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+            </div>
+        </header>
+
+        @* ── KPI CARDS ── *@
+        <div class="stk-kpi-row">
+            <div class="stk-kpi">
+                <div class="stk-kpi-icon blue"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+                <div class="stk-kpi-data">
+                    <span class="stk-kpi-label">Total Matériels</span>
+                    <span class="stk-kpi-value">@Stats.TotalArticles</span>
+                </div>
+                <span class="stk-kpi-trend up">+5%</span>
+            </div>
+            <div class="stk-kpi">
+                <div class="stk-kpi-icon green"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></div>
+                <div class="stk-kpi-data">
+                    <span class="stk-kpi-label">En Stock</span>
+                    <span class="stk-kpi-value">@Stats.EnStock</span>
+                </div>
+                <span class="stk-kpi-trend up">+2%</span>
+            </div>
+            <div class="stk-kpi">
+                <div class="stk-kpi-icon orange"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg></div>
+                <div class="stk-kpi-data">
+                    <span class="stk-kpi-label">Seuil Min Atteint</span>
+                    <span class="stk-kpi-value">@Stats.AlerteSeuil</span>
+                </div>
+                <span class="stk-kpi-trend down">-10%</span>
+            </div>
+            <div class="stk-kpi">
+                <div class="stk-kpi-icon red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg></div>
+                <div class="stk-kpi-data">
+                    <span class="stk-kpi-label">Rupture Critique</span>
+                    <span class="stk-kpi-value">@Stats.RuptureCritique</span>
+                </div>
+                <span class="stk-kpi-trend down">-4%</span>
+            </div>
+        </div>
+
+        @* ── TABLEAU ── *@
+        <div class="stk-table-wrap">
+            @if (Loading)
+            {
+                <div class="stk-loading"><div class="stk-spinner"></div><span>Chargement...</span></div>
+            }
+            else if (!MaterielsFiltres.Any())
+            {
+                <div class="stk-empty">
+                    <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    <p>Aucun matériel trouvé</p>
+                </div>
+            }
+            else
+            {
+                <table class="stk-table">
+                    <thead>
+                        <tr>
+                            <th>RÉFÉRENCE</th>
+                            <th>DÉSIGNATION</th>
+                            <th>CATÉGORIE</th>
+                            <th>QUANTITÉ</th>
+                            <th>SEUIL MIN</th>
+                            <th>STATUT</th>
+                            <th>SEUIL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var mat in MaterielsFiltres)
+                        {
+                            var statut = GetStatut(mat);
+                            <tr>
+                                <td><span class="stk-ref">@mat.Reference</span></td>
+                                <td>
+                                    <div class="stk-mat-cell">
+                                        @if (!string.IsNullOrEmpty(mat.ImageUrl))
+                                        { <img src="@mat.ImageUrl" class="stk-mat-img" alt="" /> }
+                                        else
+                                        { <div class="stk-mat-img-placeholder"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div> }
+                                        <span class="stk-mat-name">@mat.Designation</span>
+                                    </div>
+                                </td>
+                                <td><span class="stk-cat">@mat.Categorie</span></td>
+                                <td>
+                                    <div class="stk-qty-wrap">
+                                        <span class="stk-qty @(mat.QuantiteStock == 0 ? "zero" : "")">@mat.QuantiteStock</span>
+                                        <div class="stk-qty-bar">
+                                            <div class="stk-qty-fill @statut.css" style="width:@GetFillPct(mat)%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="stk-seuil-val">@mat.QuantiteMin</span></td>
+                                <td><span class="stk-statut-badge @statut.css">@statut.label</span></td>
+                                <td>
+                                    <button class="stk-btn-seuil" @onclick="() => OuvrirSeuil(mat)" title="Configurer les seuils">
+                                        <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Seuils
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @* Pagination *@
+                <div class="stk-pagination">
+                    <span class="stk-pag-info">Affichage de @((Page-1)*PageSize+1) à @(Math.Min(Page*PageSize, TotalFiltres)) sur @TotalFiltres matériels</span>
+                    <div class="stk-pag-btns">
+                        <button class="stk-pag-btn" disabled="@(Page == 1)" @onclick="() => ChangerPage(Page-1)">
+                            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        @for (int p = 1; p <= TotalPages; p++)
+                        {
+                            var pg = p;
+                            <button class="stk-pag-btn @(pg == Page ? "active" : "")" @onclick="() => ChangerPage(pg)">@pg</button>
+                        }
+                        <button class="stk-pag-btn" disabled="@(Page == TotalPages)" @onclick="() => ChangerPage(Page+1)">
+                            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </main>
+</div>
+
+@* ── MODAL CONFIGURATION SEUIL ── *@
+@if (MaterielSeuil != null)
+{
+    <div class="stk-modal-backdrop" @onclick="FermerSeuil">
+        <div class="stk-modal" @onclick:stopPropagation="true">
+
+            <div class="stk-modal-header">
+                <div class="stk-modal-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <div>
+                    <h3 class="stk-modal-title">Configuration : @MaterielSeuil.Designation</h3>
+                    <p class="stk-modal-sub">Définissez le niveau de vigilance pour ce matériel</p>
+                </div>
+                <button class="stk-modal-close" @onclick="FermerSeuil">
+                    <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            @* Un seul seuil *@
+            <div class="stk-seuil-card orange stk-seuil-card-full">
+                <div class="stk-seuil-card-head">
+                    <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                    <span>SEUIL MINIMUM</span>
+                </div>
+                <div class="stk-seuil-input-wrap">
+                    <input type="number" min="0" class="stk-seuil-input"
+                           @bind="SeuilMin" @bind:event="oninput" />
+                    <span class="stk-seuil-unit">unités</span>
+                </div>
+                <p class="stk-seuil-hint">Déclenche une alerte de réapprovisionnement.</p>
+            </div>
+
+            @* Visualisation 2 zones seulement *@
+            <div class="stk-viz-wrap">
+                <div class="stk-viz-head">
+                    <span class="stk-viz-title">VISUALISATION DES ZONES DE STOCK</span>
+                    <span class="stk-viz-cap">Capacité actuelle : @MaterielSeuil.QuantiteStock unités</span>
+                </div>
+                <div class="stk-viz-bar">
+                    <div class="stk-viz-zone orange" style="width:@GetZonePct(0, SeuilMin)%"><span>ALERTE</span></div>
+                    <div class="stk-viz-zone green"  style="width:@GetZonePct(SeuilMin, Math.Max(MaterielSeuil.QuantiteStock, SeuilMin * 3))%"><span>STOCK SAIN</span></div>
+                </div>
+                <div class="stk-viz-legend">
+                    <span><i class="dot orange"></i>0 – @SeuilMin unités</span>
+                    <span><i class="dot green"></i>@(SeuilMin + 1)+ unités</span>
+                </div>
+            </div>
+
+            @* Déclencheur unique *@
+            <div class="stk-triggers">
+                <span class="stk-triggers-title">⚡ APERÇU DES DÉCLENCHEURS</span>
+                <div class="stk-trigger orange">
+                    <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>
+                    <div>
+                        <p>Si stock ≤ <strong>@SeuilMin</strong></p>
+                        <p class="stk-trigger-desc">Alerte de réapprovisionnement envoyée à l'équipe Achat.</p>
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(SeuilErrorMsg))
+            {
+                <p class="stk-seuil-error">@SeuilErrorMsg</p>
+            }
+
+            <div class="stk-modal-actions">
+                <button class="stk-modal-cancel" @onclick="FermerSeuil">Annuler</button>
+                <button class="stk-modal-save" disabled="@IsSaving" @onclick="SauvegarderSeuil">
+                    @if (IsSaving) { <div class="stk-btn-spinner"></div> }
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                    Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+}
+</RoleAuthGuard>

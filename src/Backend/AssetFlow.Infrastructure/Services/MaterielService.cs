@@ -68,9 +68,9 @@ namespace AssetFlow.Infrastructure.Services
             return new MaterielStatsDto
             {
                 TotalArticles   = all.Count,
-                AlerteSeuil     = all.Count(m =>
-                    m.QuantiteStock <= m.QuantiteMin * 2 &&
-                    m.QuantiteStock > 0),
+                EnStock         = all.Count(m => m.QuantiteStock > m.QuantiteMin),
+                AlerteSeuil     = all.Count(m => m.QuantiteStock <= m.QuantiteMin && m.QuantiteStock > 0),
+                RuptureCritique = all.Count(m => m.QuantiteStock == 0)
             };
         }
 

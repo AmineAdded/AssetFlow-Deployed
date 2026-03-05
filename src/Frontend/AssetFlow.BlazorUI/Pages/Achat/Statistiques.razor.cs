@@ -8,7 +8,7 @@ using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace AssetFlow.BlazorUI.Pages
+namespace AssetFlow.BlazorUI.Pages.Achat
 {
     public partial class Statistiques : ComponentBase, IAsyncDisposable
     {

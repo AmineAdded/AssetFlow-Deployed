@@ -50,5 +50,6 @@ builder.Services.AddScoped<ArticleService>();
 builder.Services.AddScoped<DemandeAchatService>();
 builder.Services.AddScoped<StatistiquesService>();
 builder.Services.AddScoped<AffectationClientService>();
+builder.Services.AddScoped<EmployeManagementService>();
 
 await builder.Build().RunAsync();

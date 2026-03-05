@@ -42,5 +42,12 @@ namespace AssetFlow.Domain.Entities
         /// <summary>Navigation : utilisateur qui reçoit le matériel</summary>
         public User Utilisateur { get; set; } = null!;
         public List<ArticleIndividuel> Articles { get; set; } = new();
+        public EtatAffectation Etat { get; set; } = EtatAffectation.Courante;
+    }
+
+    public enum EtatAffectation  // ← AJOUTER (à la fin du fichier)
+    {
+        Courante  = 0,
+        Terminee  = 1
     }
 }

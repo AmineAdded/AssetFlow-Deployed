@@ -82,8 +82,7 @@ namespace AssetFlow.Infrastructure.Services
         // 1. Affectations de l'utilisateur
         var affectations = await _context.Affectations
             .Include(a => a.Materiel)
-            .Where(a => a.UtilisateurId == utilisateurId)
-            .OrderByDescending(a => a.DateAffectation)
+            .Where(a => a.UtilisateurId == utilisateurId && a.Etat == EtatAffectation.Courante)            .OrderByDescending(a => a.DateAffectation)
             .ToListAsync();
 
         if (!affectations.Any())

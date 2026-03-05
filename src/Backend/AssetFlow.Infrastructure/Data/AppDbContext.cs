@@ -61,6 +61,10 @@ namespace AssetFlow.Infrastructure.Data
                       .WithMany()
                       .HasForeignKey(a => a.UtilisateurId)
                       .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(a => a.Etat)
+                        .HasConversion<string>()
+                        .HasMaxLength(20)
+                        .HasDefaultValue(EtatAffectation.Courante);
             });
 
             // === INCIDENT ===

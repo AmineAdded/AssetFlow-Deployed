@@ -152,7 +152,7 @@ html.dark .aff-sidebar {
 .aff-header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 1.125rem 2rem;
+    padding: 0.6rem 1.2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;

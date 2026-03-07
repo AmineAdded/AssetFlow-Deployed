@@ -63,6 +63,16 @@
                 <h1 class="stk-page-title">Consultation des Stocks</h1>
                 <p class="stk-page-sub">Visualisez l'inventaire et configurez les seuils d'alerte</p>
             </div>
+            <div class="stk-export-btns">
+                <button class="stk-btn-export" @onclick="ExporterExcel">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>Excel</span>
+                </button>
+                <button class="stk-btn-export" @onclick="ExporterPdf">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span>PDF</span>
+                </button>
+            </div>
             <div class="stk-header-controls">
                 <div class="stk-search-wrap">
                     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>

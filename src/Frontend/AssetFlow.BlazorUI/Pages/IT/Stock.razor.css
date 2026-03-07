@@ -231,3 +231,11 @@ html.dark .stk-menu-drawer { background:#060d18; }
     .stk-modal-seuils, .stk-triggers-row { grid-template-columns:1fr; }
     .stk-modal { padding:1.25rem; }
 }
+
+/* ── Boutons Export ── */
+.stk-export-btns { display:flex; align-items:center; gap:0.5rem; margin-left:auto; flex-shrink:0; }
+.stk-btn-export { display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:0.375rem; background:var(--surface); border:1px solid var(--border); color:var(--text-muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+.stk-btn-export svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.stk-btn-export:hover { background:rgba(19,109,236,0.08); color:#136dec; border-color:rgba(19,109,236,0.3); }
+html.dark .stk-btn-export { background:#161f2e; border-color:#1e2d42; }
+html.dark .stk-btn-export:hover { background:rgba(19,109,236,0.15); }

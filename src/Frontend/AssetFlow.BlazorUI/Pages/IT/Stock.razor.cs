@@ -1,6 +1,7 @@
 using AssetFlow.BlazorUI.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {
@@ -8,6 +9,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
     {
         [Inject] private StockClientService   Svc          { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage  { get; set; } = default!;
+        [Inject] private IJSRuntime JS { get; set; } = default!;
 
         private List<MaterielDto> Tous             { get; set; } = new();
         private List<MaterielDto> MaterielsFiltres { get; set; } = new();
@@ -148,6 +150,40 @@ namespace AssetFlow.BlazorUI.Pages.IT
             if (p.Length >= 2) return $"{p[0][0]}{p[1][0]}".ToUpper();
             if (p.Length == 1 && p[0].Length >= 2) return p[0][..2].ToUpper();
             return "IT";
+        }
+        private async Task ExporterExcel()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("Référence;Désignation;Catégorie;Quantité;Seuil Min;Statut");
+                foreach (var m in MaterielsFiltres)
+                {
+                    var statut = GetStatut(m).label;
+                    sb.AppendLine($"{m.Reference};{m.Designation};{m.Categorie};{m.QuantiteStock};{m.QuantiteMin};{statut}");
+                }
+                var bytes    = System.Text.Encoding.UTF8.GetPreamble().Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+                var b64      = Convert.ToBase64String(bytes);
+                var fileName = $"stocks_{DateTime.Now:yyyyMMdd_HHmm}.csv";
+                await JS.InvokeVoidAsync("eval", $@"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{b64}';a.download='{fileName}';document.body.appendChild(a);a.click();document.body.removeChild(a);}})();");
+            }
+            catch (Exception ex) { Console.WriteLine($"Erreur export Excel : {ex.Message}"); }
+        }
+
+        private async Task ExporterPdf()
+        {
+            try
+            {
+                var rows = new System.Text.StringBuilder();
+                foreach (var m in MaterielsFiltres)
+                {
+                    var statut = GetStatut(m).label;
+                    rows.AppendLine($"<tr><td>{m.Reference}</td><td>{m.Designation}</td><td>{m.Categorie}</td><td>{m.QuantiteStock}</td><td>{m.QuantiteMin}</td><td>{statut}</td></tr>");
+                }
+                var html = $@"<!DOCTYPE html><html><head><meta charset='utf-8'/><title>Stocks</title><style>body{{font-family:Arial;font-size:11px;margin:20px}}table{{width:100%;border-collapse:collapse}}th{{background:#136dec;color:#fff;padding:7px 8px;font-size:10px;text-transform:uppercase}}td{{padding:6px 8px;border-bottom:1px solid #eee;font-size:10px}}tr:nth-child(even){{background:#f8fafc}}</style></head><body><h2>Consultation des Stocks</h2><p>Exporté le {DateTime.Now:dd/MM/yyyy HH:mm}</p><table><thead><tr><th>Référence</th><th>Désignation</th><th>Catégorie</th><th>Quantité</th><th>Seuil Min</th><th>Statut</th></tr></thead><tbody>{rows}</tbody></table></body></html>";
+                await JS.InvokeVoidAsync("eval", $@"(function(){{var w=window.open('','_blank','width=900,height=700');w.document.write({System.Text.Json.JsonSerializer.Serialize(html)});w.document.close();w.focus();setTimeout(function(){{w.print();}},400);}})();");
+            }
+            catch (Exception ex) { Console.WriteLine($"Erreur export PDF : {ex.Message}"); }
         }
     }
 

@@ -123,7 +123,7 @@ window.ApexInterop = (function () {
                 bar: {
                     horizontal:   false,
                     borderRadius: 6,
-                    columnWidth:  '58%',
+                    columnWidth:  '38%',
                     distributed:  true,
                 }
             },

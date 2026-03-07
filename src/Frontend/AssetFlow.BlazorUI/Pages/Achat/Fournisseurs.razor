@@ -1,7 +1,6 @@
 @* ============================================================
    FICHIER : Pages/Achat/Fournisseurs.razor
-   v4 : Sidebar style Employé + nom utilisateur dynamique
-        + headers tableau plus larges
+   v5 : Boutons Export Excel / PDF fonctionnels
    ============================================================ *@
 
 @page "/achat/fournisseurs"
@@ -15,9 +14,6 @@
             <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
         }
 
-        @* ══════════════════════════════════════════════════
-        SIDEBAR — Design identique au sidebar Employé
-        ══════════════════════════════════════════════════ *@
         <aside class="sidebar @(_sidebarOpen ? "open" : "")">
 
             <div class="sidebar-header">
@@ -48,7 +44,7 @@
                     <span class="nav-text">Matériel</span>
                 </a>
 
-                <a href="/fournisseurs" class="nav-link active">
+                <a href="/achat/fournisseurs" class="nav-link active">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -70,6 +66,7 @@
                     </span>
                     <span class="nav-text">Demande d'achat</span>
                 </a>
+
                 <a href="/achat/web-scraping" class="nav-link">
                     <span class="nav-icon">
                         <svg viewBox="0 0 24 24">
@@ -84,7 +81,6 @@
 
             </nav>
 
-            @* ── Profil utilisateur courant (comme sidebar Employé) ── *@
             <div class="sidebar-profile">
                 <div class="profile-avatar">@CurrentUserInitials</div>
                 <div class="profile-info">
@@ -97,9 +93,6 @@
 
         </aside>
 
-        @* ══════════════════════════════════════════════════
-        ZONE PRINCIPALE
-        ══════════════════════════════════════════════════ *@
         <main class="main-zone">
 
             <header class="topbar">
@@ -143,14 +136,14 @@
                         <p>Analyse temps réel de la fiabilité logistique et opérationnelle.</p>
                     </div>
                     <div class="page-title-actions">
-                        <button class="btn-export">
+                        <button class="btn-export" @onclick="ExporterExcel">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                             </svg>
                             Excel
                         </button>
-                        <button class="btn-export">
+                        <button class="btn-export" @onclick="ExporterPdf">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>

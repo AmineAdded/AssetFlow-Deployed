@@ -208,3 +208,28 @@ body {
     height: 16px;
     flex-shrink: 0;
 }
+/*[data-theme="dark"] .apexcharts-menu {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+[data-theme="dark"] .apexcharts-menu-item {
+  color: #ffffff;
+}*/
+
+/* Mode sombre - menu export ApexCharts */
+[data-theme="dark"] .apexcharts-menu {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+/* texte des items */
+[data-theme="dark"] .apexcharts-menu-item {
+  color: #f1f5f9;
+}
+
+/* hover corrigé */
+[data-theme="dark"] .apexcharts-menu-item:hover {
+  background: #334155 !important;   /* fond sombre */
+  color: #ffffff;        /* texte visible */
+}

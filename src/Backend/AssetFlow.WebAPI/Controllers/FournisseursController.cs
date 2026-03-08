@@ -111,7 +111,7 @@ public async Task<ActionResult<FournisseurReponseDto>> Ajouter(CreerFournisseurD
         Adresse = dto.Adresse?.Trim(),
         Mail = dto.Mail?.Trim(),
 
-        CommandesTotales = dto.CommandesTotales,
+        CommandesTotales = 0,
         TauxLivraisonATemps = dto.TauxLivraisonATemps,
         ScoreFiabilite = dto.ScoreFiabilite,
         DerniereCommande = dto.DerniereCommande
@@ -147,7 +147,6 @@ public async Task<ActionResult<FournisseurReponseDto>> Modifier(ModifierFourniss
         Adresse = dto.Adresse?.Trim(),
         Mail = dto.Mail?.Trim(),
 
-        CommandesTotales = dto.CommandesTotales,
         TauxLivraisonATemps = dto.TauxLivraisonATemps,
         ScoreFiabilite = dto.ScoreFiabilite,
         DerniereCommande = dto.DerniereCommande

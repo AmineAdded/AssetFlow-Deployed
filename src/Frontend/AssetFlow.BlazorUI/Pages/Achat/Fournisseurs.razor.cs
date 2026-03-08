@@ -33,7 +33,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public string Telephone { get; set; } = string.Empty;
             public string Adresse { get; set; } = string.Empty;
             public string Mail { get; set; } = string.Empty;
-            public int CommandesTotales { get; set; }
             public decimal TauxLivraisonATemps { get; set; }
             public decimal ScoreFiabilite { get; set; }
             public DateTime? DerniereCommande { get; set; }
@@ -193,7 +192,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     Telephone           = vm.Telephone ?? string.Empty,
                     Adresse             = vm.Adresse   ?? string.Empty,
                     Mail                = vm.Mail      ?? string.Empty,
-                    CommandesTotales    = vm.CommandesTotales,
                     TauxLivraisonATemps = vm.TauxLivraisonATemps,
                     ScoreFiabilite      = vm.ScoreFiabilite,
                     DerniereCommande    = vm.DerniereCommande
@@ -225,7 +223,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         Telephone           = Vide(_form.Telephone),
                         Adresse             = Vide(_form.Adresse),
                         Mail                = Vide(_form.Mail),
-                        CommandesTotales    = _form.CommandesTotales,
                         TauxLivraisonATemps = _form.TauxLivraisonATemps,
                         ScoreFiabilite      = _form.ScoreFiabilite,
                         DerniereCommande    = _form.DerniereCommande
@@ -238,7 +235,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         {
                             vm.Nom = _form.Nom.Trim(); vm.Telephone = Vide(_form.Telephone);
                             vm.Adresse = Vide(_form.Adresse); vm.Mail = Vide(_form.Mail);
-                            vm.CommandesTotales    = _form.CommandesTotales;
                             vm.TauxLivraisonATemps = _form.TauxLivraisonATemps;
                             vm.ScoreFiabilite      = _form.ScoreFiabilite;
                             vm.DerniereCommande    = _form.DerniereCommande;
@@ -256,7 +252,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         Telephone           = Vide(_form.Telephone),
                         Adresse             = Vide(_form.Adresse),
                         Mail                = Vide(_form.Mail),
-                        CommandesTotales    = _form.CommandesTotales,
+                        CommandesTotales    = 0,
                         TauxLivraisonATemps = _form.TauxLivraisonATemps,
                         ScoreFiabilite      = _form.ScoreFiabilite,
                         DerniereCommande    = _form.DerniereCommande
@@ -271,7 +267,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                             Telephone           = Vide(_form.Telephone),
                             Adresse             = Vide(_form.Adresse),
                             Mail                = Vide(_form.Mail),
-                            CommandesTotales    = _form.CommandesTotales,
                             TauxLivraisonATemps = _form.TauxLivraisonATemps,
                             ScoreFiabilite      = _form.ScoreFiabilite,
                             DerniereCommande    = _form.DerniereCommande

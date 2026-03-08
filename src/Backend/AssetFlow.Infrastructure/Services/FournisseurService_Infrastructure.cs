@@ -37,10 +37,25 @@ namespace AssetFlow.Infrastructure.Services
         /// </summary>
         public async Task<List<Fournisseur>> GetAllAsync()
         {
-            return await _context.Fournisseurs
+            var fournisseurs = await _context.Fournisseurs
                 .OrderBy(f => f.Nom)
                 .AsNoTracking()
                 .ToListAsync();
+
+            // Calculer le nombre réel de commandes par fournisseur
+            var comptes = await _context.Commandes
+                .Where(c => c.FournisseurId != null)
+                .GroupBy(c => c.FournisseurId)
+                .Select(g => new { FournisseurId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            foreach (var f in fournisseurs)
+            {
+                var compte = comptes.FirstOrDefault(c => c.FournisseurId == f.IdFournisseur);
+                f.CommandesTotales = compte?.Count ?? 0;
+            }
+
+            return fournisseurs;
         }
 
         // ────────────────────────────────────────────────────────
@@ -121,7 +136,6 @@ existant.Telephone = fournisseur.Telephone;
 existant.Adresse = fournisseur.Adresse;
 existant.Mail = fournisseur.Mail;
 
-existant.CommandesTotales = fournisseur.CommandesTotales;
 existant.TauxLivraisonATemps = fournisseur.TauxLivraisonATemps;
 existant.ScoreFiabilite = fournisseur.ScoreFiabilite;
 existant.DerniereCommande = fournisseur.DerniereCommande;

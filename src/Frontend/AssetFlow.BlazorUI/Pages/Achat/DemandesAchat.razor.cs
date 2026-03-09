@@ -16,6 +16,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
     {
         [Inject] private IJSRuntime          JS              { get; set; } = default!;
         [Inject] private DemandeAchatService DemandeAchatSvc { get; set; } = default!;
+        [Inject] private HttpClient _http { get; set; } = default!;
 
         // ─── ViewModels locaux ───────────────────────────────────
         // Séparés des DTOs car OffreVm inclut PdfUrl (string)
@@ -350,11 +351,25 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
         }
 
-        private void PrevisualiserOffre(OffreVm o)
+        private async Task PrevisualiserOffre(OffreVm o)
         {
-            // Construire l'URL du PDF pour l'iframe
-            o.PdfUrl       = DemandeAchatSvc.GetPdfUrl(o.IdDemande, o.Id);
-            _offrePreview  = o;
+            _offrePreview = o;
+            _offrePreview.PdfUrl = null; // show loading state
+            StateHasChanged();
+
+            try
+            {
+                var url = $"api/demandes/{o.IdDemande}/offres/{o.Id}/pdf";
+                var bytes = await _http.GetByteArrayAsync(url); // uses AuthTokenHandler ✓
+                var base64 = Convert.ToBase64String(bytes);
+                _offrePreview.PdfUrl = $"data:application/pdf;base64,{base64}";
+            }
+            catch (Exception ex)
+            {
+                AfficherToast($"Erreur aperçu : {ex.Message}", "toast-error");
+            }
+
+            StateHasChanged();
         }
 
         private void FermerPreview()  => _offrePreview = null;

@@ -22,6 +22,7 @@ namespace AssetFlow.Infrastructure.Data
         public DbSet<ArticleIndividuel> ArticlesIndividuels { get; set; }
         public DbSet<DemandeAchat> DemandeAchat { get; set; }
         public DbSet<OffreAchat>   OffreAchat   { get; set; }
+        public DbSet<LigneDemande>  LigneDemande  { get; set; } 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -189,6 +190,10 @@ namespace AssetFlow.Infrastructure.Data
                         .WithOne(o => o.Demande)
                         .HasForeignKey(o => o.IdDemande)
                         .OnDelete(DeleteBehavior.Cascade);
+                        entity.HasMany(d => d.Lignes)
+                        .WithOne(l => l.Demande)
+                        .HasForeignKey(l => l.IdDemande)
+                        .OnDelete(DeleteBehavior.Cascade);
                   });
 
                   modelBuilder.Entity<OffreAchat>(entity =>
@@ -215,6 +220,17 @@ namespace AssetFlow.Infrastructure.Data
 
    
 });
+ modelBuilder.Entity<LigneDemande>(entity =>
+    {
+        entity.HasKey(l => l.IdLigne);
+        entity.Property(l => l.NomProduit).IsRequired().HasMaxLength(200);
+        entity.Property(l => l.Quantite).HasDefaultValue(1);
+
+        entity.HasOne(l => l.Demande)
+              .WithMany(d => d.Lignes)
+              .HasForeignKey(l => l.IdDemande)
+              .OnDelete(DeleteBehavior.Cascade);
+    });
 
         }
     }

@@ -47,8 +47,8 @@ namespace AssetFlow.WebAPI.Controllers
             if (string.IsNullOrWhiteSpace(dto.NomProduit))
                 return BadRequest("Le nom du produit est obligatoire.");
 
-            if (dto.Quantite < 1)
-                return BadRequest("La quantité doit être au moins 1.");
+            /*if (dto.Quantite < 1)
+                return BadRequest("La quantité doit être au moins 1.");*/
 
             var created = await _service.CreateAsync(dto);
 

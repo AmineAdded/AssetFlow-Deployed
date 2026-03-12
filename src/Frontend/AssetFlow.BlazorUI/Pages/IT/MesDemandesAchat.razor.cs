@@ -1,6 +1,8 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / IT / MesDemandesAchat.razor.cs
+// MODIF : formulaire de création avec lignes multi-matériel
 // ============================================================
+
 using AssetFlow.Application.DTOs;
 using AssetFlow.BlazorUI.Services;
 using Blazored.LocalStorage;
@@ -41,14 +43,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private int TotalPages => Math.Max(1, (int)Math.Ceiling(DemandesFiltrees.Count / (double)PageSize));
 
         // ── Panneau création ─────────────────────────────────────
-        private bool   _showCreatePanel = false;
-        private bool   _isSaving        = false;
+        private bool _showCreatePanel = false;
+        private bool _isSaving        = false;
         private CreateDemandeForm _form = new();
-        private Dictionary<string, string> _formErrors = new()
-        {
-            ["NomProduit"] = string.Empty,
-            ["Quantite"]   = string.Empty,
-        };
+
+        // Erreurs globales du formulaire
+        private string _formError = string.Empty;
 
         // ── Init ─────────────────────────────────────────────────
         protected override async Task OnInitializedAsync()
@@ -92,7 +92,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 result = result.Where(d =>
                     d.NomProduit.ToLower().Contains(q)              ||
                     d.Reference.ToLower().Contains(q)               ||
-                    (d.Description?.ToLower().Contains(q) ?? false));
+                    (d.Description?.ToLower().Contains(q) ?? false) ||
+                    d.Lignes.Any(l => l.NomProduit.ToLower().Contains(q)));
             }
 
             result = SortOrder switch
@@ -146,30 +147,49 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private void OpenCreatePanel()
         {
             _form = new CreateDemandeForm();
-            _formErrors["NomProduit"] = string.Empty;
-            _formErrors["Quantite"]   = string.Empty;
-            ErrorMessage              = string.Empty;
-            SuccessMessage            = string.Empty;
-            _showCreatePanel          = true;
+            _formError     = string.Empty;
+            ErrorMessage   = string.Empty;
+            SuccessMessage = string.Empty;
+            _showCreatePanel = true;
         }
 
-        private void CloseCreatePanel()
+        private void CloseCreatePanel() => _showCreatePanel = false;
+
+        // ── Gestion des lignes ───────────────────────────────────
+        private void AjouterLigne()
         {
-            _showCreatePanel = false;
+            _form.Lignes.Add(new LigneForm());
         }
 
+        private void SupprimerLigne(LigneForm ligne)
+        {
+            if (_form.Lignes.Count > 1)
+                _form.Lignes.Remove(ligne);
+        }
+
+        // ── Soumission ───────────────────────────────────────────
         private async Task SubmitCreate()
         {
-            // Validation
-            _formErrors["NomProduit"] = string.IsNullOrWhiteSpace(_form.NomProduit)
-                ? "Le nom du produit est obligatoire."
-                : string.Empty;
+            _formError = string.Empty;
 
-            _formErrors["Quantite"] = _form.Quantite < 1
-                ? "La quantité doit être au moins 1."
-                : string.Empty;
+            // Validation titre
+            if (string.IsNullOrWhiteSpace(_form.NomDemande))
+            {
+                _formError = "Le titre de la demande est obligatoire.";
+                return;
+            }
 
-            if (_formErrors.Values.Any(e => !string.IsNullOrEmpty(e)))
+            // Validation lignes
+            foreach (var (ligne, idx) in _form.Lignes.Select((l, i) => (l, i)))
+            {
+                ligne.Erreur = string.Empty;
+                if (string.IsNullOrWhiteSpace(ligne.NomProduit))
+                    ligne.Erreur = "Le nom du produit est obligatoire.";
+                else if (ligne.Quantite < 1)
+                    ligne.Erreur = "La quantité doit être au moins 1.";
+            }
+
+            if (_form.Lignes.Any(l => !string.IsNullOrEmpty(l.Erreur)))
                 return;
 
             _isSaving = true;
@@ -179,11 +199,16 @@ namespace AssetFlow.BlazorUI.Pages.IT
             {
                 await DemandeService.CreateDemandeAsync(new CreateDemandeAchatDto
                 {
-                    NomProduit   = _form.NomProduit.Trim(),
+                    NomProduit   = _form.NomDemande.Trim(),
                     Reference    = string.IsNullOrWhiteSpace(_form.Reference) ? null : _form.Reference.Trim(),
-                    Quantite     = _form.Quantite,
                     Description  = _form.Description?.Trim(),
-                    DemandeurNom = UserName
+                    DemandeurNom = UserName,
+                    Lignes       = _form.Lignes.Select(l => new CreateLigneDemandeDto
+                    {
+                        NomProduit  = l.NomProduit.Trim(),
+                        Quantite    = l.Quantite,
+                        Description = l.Description?.Trim()
+                    }).ToList()
                 });
 
                 SuccessMessage   = "Demande soumise avec succès !";
@@ -238,10 +263,19 @@ namespace AssetFlow.BlazorUI.Pages.IT
         // ── Modèles formulaire ───────────────────────────────────
         private class CreateDemandeForm
         {
-            public string  NomProduit  { get; set; } = string.Empty;
+            /// <summary>Titre global de la demande.</summary>
+            public string  NomDemande  { get; set; } = string.Empty;
             public string? Reference   { get; set; }
+            public string? Description { get; set; }
+            public List<LigneForm> Lignes { get; set; } = new() { new LigneForm() };
+        }
+
+        private class LigneForm
+        {
+            public string  NomProduit  { get; set; } = string.Empty;
             public int     Quantite    { get; set; } = 1;
             public string? Description { get; set; }
+            public string  Erreur      { get; set; } = string.Empty;
         }
     }
 }

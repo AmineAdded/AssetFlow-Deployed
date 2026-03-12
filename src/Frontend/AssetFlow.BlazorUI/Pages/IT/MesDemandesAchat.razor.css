@@ -643,3 +643,235 @@ html.dark .mda-menu-drawer { background: #060d18; }
     .mda-td-actions { justify-content: flex-start; margin-top: 0.25rem; }
     .mda-detail-grid { grid-template-columns: 1fr 1fr; }
 }
+/* ============================================================
+   MesDemandesAchat.razor.css — AJOUTS multi-matériel
+   À COLLER À LA FIN de votre MesDemandesAchat.razor.css existant
+   ============================================================ */
+
+/* ══════════════════════════════════════
+   TABLEAU DES MATÉRIELS (détail dépliable)
+══════════════════════════════════════ */
+.mda-lignes-section {
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    overflow: hidden;
+}
+
+html.dark .mda-lignes-section { border-color: #1e2d42; }
+
+.mda-lignes-title {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    padding: 0.625rem 0.875rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2, rgba(0,0,0,0.02));
+    margin: 0;
+}
+
+html.dark .mda-lignes-title { background: rgba(255,255,255,0.02); border-bottom-color: #1e2d42; }
+
+.mda-lignes-title svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.mda-lignes-table { display: flex; flex-direction: column; }
+
+.mda-lignes-head {
+    display: grid;
+    grid-template-columns: 28px 1fr 50px 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2, rgba(0,0,0,0.01));
+}
+
+html.dark .mda-lignes-head { border-bottom-color: #1e2d42; }
+
+.mda-ligne-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 50px 1fr;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+    transition: background 0.15s;
+}
+
+html.dark .mda-ligne-row { border-bottom-color: #1e2d42; }
+.mda-ligne-row:last-child { border-bottom: none; }
+.mda-ligne-row:hover { background: var(--bg-row-hover, rgba(0,0,0,0.02)); }
+
+.mda-ligne-num  { font-size: 0.68rem; font-weight: 700; color: var(--text-faint); text-align: center; }
+.mda-ligne-nom  { font-weight: 600; color: var(--text); }
+.mda-ligne-qty  { font-weight: 800; color: var(--primary); text-align: center; }
+.mda-ligne-desc { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ══════════════════════════════════════
+   PANNEAU CRÉATION — LIGNES
+══════════════════════════════════════ */
+
+/* En-tête de la section lignes */
+.mda-lignes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0.25rem 0 0.375rem;
+}
+
+.mda-lignes-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.mda-lignes-label svg {
+    width: 12px; height: 12px;
+    stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Bouton "Ajouter un matériel" (dans l'en-tête) */
+.mda-btn-add-ligne {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.75rem;
+    background: rgba(19,109,236,0.1);
+    border: 1px solid rgba(19,109,236,0.3);
+    border-radius: 0.375rem;
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.mda-btn-add-ligne svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+.mda-btn-add-ligne:hover { background: rgba(19,109,236,0.18); }
+
+/* Card de ligne dans le formulaire */
+.mda-ligne-form {
+    background: var(--surface, #fff);
+    border: 1.5px solid var(--border);
+    border-radius: 0.625rem;
+    padding: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    animation: mdaExpandIn 0.18s ease;
+}
+
+html.dark .mda-ligne-form { background: #0d1520; border-color: #1e2d42; }
+.mda-ligne-form.has-error { border-color: rgba(239,68,68,0.4); }
+
+.mda-ligne-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Badge "Matériel N" */
+.mda-ligne-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--primary);
+    background: rgba(19,109,236,0.1);
+    border: 1px solid rgba(19,109,236,0.2);
+    border-radius: 0.375rem;
+    padding: 0.2rem 0.5rem;
+}
+
+/* Bouton supprimer ligne */
+.mda-ligne-del {
+    width: 28px; height: 28px;
+    border-radius: 0.375rem;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.mda-ligne-del svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mda-ligne-del:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+
+/* Ligne produit + quantité côte à côte */
+.mda-ligne-row-inputs {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-end;
+}
+
+.mda-field-qty { width: 80px; flex-shrink: 0; }
+
+/* Bouton "Ajouter un autre matériel" (pleine largeur, en bas de la liste) */
+.mda-btn-add-ligne-full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.625rem;
+    background: transparent;
+    border: 1.5px dashed var(--border);
+    border-radius: 0.625rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-family: inherit;
+    margin-top: 0.125rem;
+}
+
+.mda-btn-add-ligne-full svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+.mda-btn-add-ligne-full:hover { border-color: var(--primary); color: var(--primary); background: rgba(19,109,236,0.04); }
+
+/* Bannière d'erreur globale */
+.mda-form-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 0.5rem;
+    color: #ef4444;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.mda-form-error-banner svg {
+    width: 15px; height: 15px;
+    stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round;
+    flex-shrink: 0;
+}
+

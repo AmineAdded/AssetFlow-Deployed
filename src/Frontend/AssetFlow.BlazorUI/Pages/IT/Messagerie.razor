@@ -1,0 +1,273 @@
+@page "/it/messagerie"
+@using AssetFlow.BlazorUI.Services
+@using AssetFlow.BlazorUI.Components
+@using Microsoft.AspNetCore.SignalR.Client
+
+<RoleAuthGuard AllowedRoles="@(new[]{"IT"})">
+<div class="msg-layout">
+
+    @* ── SIDEBAR ── *@
+    <aside class="msg-sidebar">
+        <div class="sidebar-logo-wrap">
+            <img src="images/logo.png" alt="AssetFlow" class="msg-sidebar-logo" />
+        </div>
+        <nav class="msg-sidebar-nav">
+            <a href="/dashboard/it"   class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+            <a href="/it/employes"    class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Employés</span></a>
+            <a href="/it/affectation" class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg><span>Affectations</span></a>
+            <a href="/it/incidents"   class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span>Incidents</span></a>
+            <a href="/it/inventaire"  class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg><span>Inventaire</span></a>
+            <a href="/it/demandes-achat" class="msg-nav-link"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Mes achats</span></a>
+            <a href="/it/messagerie"  class="msg-nav-link active"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie</span></a>
+        </nav>
+        <div class="msg-sidebar-profile">
+            <div class="msg-profile-avatar">@GetInitials()</div>
+            <div>
+                <p class="msg-profile-name">@UserName</p>
+                <p class="msg-profile-role">IT</p>
+            </div>
+        </div>
+        <LogoutButton />
+    </aside>
+
+    @* ── OVERLAY MOBILE ── *@
+    @if (_menuOpen)
+    {
+        <div class="msg-menu-overlay" @onclick="() => _menuOpen = false">
+            <div class="msg-menu-drawer" @onclick:stopPropagation="true">
+                <div class="msg-menu-drawer-logo">
+                    <img src="images/logo.png" alt="AssetFlow" class="msg-sidebar-logo" />
+                </div>
+                <nav class="msg-menu-drawer-nav">
+                    <a href="/dashboard/it"      class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+                    <a href="/it/employes"        class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Employés</span></a>
+                    <a href="/it/affectation"     class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span>Affectations</span></a>
+                    <a href="/it/incidents"       class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg><span>Incidents</span></a>
+                    <a href="/it/inventaire"      class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span>Inventaire</span></a>
+                    <a href="/it/demandes-achat"  class="msg-nav-link" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg><span>Mes achats</span></a>
+                    <a href="/it/messagerie"      class="msg-nav-link active" @onclick="() => _menuOpen=false"><svg class="msg-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie</span></a>
+                </nav>
+                <div class="msg-sidebar-profile">
+                    <div class="msg-profile-avatar">@GetInitials()</div>
+                    <div><p class="msg-profile-name">@UserName</p><p class="msg-profile-role">IT</p></div>
+                </div>
+                <LogoutButton />
+            </div>
+        </div>
+    }
+
+    @* ── MAIN ── *@
+    <main class="msg-main">
+
+        <header class="msg-header">
+            <button class="msg-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div>
+                <h1 class="msg-page-title">Messagerie</h1>
+                <p class="msg-page-sub">Communication en temps réel avec les employés</p>
+            </div>
+            @* Connection status *@
+            <div class="msg-conn-status @(_hubConnected ? "connected" : "disconnected")">
+                <span class="msg-conn-dot"></span>
+                <span class="msg-conn-label">@(_hubConnected ? "En ligne" : "Reconnexion...")</span>
+            </div>
+        </header>
+
+        <div class="msg-body">
+
+            @* ══ COLONNE GAUCHE : liste conversations ══ *@
+            <div class="msg-col-left @(_conversationOpen ? "mobile-hidden" : "")">
+                <div class="msg-col-header">
+                    <span class="msg-col-title">Conversations</span>
+                    @{var totalUnread = Conversations.Sum(c => c.UnreadCount);}
+                    @if (totalUnread > 0)
+                    {
+                        <span class="msg-badge">@totalUnread</span>
+                    }
+                </div>
+
+                <div class="msg-search-wrap">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" placeholder="Rechercher un employé..."
+                           @bind="SearchConv" @bind:event="oninput" />
+                </div>
+
+                @if (LoadingConversations)
+                {
+                    <div class="msg-loading"><div class="msg-spinner"></div><span>Chargement...</span></div>
+                }
+                else if (!ConversationsFiltrees.Any())
+                {
+                    <div class="msg-empty-conv">
+                        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <p>Aucune conversation</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="msg-conv-list">
+                        @foreach (var conv in ConversationsFiltrees)
+                        {
+                            var isSel = SelectedConv?.EmployeId == conv.EmployeId;
+                            <div class="msg-conv-item @(isSel ? "selected" : "") @(conv.UnreadCount > 0 ? "has-unread" : "")"
+                                 @onclick="() => SelectConversation(conv)">
+                                <div class="msg-conv-avatar @(isSel ? "sel" : "")">
+                                    @conv.Initials
+                                    @if (conv.IsOnline)
+                                    {
+                                        <span class="msg-online-dot"></span>
+                                    }
+                                </div>
+                                <div class="msg-conv-info">
+                                    <div class="msg-conv-top">
+                                        <span class="msg-conv-name @(conv.UnreadCount > 0 ? "bold" : "")">@conv.FullName</span>
+                                        <span class="msg-conv-time">@FormatConvTime(conv.LastMessageTime)</span>
+                                    </div>
+                                    <div class="msg-conv-bottom">
+                                        <span class="msg-conv-preview @(conv.UnreadCount > 0 ? "bold" : "")">
+                                            @(conv.LastMessage?.Length > 38 ? conv.LastMessage[..38] + "…" : conv.LastMessage ?? "Démarrer une conversation")
+                                        </span>
+                                        @if (conv.UnreadCount > 0)
+                                        {
+                                            <span class="msg-unread-badge">@(conv.UnreadCount > 99 ? "99+" : conv.UnreadCount.ToString())</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* ══ COLONNE DROITE : fenêtre de chat ══ *@
+            <div class="msg-col-right @(_conversationOpen ? "mobile-visible" : "")">
+
+                @if (SelectedConv == null)
+                {
+                    <div class="msg-placeholder">
+                        <div class="msg-placeholder-icon">
+                            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        </div>
+                        <p class="msg-placeholder-title">Sélectionnez une conversation</p>
+                        <p class="msg-placeholder-sub">Choisissez un employé pour commencer à échanger</p>
+                    </div>
+                }
+                else
+                {
+                    @* ── Chat header ── *@
+                    <div class="msg-chat-header">
+                        <button class="msg-back-btn" @onclick="BackToList">
+                            <svg viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+                        </button>
+                        <div class="msg-chat-avatar">@SelectedConv.Initials</div>
+                        <div class="msg-chat-info">
+                            <p class="msg-chat-name">@SelectedConv.FullName</p>
+                            <p class="msg-chat-status">
+                                @if (SelectedConv.IsOnline)
+                                {
+                                    <span class="msg-status-online"><span class="msg-dot-green"></span>En ligne</span>
+                                }
+                                else if (SelectedConv.IsTyping)
+                                {
+                                    <span class="msg-status-typing">est en train d'écrire<span class="msg-typing-dots"><span></span><span></span><span></span></span></span>
+                                }
+                                else
+                                {
+                                    <span class="msg-status-offline">Hors ligne</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    @* ── Messages zone ── *@
+                    <div class="msg-messages-zone" id="messagesZone">
+                        @if (LoadingMessages)
+                        {
+                            <div class="msg-loading msg-loading-center"><div class="msg-spinner"></div><span>Chargement...</span></div>
+                        }
+                        else if (!CurrentMessages.Any())
+                        {
+                            <div class="msg-no-messages">
+                                <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                <p>Aucun message. Démarrez la conversation !</p>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Group messages by date *@
+                            @foreach (var group in GroupedMessages)
+                            {
+                                <div class="msg-date-separator">
+                                    <span>@group.Key</span>
+                                </div>
+                                @foreach (var msg in group.Value)
+                                {
+                                    var isMe = msg.SenderId == CurrentUserId;
+                                    <div class="msg-bubble-wrap @(isMe ? "me" : "them")">
+                                        @if (!isMe)
+                                        {
+                                            <div class="msg-bubble-avatar">@SelectedConv.Initials</div>
+                                        }
+                                        <div class="msg-bubble @(isMe ? "bubble-me" : "bubble-them")">
+                                            <span class="msg-bubble-text">@msg.Content</span>
+                                            <div class="msg-bubble-meta">
+                                                <span class="msg-bubble-time">@msg.SentAt.ToString("HH:mm")</span>
+                                                @if (isMe)
+                                                {
+                                                    <span class="msg-read-status" title="@(msg.IsRead ? "Vu" : "Envoyé")">
+                                                        @if (msg.IsRead)
+                                                        {
+                                                            @* Double check bleu = vu *@
+                                                            <svg class="msg-check-icon seen" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/><path d="M16 6 8 14" opacity="0.5"/></svg>
+                                                        }
+                                                        else
+                                                        {
+                                                            @* Check simple gris = envoyé *@
+                                                            <svg class="msg-check-icon sent" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                                                        }
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            @* Typing indicator *@
+                            @if (SelectedConv.IsTyping)
+                            {
+                                <div class="msg-bubble-wrap them">
+                                    <div class="msg-bubble-avatar">@SelectedConv.Initials</div>
+                                    <div class="msg-bubble bubble-them msg-typing-bubble">
+                                        <span class="msg-typing-dots"><span></span><span></span><span></span></span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    @* ── Input zone ── *@
+                    <div class="msg-input-zone">
+                        <div class="msg-input-wrap">
+                            <textarea class="msg-textarea"
+                                      placeholder="Écrire un message..."
+                                      @bind="NewMessage"
+                                      @bind:event="oninput"
+                                      @onkeydown="@(e => OnKeyDown(e))"
+                                      rows="1"
+                                      id="msgInput"></textarea>
+                            <button class="msg-send-btn @(string.IsNullOrWhiteSpace(NewMessage) ? "" : "active")"
+                                    disabled="@(string.IsNullOrWhiteSpace(NewMessage) || !_hubConnected)"
+                                    @onclick="SendMessage">
+                                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                        </div>
+                        <p class="msg-input-hint">Appuyez sur <kbd>Entrée</kbd> pour envoyer · <kbd>Maj+Entrée</kbd> pour une nouvelle ligne</p>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </main>
+</div>
+</RoleAuthGuard>

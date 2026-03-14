@@ -1,11 +1,11 @@
 // ============================================================
-// AssetFlow.WebAPI / Program.cs — MISE À JOUR
-// Ajout de CommandeService
+// AssetFlow.WebAPI / Program.cs — CORRIGÉ SignalR + CORS
 // ============================================================
 
 using AssetFlow.Application.Interfaces;
 using AssetFlow.Infrastructure.Data;
 using AssetFlow.Infrastructure.Services;
+using AssetFlow.WebAPI.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -28,34 +28,37 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidateLifetime = true,
             ClockSkew        = TimeSpan.Zero,
-            // Mapper le claim "roles" Keycloak → ClaimTypes.Role ASP.NET
             RoleClaimType    = System.Security.Claims.ClaimTypes.Role
         };
-        // Transformer les realm_access.roles de Keycloak
         options.Events = new JwtBearerEvents
         {
+            // ── AJOUT : SignalR envoie le token en query string ──
+            OnMessageReceived = ctx =>
+            {
+                var accessToken = ctx.Request.Query["access_token"];
+                var path = ctx.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
+                    ctx.Token = accessToken;
+                return Task.CompletedTask;
+            },
             OnTokenValidated = ctx =>
             {
                 var identity = ctx.Principal?.Identity as System.Security.Claims.ClaimsIdentity;
                 if (identity == null) return Task.CompletedTask;
-
-                // Keycloak met les rôles dans realm_access.roles
                 var realmAccess = ctx.Principal?.FindFirst("realm_access");
                 if (realmAccess != null)
                 {
                     var doc = System.Text.Json.JsonDocument.Parse(realmAccess.Value);
                     if (doc.RootElement.TryGetProperty("roles", out var roles))
-                    {
                         foreach (var role in roles.EnumerateArray())
                             identity.AddClaim(new System.Security.Claims.Claim(
                                 System.Security.Claims.ClaimTypes.Role, role.GetString()!));
-                    }
                 }
                 return Task.CompletedTask;
             }
         };
     });
-    
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly",      p => p.RequireRole("Admin"));
@@ -64,28 +67,39 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("EmployeOnly",    p => p.RequireRole("Employe"));
     options.AddPolicy("ITOrAdmin",      p => p.RequireRole("IT", "Admin"));
     options.AddPolicy("AchatOrAdmin",   p => p.RequireRole("EquipeAchat", "Admin"));
-    options.AddPolicy("ITOrAchat",   p => p.RequireRole("IT", "EquipeAchat"));
+    options.AddPolicy("ITOrAchat",      p => p.RequireRole("IT", "EquipeAchat"));
 });
 
 // === INJECTION DES SERVICES ===
 builder.Services.AddHttpClient<IAuthService, KeycloakAuthService>();
-builder.Services.AddScoped<IEmployeService,   EmployeService>();
-builder.Services.AddScoped<IIncidentService,  IncidentService>();
-builder.Services.AddScoped<IFournisseurService, FournisseurService>();
-builder.Services.AddScoped<IMaterielService,  MaterielService>();
-builder.Services.AddScoped<ICommandeService,  CommandeService>(); // ← NOUVEAU
-builder.Services.AddScoped<IDemandeAchatService, DemandeAchatService>();
-builder.Services.AddScoped<IStatistiquesService, StatistiquesService>();
-builder.Services.AddScoped<IAffectationService, AffectationService>();
-builder.Services.AddScoped<IEmployeManagementService, EmployeManagementService>();
-builder.Services.AddScoped<IDemandeAchatITService, DemandeAchatITService>();
-builder.Services.AddScoped<IOffreAchatService, OffreAchatService>();
+builder.Services.AddScoped<IEmployeService,             EmployeService>();
+builder.Services.AddScoped<IIncidentService,            IncidentService>();
+builder.Services.AddScoped<IFournisseurService,         FournisseurService>();
+builder.Services.AddScoped<IMaterielService,            MaterielService>();
+builder.Services.AddScoped<ICommandeService,            CommandeService>();
+builder.Services.AddScoped<IDemandeAchatService,        DemandeAchatService>();
+builder.Services.AddScoped<IStatistiquesService,        StatistiquesService>();
+builder.Services.AddScoped<IAffectationService,         AffectationService>();
+builder.Services.AddScoped<IEmployeManagementService,   EmployeManagementService>();
+builder.Services.AddScoped<IDemandeAchatITService,      DemandeAchatITService>();
+builder.Services.AddScoped<IOffreAchatService,          OffreAchatService>();
+
+// === SIGNALR ===
+builder.Services.AddSignalR();
 
 // === CORS ===
+// AllowCredentials() requis par SignalR → WithOrigins() obligatoire (pas AllowAnyOrigin)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorPolicy", policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+        policy
+            .WithOrigins(
+                "http://localhost:5001",    // Blazor HTTP (launchSettings)
+                "https://localhost:7020"  // Blazor HTTPS (launchSettings)
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()); // ← requis par SignalR
 });
 
 builder.Services.AddControllers();
@@ -102,10 +116,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("BlazorPolicy");
 app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
+app.UseAuthorization();          // ← UseAuthorization AVANT MapHub
 
-// === MIGRATION AUTOMATIQUE AU DÉMARRAGE ===
+app.MapControllers();
+app.MapHub<ChatHub>("/chathub"); // ← après UseAuthorization
+
+// === MIGRATION AUTOMATIQUE ===
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

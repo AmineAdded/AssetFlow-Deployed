@@ -4,6 +4,7 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;  // ← si besoin
+using Microsoft.AspNetCore.SignalR.Client;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -54,6 +55,7 @@ builder.Services.AddScoped<EmployeManagementService>();
 builder.Services.AddScoped<ITIncidentService>();
 builder.Services.AddScoped<StockClientService>();
 builder.Services.AddScoped<DemandeAchatITClientService>();
+builder.Services.AddScoped<MessagerieService>();
 
 
 await builder.Build().RunAsync();

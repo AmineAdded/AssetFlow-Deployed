@@ -1,12 +1,12 @@
 @* ============================================================
-   RoleSelect.razor — Design cohérent, SVG icons, logo grand
+   RoleSelect.razor — Sélection de rôle + Modal Admin (frappe clavier)
    ============================================================ *@
 
 @page "/"
 @namespace AssetFlow.BlazorUI.Pages.RoleSelection
 @using AssetFlow.BlazorUI.Components
 
-<div class="role-select-page">
+<div class="role-select-page" @onkeydown="HandleKeyDown" tabindex="0" autofocus>
 
     <div class="role-select-header">
         <img src="images/logo.png" alt="AssetFlow" class="role-select-logo" />
@@ -59,10 +59,116 @@
 
     <div class="admin-hint">
         <p>Mode avancé : tapez 'admin' pour accéder</p>
-        <input type="text"
-               @bind="AdminInput"
-               @oninput="CheckAdminMode"
-               style="opacity:0;position:absolute;pointer-events:none;" />
     </div>
 
 </div>
+
+@* ============================================================
+   MODAL ADMIN
+   ============================================================ *@
+@if (ShowAdminModal)
+{
+    <div class="admin-modal-overlay" @onclick="CloseModal">
+        <div class="admin-modal" @onclick:stopPropagation="true">
+
+            <div class="admin-modal-header">
+                <div class="admin-modal-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="admin-modal-title">Accès Administrateur</h2>
+                    <p class="admin-modal-subtitle">Mode avancé — authentification requise</p>
+                </div>
+                <button class="admin-modal-close" @onclick="CloseModal" aria-label="Fermer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(AdminErrorMessage))
+            {
+                <div class="admin-alert-error">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    </svg>
+                    @AdminErrorMessage
+                </div>
+            }
+
+            <div class="admin-form">
+                <div class="admin-input-group">
+                    <label class="admin-field-label">E-mail</label>
+                    <div class="admin-input-wrapper">
+                        <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="16" x="2" y="4" rx="2"/>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                        </svg>
+                        <input class="admin-form-input @(AdminEmailError ? "has-error" : "")"
+                               type="email"
+                               placeholder="admin@assetflow.com"
+                               @bind="AdminEmail"
+                               @bind:event="oninput"
+                               @onkeydown="HandleModalKeyDown" />
+                    </div>
+                    @if (AdminEmailError)
+                    {
+                        <span class="admin-error-text">Adresse email invalide</span>
+                    }
+                </div>
+
+                <div class="admin-input-group">
+                    <label class="admin-field-label">Mot de passe</label>
+                    <div class="admin-input-wrapper">
+                        <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input class="admin-form-input"
+                               type="@(ShowAdminPassword ? "text" : "password")"
+                               placeholder="••••••••"
+                               @bind="AdminPassword"
+                               @bind:event="oninput"
+                               @onkeydown="HandleModalKeyDown" />
+                        <button class="admin-toggle-password" type="button" @onclick="ToggleAdminPassword" tabindex="-1">
+                            @if (ShowAdminPassword)
+                            {
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="admin-btn-login" @onclick="HandleAdminLogin" disabled="@AdminIsLoading">
+                @if (AdminIsLoading)
+                {
+                    <span class="admin-spinner"></span>
+                    <span>Connexion en cours...</span>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                    </svg>
+                    <span>Accéder au panneau admin</span>
+                }
+            </button>
+
+            <p class="admin-modal-footer">Accès restreint — Administrateurs uniquement</p>
+
+        </div>
+    </div>
+}

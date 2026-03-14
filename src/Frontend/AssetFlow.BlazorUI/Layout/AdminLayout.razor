@@ -1,0 +1,100 @@
+@inherits LayoutComponentBase
+@using AssetFlow.BlazorUI.Services
+@using AssetFlow.BlazorUI.Components
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="admin-shell">
+
+    <aside class="admin-sidebar">
+
+        <div class="sidebar-header">
+            <img src="images/logo.png" alt="AssetFlow" class="sidebar-logo" />
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link @(IsActive("/dashboard/admin") ? "active" : "")"
+               href="/dashboard/admin">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <span class="nav-text">Dashboard</span>
+            </a>
+
+            <a class="nav-link @(IsActive("/admin/projets") ? "active" : "")"
+               href="/admin/projets">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"/>
+                    <path d="M16 3v4M8 3v4M2 11h20"/>
+                </svg>
+                <span class="nav-text">Projets</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-profile">
+            <div class="profile-avatar">@GetInitials()</div>
+            <div class="profile-info">
+                <p class="profile-name">@UserName</p>
+                <p class="profile-role">@UserRole</p>
+            </div>
+        </div>
+
+        <LogoutButton />
+
+    </aside>
+
+    <main class="admin-main">
+        @Body
+    </main>
+
+</div>
+
+@code {
+    private string UserName { get; set; } = "Admin";
+    private string UserRole { get; set; } = "Administrateur";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var name = await JS.InvokeAsync<string?>("eval", "localStorage.getItem('user_name')");
+            var role = await JS.InvokeAsync<string?>("eval", "localStorage.getItem('user_role')");
+            if (!string.IsNullOrWhiteSpace(name)) UserName = Clean(name);
+            if (!string.IsNullOrWhiteSpace(role)) UserRole = Clean(role);
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    private bool IsActive(string href)
+        => Navigation.Uri.Contains(href, StringComparison.OrdinalIgnoreCase);
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/");
+    }
+
+    private string GetInitials()
+    {
+        var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2) return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        if (UserName.Length >= 2) return UserName[..2].ToUpper();
+        return "AD";
+    }
+
+    private static string Clean(string v)
+    {
+        v = v.Trim();
+        if (v.Length >= 2 &&
+            ((v.StartsWith('"') && v.EndsWith('"')) ||
+             (v.StartsWith('\'') && v.EndsWith('\''))))
+            v = v[1..^1].Trim();
+        return v;
+    }
+}

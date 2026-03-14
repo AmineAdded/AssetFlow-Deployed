@@ -83,6 +83,7 @@ builder.Services.AddScoped<IAffectationService,         AffectationService>();
 builder.Services.AddScoped<IEmployeManagementService,   EmployeManagementService>();
 builder.Services.AddScoped<IDemandeAchatITService,      DemandeAchatITService>();
 builder.Services.AddScoped<IOffreAchatService,          OffreAchatService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // === SIGNALR ===
 builder.Services.AddSignalR();

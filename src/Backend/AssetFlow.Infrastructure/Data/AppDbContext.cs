@@ -23,6 +23,7 @@ namespace AssetFlow.Infrastructure.Data
             public DbSet<DemandeAchat> DemandeAchat { get; set; }
             public DbSet<OffreAchat> OffreAchat { get; set; }
             public DbSet<ChatMessage> ChatMessages { get; set; }
+            public DbSet<Project> Projects { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -230,6 +231,25 @@ namespace AssetFlow.Infrastructure.Data
                 .OnDelete(DeleteBehavior.Restrict);
                             entity.HasIndex(m => new { m.SenderId, m.ReceiverId, m.SentAt });
                       });
+
+                      modelBuilder.Entity<Project>(entity =>
+                        {
+                        entity.HasKey(p => p.Id);
+                        entity.Property(p => p.Nom).IsRequired().HasMaxLength(200);
+                        entity.Property(p => p.Description).HasMaxLength(2000);
+                        entity.Property(p => p.Statut)
+                              .HasConversion<string>()
+                              .HasMaxLength(30)
+                              .HasDefaultValue(StatutProjet.Planifie);
+                        entity.Property(p => p.Priorite)
+                              .HasConversion<string>()
+                              .HasMaxLength(20)
+                              .HasDefaultValue(PrioriteProjet.Moyenne);
+                        entity.Property(p => p.Responsable).HasMaxLength(150);
+                        entity.Property(p => p.Budget).HasColumnType("decimal(18,2)");
+                        entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                        entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                        });
 
             }
       }

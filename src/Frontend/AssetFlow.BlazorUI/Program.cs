@@ -56,6 +56,7 @@ builder.Services.AddScoped<ITIncidentService>();
 builder.Services.AddScoped<StockClientService>();
 builder.Services.AddScoped<DemandeAchatITClientService>();
 builder.Services.AddScoped<MessagerieService>();
+builder.Services.AddScoped<ProjectClientService>();
 
 
 await builder.Build().RunAsync();

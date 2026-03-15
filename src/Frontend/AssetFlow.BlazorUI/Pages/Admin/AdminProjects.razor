@@ -109,14 +109,89 @@
                                         </button>
                                         <button class="proj-action-btn proj-delete" @onclick="() => ConfirmDelete(p)" title="Supprimer">
                                             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                                                 <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                            </svg>
+                                        </button>
+                                        @* ← NOUVEAU : bouton dropdown affectations *@
+                                        <button class="proj-action-btn proj-expand @(ExpandedProjectId == p.Id ? "expanded" : "")"
+                                                @onclick="() => ToggleAffectations(p.Id)"
+                                                title="Voir les affectations">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m6 9 6 6 6-6"/>
                                             </svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
+
+                            @* ← NOUVEAU : ligne dropdown affectations *@
+                            @if (ExpandedProjectId == p.Id)
+                            {
+                                <tr class="proj-dropdown-row">
+                                    <td colspan="7" class="proj-dropdown-cell">
+                                        <div class="proj-dropdown-body">
+
+                                            @if (LoadingAffectations)
+                                            {
+                                                <div class="proj-dropdown-loading">
+                                                    <div class="proj-spinner-sm" style="border-top-color:var(--primary);border-color:var(--border);"></div>
+                                                    <span>Chargement des affectations...</span>
+                                                </div>
+                                            }
+                                            else if (!AffectationsOuvertes.Any())
+                                            {
+                                                <div class="proj-dropdown-empty">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                                                    </svg>
+                                                    <span>Aucun matériel affecté à ce projet.</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="proj-dropdown-header">
+                                                    <span>Matériel</span>
+                                                    <span>Articles affectés</span>
+                                                    <span>Date affectation</span>
+                                                    <span>Date de retour</span>
+                                                    <span>État</span>
+                                                </div>
+                                                <div class="proj-dropdown-list">
+                                                    @foreach (var aff in AffectationsOuvertes)
+                                                    {
+                                                        <div class="proj-dropdown-item">
+                                                            <div class="proj-dropdown-materiel">
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                                                                </svg>
+                                                                <div>
+                                                                    <p class="proj-dropdown-name">@aff.Designation</p>
+                                                                    <p class="proj-dropdown-ref">@aff.Reference</p>
+                                                                </div>
+                                                            </div>
+                                                            <span class="proj-dropdown-qty">
+                                                                <strong>@aff.QuantiteAffectee</strong> article@(aff.QuantiteAffectee > 1 ? "s" : "")
+                                                            </span>
+                                                            <span class="proj-dropdown-date">@aff.DateAffectation.ToString("dd/MM/yyyy")</span>
+                                                            <span class="proj-dropdown-date @(aff.DateRetourPrevue.HasValue && aff.DateRetourPrevue < DateTime.Now && aff.Etat == "Courante" ? "proj-date-overdue" : "")">
+                                                                @(aff.DateRetourPrevue.HasValue ? aff.DateRetourPrevue.Value.ToString("dd/MM/yyyy") : "—")
+                                                            </span>
+                                                            <span class="proj-badge @(aff.Etat == "Courante" ? "statut-encours" : "statut-termine")" style="font-size:0.68rem;">
+                                                                @aff.Etat
+                                                            </span>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
+
                     </tbody>
                 </table>
             </div>

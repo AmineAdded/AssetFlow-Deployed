@@ -1,8 +1,3 @@
-// ============================================================
-// AssetFlow.BlazorUI / Services / ProjectClientService.cs
-// Service HTTP côté Blazor pour les projets
-// ============================================================
-
 using System.Net.Http.Json;
 
 namespace AssetFlow.BlazorUI.Services
@@ -23,9 +18,19 @@ namespace AssetFlow.BlazorUI.Services
 
         public Task<HttpResponseMessage> DeleteAsync(int id)
             => _http.DeleteAsync($"api/projects/{id}");
+
+        // ← NOUVEAU
+        public async Task<List<ProjetAffectationDto>> GetAffectationsAsync(int projetId)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<List<ProjetAffectationDto>>(
+                    $"api/projects/{projetId}/affectations") ?? new();
+            }
+            catch { return new(); }
+        }
     }
 
-    // ── DTO partagé Blazor (copie légère de Application.DTOs.ProjectDto) ──
     public class ProjectDto
     {
         public int       Id          { get; set; }
@@ -39,5 +44,17 @@ namespace AssetFlow.BlazorUI.Services
         public DateTime? DateFin     { get; set; }
         public DateTime  CreatedAt   { get; set; }
         public DateTime  UpdatedAt   { get; set; }
+    }
+
+    // ← NOUVEAU
+    public class ProjetAffectationDto
+    {
+        public int       AffectationId    { get; set; }
+        public string    Designation      { get; set; } = string.Empty;
+        public string    Reference        { get; set; } = string.Empty;
+        public int       QuantiteAffectee { get; set; }
+        public DateTime  DateAffectation  { get; set; }
+        public DateTime? DateRetourPrevue { get; set; }
+        public string    Etat             { get; set; } = string.Empty;
     }
 }

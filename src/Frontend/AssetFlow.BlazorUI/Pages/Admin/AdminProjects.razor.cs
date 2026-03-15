@@ -1,5 +1,5 @@
 // ============================================================
-// AdminProjects.razor.cs — Logique CRUD projets (via ProjectClientService)
+// AdminProjects.razor.cs — MISE À JOUR : dropdown affectations
 // ============================================================
 
 using AssetFlow.BlazorUI.Services;
@@ -28,7 +28,7 @@ namespace AssetFlow.BlazorUI.Pages.Admin
         private bool             IsLoading    { get; set; } = true;
         private string           ErrorMessage { get; set; } = string.Empty;
 
-        // ── État sidebar ──
+        // ── Sidebar ──
         private bool             ShowSidebar  { get; set; } = false;
         private bool             IsEditing    { get; set; } = false;
         private int              EditingId    { get; set; }
@@ -40,24 +40,44 @@ namespace AssetFlow.BlazorUI.Pages.Admin
         private bool        ShowDeleteConfirm { get; set; } = false;
         private ProjectDto? ProjectToDelete   { get; set; }
 
+        // ── Dropdown affectations ── ← NOUVEAU
+        private int?                        ExpandedProjectId  { get; set; } = null;
+        private List<ProjetAffectationDto>  AffectationsOuvertes { get; set; } = new();
+        private bool                        LoadingAffectations { get; set; } = false;
+
         protected override async Task OnInitializedAsync()
             => await LoadProjectsAsync();
 
         private async Task LoadProjectsAsync()
         {
-            IsLoading = true;
+            IsLoading    = true;
             ErrorMessage = string.Empty;
-            try
-            {
-                Projects = await ProjectService.GetAllAsync() ?? new();
-            }
-            catch
-            {
-                ErrorMessage = "Impossible de charger les projets.";
-            }
+            try   { Projects = await ProjectService.GetAllAsync() ?? new(); }
+            catch { ErrorMessage = "Impossible de charger les projets."; }
             finally { IsLoading = false; }
         }
 
+        // ── Toggle dropdown affectations ── ← NOUVEAU
+        private async Task ToggleAffectations(int projetId)
+        {
+            if (ExpandedProjectId == projetId)
+            {
+                ExpandedProjectId    = null;
+                AffectationsOuvertes = new();
+                return;
+            }
+
+            ExpandedProjectId    = projetId;
+            AffectationsOuvertes = new();
+            LoadingAffectations  = true;
+            StateHasChanged();
+
+            AffectationsOuvertes = await ProjectService.GetAffectationsAsync(projetId);
+            LoadingAffectations  = false;
+            StateHasChanged();
+        }
+
+        // ── Sidebar ──
         private void OpenCreateSidebar()
         {
             Form        = new();
@@ -99,42 +119,22 @@ namespace AssetFlow.BlazorUI.Pages.Admin
                 FormError = "Le nom du projet est obligatoire.";
                 return;
             }
-
             FormLoading = true;
             try
             {
-                HttpResponseMessage response = IsEditing
+                var response = IsEditing
                     ? await ProjectService.UpdateAsync(EditingId, Form)
                     : await ProjectService.CreateAsync(Form);
 
-                if (response.IsSuccessStatusCode)
-                {
-                    CloseSidebar();
-                    await LoadProjectsAsync();
-                }
-                else
-                {
-                    FormError = "Une erreur est survenue. Vérifiez les champs.";
-                }
+                if (response.IsSuccessStatusCode) { CloseSidebar(); await LoadProjectsAsync(); }
+                else FormError = "Une erreur est survenue. Vérifiez les champs.";
             }
-            catch
-            {
-                FormError = "Erreur réseau. Veuillez réessayer.";
-            }
+            catch { FormError = "Erreur réseau. Veuillez réessayer."; }
             finally { FormLoading = false; }
         }
 
-        private void ConfirmDelete(ProjectDto p)
-        {
-            ProjectToDelete   = p;
-            ShowDeleteConfirm = true;
-        }
-
-        private void CancelDelete()
-        {
-            ShowDeleteConfirm = false;
-            ProjectToDelete   = null;
-        }
+        private void ConfirmDelete(ProjectDto p) { ProjectToDelete = p; ShowDeleteConfirm = true; }
+        private void CancelDelete()              { ShowDeleteConfirm = false; ProjectToDelete = null; }
 
         private async Task ExecuteDelete()
         {
@@ -147,6 +147,7 @@ namespace AssetFlow.BlazorUI.Pages.Admin
                 {
                     ShowDeleteConfirm = false;
                     ProjectToDelete   = null;
+                    if (ExpandedProjectId == ProjectToDelete?.Id) ExpandedProjectId = null;
                     await LoadProjectsAsync();
                 }
             }
@@ -155,29 +156,18 @@ namespace AssetFlow.BlazorUI.Pages.Admin
 
         private static string GetStatutLabel(string s) => s switch
         {
-            "EnCours"  => "En cours",
-            "Planifie" => "Planifié",
-            "Suspendu" => "Suspendu",
-            "Termine"  => "Terminé",
-            _          => s
+            "EnCours"  => "En cours", "Planifie" => "Planifié",
+            "Suspendu" => "Suspendu", "Termine"  => "Terminé", _ => s
         };
-
         private static string GetStatutClass(string s) => s switch
         {
-            "EnCours"  => "statut-encours",
-            "Planifie" => "statut-planifie",
-            "Suspendu" => "statut-suspendu",
-            "Termine"  => "statut-termine",
-            _          => ""
+            "EnCours"  => "statut-encours",  "Planifie" => "statut-planifie",
+            "Suspendu" => "statut-suspendu", "Termine"  => "statut-termine", _ => ""
         };
-
         private static string GetPrioriteClass(string p) => p switch
         {
-            "Critique" => "priorite-critique",
-            "Haute"    => "priorite-haute",
-            "Moyenne"  => "priorite-moyenne",
-            "Faible"   => "priorite-faible",
-            _          => ""
+            "Critique" => "priorite-critique", "Haute"  => "priorite-haute",
+            "Moyenne"  => "priorite-moyenne",  "Faible" => "priorite-faible", _ => ""
         };
     }
 }

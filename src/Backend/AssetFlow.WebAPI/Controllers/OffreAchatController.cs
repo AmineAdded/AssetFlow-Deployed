@@ -4,11 +4,13 @@
 
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = "ITOnly")]
     public class OffreAchatController : ControllerBase
     {
         private readonly IOffreAchatService _service;

@@ -263,7 +263,7 @@
                                         <div class="aff-emp-avatar @(isSelected ? "selected-av" : "")">@emp.Initials</div>
                                         <div class="aff-emp-info">
                                             <p class="aff-emp-name">@emp.FullName</p>
-                                            <p class="aff-emp-dept">@emp.Department</p>
+                                            <p class="aff-emp-dept">@emp.Role</p>
                                         </div>
                                         @if (isSelected)
                                         { <svg class="aff-emp-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> }
@@ -379,11 +379,11 @@
                                     @(UtilisateurSelectionne?.FullName ?? "—")
                                 </div>
                             </div>
-                            @if (!string.IsNullOrEmpty(UtilisateurSelectionne?.Department))
+                            @if (!string.IsNullOrEmpty(UtilisateurSelectionne?.Role))
                             {
                                 <div class="aff-summary-row">
-                                    <span class="aff-sum-label">Département</span>
-                                    <div class="aff-sum-value plain">@UtilisateurSelectionne.Department</div>
+                                    <span class="aff-sum-label">Role</span>
+                                    <div class="aff-sum-value plain">@UtilisateurSelectionne.Role</div>
                                 </div>
                             }
                         }

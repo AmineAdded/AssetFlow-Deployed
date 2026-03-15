@@ -19,7 +19,7 @@ namespace AssetFlow.Infrastructure.Services
         // ── Utilisateurs ─────────────────────────────────────
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursDisponiblesAsync(string? search = null)
         {
-            var query = _db.Users.AsNoTracking().Where(u => u.Role == "Employe");
+            var query = _db.Users.AsNoTracking().Where(u => u.Role != "Admin");
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -28,7 +28,7 @@ namespace AssetFlow.Infrastructure.Services
                     u.FirstName.ToLower().Contains(s) ||
                     u.LastName.ToLower().Contains(s)  ||
                     u.Email.ToLower().Contains(s)     ||
-                    u.Department.ToLower().Contains(s));
+                    u.Role.ToLower().Contains(s));
             }
 
             var users = await query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToListAsync();
@@ -38,7 +38,7 @@ namespace AssetFlow.Infrastructure.Services
                 Id         = u.Id,
                 FullName   = $"{u.FirstName} {u.LastName}",
                 Email      = u.Email,
-                Department = u.Department,
+                Role = u.Role,
                 Initials   = GetInitials(u.FirstName, u.LastName)
             }).ToList();
         }

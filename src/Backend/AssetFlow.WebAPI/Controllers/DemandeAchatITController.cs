@@ -6,11 +6,13 @@
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/it/demandesachat")]
+    [Authorize(Policy = "ITOnly")]
     public class DemandeAchatITController : ControllerBase
     {
         private readonly IDemandeAchatITService _service;

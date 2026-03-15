@@ -155,7 +155,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             UtilisateursFiltres = UtilisateursDisponibles
                 .Where(u =>
                     u.FullName.ToLower().Contains(q)   ||
-                    u.Department.ToLower().Contains(q) ||
+                    u.Role.ToLower().Contains(q) ||
                     u.Email.ToLower().Contains(q))
                 .ToList();
         }

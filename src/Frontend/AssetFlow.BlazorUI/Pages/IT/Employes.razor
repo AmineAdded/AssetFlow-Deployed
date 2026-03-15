@@ -139,7 +139,7 @@
                                     <div class="emp-card-avatar @(isSelected ? "sel" : "")">@emp.Initials</div>
                                     <div class="emp-card-info">
                                         <p class="emp-card-name">@emp.FullName</p>
-                                        <p class="emp-card-dept">@emp.Department</p>
+                                        <p class="emp-card-dept">@emp.Role</p>
                                         <p class="emp-card-email">@emp.Email</p>
                                     </div>
                                     <div class="emp-card-right">
@@ -231,7 +231,7 @@
                             <div class="emp-detail-avatar">@EmployeSelectionne!.Initials</div>
                             <div class="emp-detail-info">
                                 <h2 class="emp-detail-name">@EmployeSelectionne.FullName</h2>
-                                <p class="emp-detail-meta">@EmployeSelectionne.Department · @EmployeSelectionne.Email</p>
+                                <p class="emp-detail-meta">@EmployeSelectionne.Role · @EmployeSelectionne.Email</p>
                             </div>
                         }
                         else

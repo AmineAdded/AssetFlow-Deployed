@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.Infrastructure / Services / DemandeAchatITService.cs
-// MODIF : création avec plusieurs lignes de matériel
+// MODIF : Reference par ligne de matériel
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -20,7 +20,6 @@ namespace AssetFlow.Infrastructure.Services
             _context = context;
         }
 
-        // ── GET ALL ──────────────────────────────────────────────
         public async Task<IEnumerable<DemandeAchatITDto>> GetAllAsync()
         {
             return await _context.DemandeAchat
@@ -30,7 +29,6 @@ namespace AssetFlow.Infrastructure.Services
                 .ToListAsync();
         }
 
-        // ── GET BY ID ────────────────────────────────────────────
         public async Task<DemandeAchatITDto?> GetByIdAsync(int id)
         {
             var d = await _context.DemandeAchat
@@ -39,30 +37,28 @@ namespace AssetFlow.Infrastructure.Services
             return d == null ? null : ToDto(d);
         }
 
-        // ── CREATE ───────────────────────────────────────────────
         public async Task<DemandeAchatITDto> CreateAsync(CreateDemandeAchatDto dto)
         {
             if (dto.Lignes == null || !dto.Lignes.Any())
                 throw new ArgumentException("Au moins une ligne de matériel est obligatoire.");
 
-            var reference = !string.IsNullOrWhiteSpace(dto.Reference)
-                ? dto.Reference.Trim()
-                : $"SN-{DateTime.Now:yyyy}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+            // Référence globale auto-générée pour la demande
+            var referenceGlobale = $"SN-{DateTime.Now:yyyy}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
 
             var demande = new DemandeAchat
             {
-                Reference    = reference,
+                Reference    = referenceGlobale,
                 NomProduit   = string.IsNullOrWhiteSpace(dto.NomProduit)
-                                ? dto.Lignes.First().NomProduit.Trim()   // fallback : 1er produit
+                                ? dto.Lignes.First().NomProduit.Trim()
                                 : dto.NomProduit.Trim(),
                 Quantite     = dto.Lignes.Sum(l => l.Quantite),
                 Description  = dto.Description?.Trim(),
                 DemandeurNom = dto.DemandeurNom ?? "IT",
                 Statut       = "en_attente",
                 DateCreation = DateTime.Now,
-                MotifRefus   = null,
                 Lignes       = dto.Lignes.Select(l => new LigneDemande
                 {
+                    Reference   = l.Reference?.Trim() ?? string.Empty,
                     NomProduit  = l.NomProduit.Trim(),
                     Quantite    = l.Quantite,
                     Description = l.Description?.Trim()
@@ -75,7 +71,6 @@ namespace AssetFlow.Infrastructure.Services
             return ToDto(demande);
         }
 
-        // ── Mapper ───────────────────────────────────────────────
         private static DemandeAchatITDto ToDto(DemandeAchat d) => new()
         {
             IdDemande    = d.IdDemande,
@@ -90,6 +85,7 @@ namespace AssetFlow.Infrastructure.Services
             Lignes       = d.Lignes.Select(l => new LigneDemandeDto
             {
                 IdLigne     = l.IdLigne,
+                Reference   = l.Reference,
                 NomProduit  = l.NomProduit,
                 Quantite    = l.Quantite,
                 Description = l.Description

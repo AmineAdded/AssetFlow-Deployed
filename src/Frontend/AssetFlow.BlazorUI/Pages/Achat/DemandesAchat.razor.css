@@ -1405,3 +1405,98 @@ html.dark .motif-textarea { background: rgba(255,255,255,0.06); }
     .topbar-row2           { display: flex; }
     .topbar-search-mobile  { max-width: 100%; }
 }
+/* ============================================================
+   AJOUT CSS — à coller à la FIN de DemandesAchat.razor.css
+   Tableau multi-lignes dans le détail de la commande
+   ============================================================ */
+
+/* ── En-tête tableau 5 colonnes ── */
+.articles-head-multi {
+    grid-template-columns: 28px 110px 1fr 1fr 80px !important;
+}
+
+/* ── Ligne tableau 5 colonnes ── */
+.article-row-multi {
+    grid-template-columns: 28px 110px 1fr 1fr 80px !important;
+    align-items: center;
+}
+
+.article-line-num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.article-line-ref {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Courier New', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.article-line-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Ligne total ── */
+.article-total-row {
+    grid-template-columns: 28px 110px 1fr 1fr 80px !important;
+    background: var(--bg-thead) !important;
+    border-top: 2px solid var(--border) !important;
+}
+
+.article-total-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.article-total-qty {
+    font-size: 1rem !important;
+    color: var(--primary) !important;
+    font-weight: 900 !important;
+}
+
+/* ── Badge nombre de matériels dans section-title ── */
+.section-count {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background: rgba(19,109,236,0.1);
+    border: 1px solid rgba(19,109,236,0.2);
+    border-radius: 9999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-left: 0.5rem;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ── Badge nb matériels dans la card liste ── */
+.card-lignes-count {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.card-lignes-count svg {
+    width: 11px; height: 11px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+

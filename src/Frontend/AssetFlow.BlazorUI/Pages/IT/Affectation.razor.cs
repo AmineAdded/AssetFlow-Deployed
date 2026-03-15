@@ -217,7 +217,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             var request = new CreerAffectationRequest
             {
                 MaterielId       = MaterielSelectionne!.Id,
-                UtilisateurId    = ModeProjet ? 1 : UtilisateurSelectionne!.Id, // 1 = placeholder si projet
+                UtilisateurId    = ModeProjet ? null : UtilisateurSelectionne!.Id,
                 ProjetId         = ModeProjet ? ProjetSelectionne!.Id : null,
                 ArticleIds       = ArticlesSelectionnes.ToList(),
                 Observations     = string.IsNullOrWhiteSpace(Commentaire) ? null : Commentaire.Trim(),

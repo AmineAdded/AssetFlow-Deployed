@@ -62,7 +62,8 @@ namespace AssetFlow.Infrastructure.Data
                         entity.HasOne(a => a.Utilisateur)
                         .WithMany()
                         .HasForeignKey(a => a.UtilisateurId)
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired(false);
                         entity.Property(a => a.Etat)
                           .HasConversion<string>()
                           .HasMaxLength(20)

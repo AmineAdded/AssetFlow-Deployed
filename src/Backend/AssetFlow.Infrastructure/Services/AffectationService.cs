@@ -123,9 +123,15 @@ namespace AssetFlow.Infrastructure.Services
             if (dto.ArticleIds == null || dto.ArticleIds.Count == 0)
                 return new AffectationResultDto { Succes = false, Message = "Aucun article sélectionné." };
 
-            var utilisateur = await _db.Users.FindAsync(dto.UtilisateurId);
-            if (utilisateur == null)
-                return new AffectationResultDto { Succes = false, Message = "Utilisateur introuvable." };
+            User? utilisateur = null;
+            if (dto.UtilisateurId.HasValue)
+            {
+                utilisateur = await _db.Users.FindAsync(dto.UtilisateurId.Value);
+                if (utilisateur == null)
+                    return new AffectationResultDto { Succes = false, Message = "Utilisateur introuvable." };
+            }
+            if (!dto.ProjetId.HasValue && utilisateur == null)
+                return new AffectationResultDto { Succes = false, Message = "Utilisateur ou projet requis." };
 
             var materiel = await _db.Materiels.FindAsync(dto.MaterielId);
             if (materiel == null)

@@ -31,7 +31,7 @@ namespace AssetFlow.Infrastructure.Services
 
             // Compter les affectations Courantes par employé
             var counts = await _db.Affectations
-                .Where(a => userIds.Contains(a.UtilisateurId) && a.Etat == EtatAffectation.Courante)
+                .Where(a => userIds.Contains(a.UtilisateurId.Value) && a.Etat == EtatAffectation.Courante)
                 .GroupBy(a => a.UtilisateurId)
                 .Select(g => new { UserId = g.Key, Count = g.Count() })
                 .ToListAsync();

@@ -133,8 +133,8 @@ namespace AssetFlow.Infrastructure.Services
             var counts = await _context.Incidents
                 .Include(i => i.Affectation)
                 .Where(i => (i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours)
-                        && users.Select(u => u.Id).Contains(i.Affectation.UtilisateurId))
-                .GroupBy(i => i.Affectation.UtilisateurId)
+                        && users.Select(u => u.Id).Contains(i.Affectation.UtilisateurId.Value))
+                .GroupBy(i => i.Affectation.UtilisateurId.Value)
                 .Select(g => new { UserId = g.Key, Count = g.Count() })
                 .ToListAsync();
 

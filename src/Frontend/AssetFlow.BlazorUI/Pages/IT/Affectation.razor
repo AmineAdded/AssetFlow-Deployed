@@ -1,7 +1,5 @@
 @* ============================================================
-   AssetFlow.BlazorUI / Pages / IT / Affectation.razor
-   Page d'affectation de matériel à un utilisateur ou projet
-   Sidebar IT + layout 60/40 + mode sombre/clair
+   AssetFlow.BlazorUI / Pages / IT / Affectation.razor — COMPLET
    ============================================================ *@
 
 @page "/it/affectation"
@@ -11,63 +9,41 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"IT"})">
 <div class="aff-layout">
 
-    @* ══════════════════════════════════════
-       SIDEBAR IT
-    ══════════════════════════════════════ *@
+    @* ══════ SIDEBAR ══════ *@
     <aside class="aff-sidebar">
         <div class="sidebar-logo-wrap">
             <img src="images/logo.png" alt="AssetFlow" class="aff-sidebar-logo" />
         </div>
-
         <nav class="aff-sidebar-nav">
             <a href="/dashboard/it" class="aff-nav-link">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 <span class="aff-nav-text">Dashboard</span>
             </a>
             <a href="/it/employes" class="aff-nav-link">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 <span class="aff-nav-text">Employés</span>
             </a>
             <a href="/it/affectation" class="aff-nav-link active">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
                 <span class="aff-nav-text">Affectations</span>
             </a>
             <a href="/it/incidents" class="aff-nav-link">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg>
                 <span class="aff-nav-text">Incidents</span>
             </a>
             <a href="/it/inventaire" class="aff-nav-link">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg>
                 <span class="aff-nav-text">Inventaire</span>
             </a>
             <a href="/it/demandes-achat" class="aff-nav-link">
-                <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <path d="M16 10a4 4 0 0 1-8 0"/>
-                </svg>
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 <span class="aff-nav-text">Mes achats</span>
             </a>
-            <a href="/it/messagerie"  class="aff-nav-link"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie</span></a>
+            <a href="/it/messagerie" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="aff-nav-text">Messagerie</span>
+            </a>
         </nav>
-
         <div class="aff-sidebar-profile">
             <div class="aff-profile-avatar">@GetInitials()</div>
             <div class="aff-profile-info">
@@ -75,11 +51,10 @@
                 <p class="aff-profile-role">IT</p>
             </div>
         </div>
-
         <LogoutButton />
     </aside>
 
-    @* ── OVERLAY MENU MOBILE ── *@
+    @* ══════ OVERLAY MENU MOBILE ══════ *@
     @if (_menuOpen)
     {
         <div class="aff-menu-overlay" @onclick="() => _menuOpen = false">
@@ -88,30 +63,13 @@
                     <img src="images/logo.png" alt="AssetFlow" class="aff-sidebar-logo" />
                 </div>
                 <nav class="aff-menu-drawer-nav">
-                    <a href="/dashboard/it"   class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="aff-nav-text">Dashboard</span></a>
-                    <a href="/it/employes"    class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg><span class="aff-nav-text">Employés</span></a>
-                    <a href="/it/affectation" class="aff-nav-link active" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-                </svg><span class="aff-nav-text">Affectations</span></a>
-                    <a href="/it/incidents"   class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span class="aff-nav-text">Incidents</span></a>
-                    <a href="/it/inventaire"  class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>
-                </svg><span class="aff-nav-text">Inventaire</span></a>
-                <a href="/it/demandes-achat" class="aff-nav-link">
-                    <svg class="aff-nav-icon" viewBox="0 0 24 24">
-                        <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <path d="M16 10a4 4 0 0 1-8 0"/>
-                    </svg>
-                    <span class="aff-nav-text">Mes achats</span>
-                </a>
-                <a href="/it/messagerie"  class="aff-nav-link"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie</span></a>
+                    <a href="/dashboard/it"    class="aff-nav-link"        @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="aff-nav-text">Dashboard</span></a>
+                    <a href="/it/employes"     class="aff-nav-link"        @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="aff-nav-text">Employés</span></a>
+                    <a href="/it/affectation"  class="aff-nav-link active" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span class="aff-nav-text">Affectations</span></a>
+                    <a href="/it/incidents"    class="aff-nav-link"        @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span class="aff-nav-text">Incidents</span></a>
+                    <a href="/it/inventaire"   class="aff-nav-link"        @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span class="aff-nav-text">Inventaire</span></a>
+                    <a href="/it/demandes-achat" class="aff-nav-link"      @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg><span class="aff-nav-text">Mes achats</span></a>
+                    <a href="/it/messagerie"   class="aff-nav-link"        @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="aff-nav-text">Messagerie</span></a>
                 </nav>
                 <div class="aff-sidebar-profile">
                     <div class="aff-profile-avatar">@GetInitials()</div>
@@ -122,12 +80,10 @@
         </div>
     }
 
-    @* ══════════════════════════════════════
-       MAIN CONTENT
-    ══════════════════════════════════════ *@
+    @* ══════ MAIN ══════ *@
     <main class="aff-main">
 
-        @* Header *@
+        @* ── Header ── *@
         <header class="aff-header">
             <button class="aff-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
                 <span></span><span></span><span></span>
@@ -136,29 +92,19 @@
                 <h1 class="aff-page-title">Affectation de Matériel</h1>
                 <p class="aff-page-sub">Attribuez un équipement à un employé ou un projet</p>
             </div>
-
-            @* Toggle Utilisateur / Projet *@
             <div class="aff-tab-toggle">
-                <button class="aff-tab @(ModeProjet == false ? "active" : "")"
-                        @onclick="() => SetMode(false)">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
+                <button class="aff-tab @(ModeProjet == false ? "active" : "")" @onclick="() => SetMode(false)">
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     Affecter à un utilisateur
                 </button>
-                <button class="aff-tab @(ModeProjet == true ? "active" : "")"
-                        @onclick="() => SetMode(true)">
-                    <svg viewBox="0 0 24 24">
-                        <rect x="2" y="7" width="20" height="14" rx="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                    </svg>
+                <button class="aff-tab @(ModeProjet == true ? "active" : "")" @onclick="() => SetMode(true)">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     Affecter à un projet
                 </button>
             </div>
         </header>
 
-        @* ── Notifications ── *@
+        @* ── Alertes ── *@
         @if (!string.IsNullOrEmpty(SuccessMessage))
         {
             <div class="aff-alert aff-alert-success">
@@ -177,9 +123,7 @@
         @* ── Body 60/40 ── *@
         <div class="aff-body">
 
-            @* ════════════════════════════
-               COLONNE GAUCHE (60%)
-            ════════════════════════════ *@
+            @* ════ COLONNE GAUCHE (60%) ════ *@
             <div class="aff-col-left">
 
                 @* ── Recherche matériel ── *@
@@ -189,19 +133,12 @@
                         Rechercher un matériel
                     </h3>
                     <div class="aff-search-box">
-                        <svg class="aff-search-icon" viewBox="0 0 24 24">
-                            <rect x="2" y="3" width="20" height="14" rx="2"/>
-                            <path d="M8 21h8M12 17v4"/>
-                        </svg>
-                        <input type="text"
-                               class="aff-search-input"
+                        <svg class="aff-search-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                        <input type="text" class="aff-search-input"
                                placeholder="Rechercher un produit (Nom, SN, Catégorie...)"
                                value="@MaterielSearch"
                                @oninput="OnMaterielSearchInput" />
-                        @if (LoadingMateriels)
-                        {
-                            <div class="aff-search-spinner"></div>
-                        }
+                        @if (LoadingMateriels) { <div class="aff-search-spinner"></div> }
                     </div>
                 </section>
 
@@ -213,18 +150,9 @@
                         <div class="aff-product-card">
                             <div class="aff-product-img">
                                 @if (!string.IsNullOrEmpty(MaterielSelectionne.ImageUrl))
-                                {
-                                    <img src="@MaterielSelectionne.ImageUrl" alt="@MaterielSelectionne.Designation" />
-                                }
+                                { <img src="@MaterielSelectionne.ImageUrl" alt="@MaterielSelectionne.Designation" /> }
                                 else
-                                {
-                                    <div class="aff-product-img-placeholder">
-                                        <svg viewBox="0 0 24 24">
-                                            <rect x="2" y="3" width="20" height="14" rx="2"/>
-                                            <path d="M8 21h8M12 17v4"/>
-                                        </svg>
-                                    </div>
-                                }
+                                { <div class="aff-product-img-placeholder"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div> }
                             </div>
                             <div class="aff-product-info">
                                 <div class="aff-product-header">
@@ -238,8 +166,6 @@
                                     </span>
                                 </div>
                                 <p class="aff-product-cat">@MaterielSelectionne.Categorie</p>
-
-                                @* Sélection des articles *@
                                 <div class="aff-articles-select">
                                     <p class="aff-articles-label">Sélectionner les articles à affecter :</p>
                                     <div class="aff-articles-list">
@@ -247,26 +173,19 @@
                                         {
                                             var isChecked = ArticlesSelectionnes.Contains(art.Id);
                                             <label class="aff-article-item @(isChecked ? "checked" : "")">
-                                                <input type="checkbox"
-                                                       checked="@isChecked"
-                                                       @onchange="() => ToggleArticle(art.Id)" />
+                                                <input type="checkbox" checked="@isChecked" @onchange="() => ToggleArticle(art.Id)" />
                                                 <span class="aff-article-sn">@art.NumeroSerie</span>
-                                                <span class="aff-article-etat @(art.Etat == "Panne" ? "panne" : "bon")">
-                                                    @art.Etat
-                                                </span>
+                                                <span class="aff-article-etat @(art.Etat == "Panne" ? "panne" : "bon")">@art.Etat</span>
                                             </label>
                                         }
                                     </div>
                                 </div>
-
                                 <div class="aff-product-actions">
                                     <button class="aff-btn-change" @onclick="DeselectMateriel">
                                         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                         Changer
                                     </button>
-                                    <span class="aff-articles-count">
-                                        @ArticlesSelectionnes.Count article(s) sélectionné(s)
-                                    </span>
+                                    <span class="aff-articles-count">@ArticlesSelectionnes.Count article(s) sélectionné(s)</span>
                                 </div>
                             </div>
                         </div>
@@ -274,7 +193,6 @@
                 }
                 else if (MaterielsDisponibles.Any() || LoadingMateriels)
                 {
-                    @* ── Liste des matériels ── *@
                     <section class="aff-section">
                         <h3 class="aff-section-label">
                             Matériels disponibles
@@ -282,10 +200,7 @@
                         </h3>
                         @if (LoadingMateriels)
                         {
-                            <div class="aff-loading-row">
-                                <div class="aff-mini-spinner"></div>
-                                <span>Chargement...</span>
-                            </div>
+                            <div class="aff-loading-row"><div class="aff-mini-spinner"></div><span>Chargement...</span></div>
                         }
                         else
                         {
@@ -295,22 +210,16 @@
                                     <div class="aff-materiel-row" @onclick="() => SelectMateriel(mat)">
                                         <div class="aff-mat-img">
                                             @if (!string.IsNullOrEmpty(mat.ImageUrl))
-                                            {
-                                                <img src="@mat.ImageUrl" alt="@mat.Designation" />
-                                            }
+                                            { <img src="@mat.ImageUrl" alt="@mat.Designation" /> }
                                             else
-                                            {
-                                                <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                                            }
+                                            { <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> }
                                         </div>
                                         <div class="aff-mat-info">
                                             <p class="aff-mat-name">@mat.Designation</p>
                                             <p class="aff-mat-ref">@mat.Reference · @mat.Categorie</p>
                                         </div>
                                         <span class="aff-mat-qty">@mat.QuantiteDisponible dispo</span>
-                                        <svg class="aff-mat-arrow" viewBox="0 0 24 24">
-                                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                                        </svg>
+                                        <svg class="aff-mat-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                                     </div>
                                 }
                             </div>
@@ -318,91 +227,118 @@
                     </section>
                 }
 
-                @* ── Sélectionner le bénéficiaire ── *@
-                <section class="aff-section">
-                    <div class="aff-beneficiaire-header">
-                        <h3 class="aff-section-title">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                            Sélectionner le bénéficiaire
-                        </h3>
-                        <span class="aff-emp-count">@UtilisateursDisponibles.Count employé(s)</span>
-                    </div>
-
-                    @* Search employés *@
-                    <div class="aff-emp-search">
-                        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                        <input type="text"
-                               placeholder="Filtrer les employés..."
-                               value="@EmployeSearch"
-                               @oninput="OnEmployeSearchInput" />
-                    </div>
-
-                    @* Liste scrollable des employés *@
-                    <div class="aff-emp-list">
-                        @if (LoadingUtilisateurs)
-                        {
-                            <div class="aff-loading-row">
-                                <div class="aff-mini-spinner"></div>
-                                <span>Chargement des employés...</span>
-                            </div>
-                        }
-                        else if (!UtilisateursFiltres.Any())
-                        {
-                            <div class="aff-emp-empty">
-                                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                                <p>Aucun employé trouvé</p>
-                            </div>
-                        }
-                        else
-                        {
-                            @foreach (var emp in UtilisateursFiltres)
+                @* ════ SECTION BÉNÉFICIAIRE / PROJET ════ *@
+                @if (!ModeProjet)
+                {
+                    <section class="aff-section">
+                        <div class="aff-beneficiaire-header">
+                            <h3 class="aff-section-title">
+                                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Sélectionner le bénéficiaire
+                            </h3>
+                            <span class="aff-emp-count">@UtilisateursDisponibles.Count employé(s)</span>
+                        </div>
+                        <div class="aff-emp-search">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" placeholder="Filtrer les employés..." value="@EmployeSearch" @oninput="OnEmployeSearchInput" />
+                        </div>
+                        <div class="aff-emp-list">
+                            @if (LoadingUtilisateurs)
                             {
-                                var isSelected = UtilisateurSelectionne?.Id == emp.Id;
-                                <div class="aff-emp-row @(isSelected ? "selected" : "")"
-                                     @onclick="() => SelectUtilisateur(emp)">
-                                    <div class="aff-emp-avatar @(isSelected ? "selected-av" : "")">
-                                        @emp.Initials
-                                    </div>
-                                    <div class="aff-emp-info">
-                                        <p class="aff-emp-name">@emp.FullName</p>
-                                        <p class="aff-emp-dept">@emp.Department</p>
-                                    </div>
-                                    @if (isSelected)
-                                    {
-                                        <svg class="aff-emp-check" viewBox="0 0 24 24">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                            <path d="m9 11 3 3L22 4"/>
-                                        </svg>
-                                    }
-                                    else
-                                    {
-                                        <svg class="aff-emp-radio" viewBox="0 0 24 24">
-                                            <circle cx="12" cy="12" r="10"/>
-                                        </svg>
-                                    }
+                                <div class="aff-loading-row"><div class="aff-mini-spinner"></div><span>Chargement des employés...</span></div>
+                            }
+                            else if (!UtilisateursFiltres.Any())
+                            {
+                                <div class="aff-emp-empty">
+                                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                    <p>Aucun employé trouvé</p>
                                 </div>
                             }
-                        }
-                    </div>
-                </section>
+                            else
+                            {
+                                @foreach (var emp in UtilisateursFiltres)
+                                {
+                                    var isSelected = UtilisateurSelectionne?.Id == emp.Id;
+                                    <div class="aff-emp-row @(isSelected ? "selected" : "")" @onclick="() => SelectUtilisateur(emp)">
+                                        <div class="aff-emp-avatar @(isSelected ? "selected-av" : "")">@emp.Initials</div>
+                                        <div class="aff-emp-info">
+                                            <p class="aff-emp-name">@emp.FullName</p>
+                                            <p class="aff-emp-dept">@emp.Department</p>
+                                        </div>
+                                        @if (isSelected)
+                                        { <svg class="aff-emp-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> }
+                                        else
+                                        { <svg class="aff-emp-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </section>
+                }
+                else
+                {
+                    <section class="aff-section">
+                        <div class="aff-beneficiaire-header">
+                            <h3 class="aff-section-title">
+                                <svg viewBox="0 0 24 24"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+                                Sélectionner le projet
+                            </h3>
+                            <span class="aff-emp-count">@ProjetsDisponibles.Count projet(s)</span>
+                        </div>
+                        <div class="aff-emp-search">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input type="text" placeholder="Filtrer les projets..." value="@ProjetSearch" @oninput="OnProjetSearchInput" />
+                        </div>
+                        <div class="aff-emp-list">
+                            @if (LoadingProjets)
+                            {
+                                <div class="aff-loading-row"><div class="aff-mini-spinner"></div><span>Chargement des projets...</span></div>
+                            }
+                            else if (!ProjetsFiltres.Any())
+                            {
+                                <div class="aff-emp-empty">
+                                    <svg viewBox="0 0 24 24"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+                                    <p>Aucun projet disponible</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var proj in ProjetsFiltres)
+                                {
+                                    var isSelected = ProjetSelectionne?.Id == proj.Id;
+                                    <div class="aff-emp-row @(isSelected ? "selected" : "")" @onclick="() => SelectProjet(proj)">
+                                        <div class="aff-projet-icon @(isSelected ? "selected-av" : "")">
+                                            <svg viewBox="0 0 24 24"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+                                        </div>
+                                        <div class="aff-emp-info">
+                                            <p class="aff-emp-name">@proj.Nom</p>
+                                            <div class="aff-proj-meta">
+                                                <span class="aff-proj-badge @GetStatutProjetClass(proj.Statut)">@proj.Statut</span>
+                                                <span class="aff-proj-badge @GetPrioriteClass(proj.Priorite)">@proj.Priorite</span>
+                                                @if (!string.IsNullOrEmpty(proj.Responsable))
+                                                { <span class="aff-emp-dept">· @proj.Responsable</span> }
+                                            </div>
+                                        </div>
+                                        @if (isSelected)
+                                        { <svg class="aff-emp-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> }
+                                        else
+                                        { <svg class="aff-emp-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg> }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </section>
+                }
 
             </div>
+            @* FIN COLONNE GAUCHE *@
 
-            @* ════════════════════════════
-               COLONNE DROITE (40%) — sticky
-            ════════════════════════════ *@
+            @* ════ COLONNE DROITE (40%) ════ *@
             <div class="aff-col-right">
                 <div class="aff-summary-card">
 
                     <div class="aff-summary-header">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M9 11l3 3L22 4"/>
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                         <h3>Résumé de l'affectation</h3>
                     </div>
 
@@ -417,7 +353,7 @@
                             </div>
                         </div>
 
-                        @* Articles *@
+                        @* Articles sélectionnés *@
                         @if (ArticlesSelectionnes.Any())
                         {
                             <div class="aff-summary-row">
@@ -427,29 +363,56 @@
                                     {
                                         var art = MaterielSelectionne?.Articles.FirstOrDefault(a => a.Id == id);
                                         if (art != null)
-                                        {
-                                            <span class="aff-sum-art-pill">@art.NumeroSerie</span>
-                                        }
+                                        { <span class="aff-sum-art-pill">@art.NumeroSerie</span> }
                                     }
                                 </div>
                             </div>
                         }
 
-                        @* Bénéficiaire *@
-                        <div class="aff-summary-row">
-                            <span class="aff-sum-label">Bénéficiaire</span>
-                            <div class="aff-sum-value">
-                                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                @(UtilisateurSelectionne?.FullName ?? "—")
-                            </div>
-                        </div>
-
-                        @if (!string.IsNullOrEmpty(UtilisateurSelectionne?.Department))
+                        @* ── Bénéficiaire OU Projet selon le mode ── *@
+                        @if (!ModeProjet)
                         {
                             <div class="aff-summary-row">
-                                <span class="aff-sum-label">Département</span>
-                                <div class="aff-sum-value plain">@UtilisateurSelectionne.Department</div>
+                                <span class="aff-sum-label">Bénéficiaire</span>
+                                <div class="aff-sum-value">
+                                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    @(UtilisateurSelectionne?.FullName ?? "—")
+                                </div>
                             </div>
+                            @if (!string.IsNullOrEmpty(UtilisateurSelectionne?.Department))
+                            {
+                                <div class="aff-summary-row">
+                                    <span class="aff-sum-label">Département</span>
+                                    <div class="aff-sum-value plain">@UtilisateurSelectionne.Department</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="aff-summary-row">
+                                <span class="aff-sum-label">Projet</span>
+                                <div class="aff-sum-value">
+                                    <svg viewBox="0 0 24 24"><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z"/><path d="M16 3v4M8 3v4M2 11h20"/></svg>
+                                    @(ProjetSelectionne?.Nom ?? "—")
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(ProjetSelectionne?.Responsable))
+                            {
+                                <div class="aff-summary-row">
+                                    <span class="aff-sum-label">Responsable</span>
+                                    <div class="aff-sum-value plain">@ProjetSelectionne.Responsable</div>
+                                </div>
+                            }
+                            @if (ProjetSelectionne != null)
+                            {
+                                <div class="aff-summary-row">
+                                    <span class="aff-sum-label">Statut / Priorité</span>
+                                    <div class="aff-sum-value">
+                                        <span class="aff-proj-badge @GetStatutProjetClass(ProjetSelectionne.Statut)">@ProjetSelectionne.Statut</span>
+                                        <span class="aff-proj-badge @GetPrioriteClass(ProjetSelectionne.Priorite)">@ProjetSelectionne.Priorite</span>
+                                    </div>
+                                </div>
+                            }
                         }
 
                         <hr class="aff-divider" />
@@ -457,61 +420,38 @@
                         @* Checklist *@
                         <div class="aff-checklist">
                             <div class="aff-check-item @(MaterielSelectionne != null ? "done" : "")">
-                                <div class="aff-check-box">
-                                    @if (MaterielSelectionne != null)
-                                    {
-                                        <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
-                                    }
-                                </div>
+                                <div class="aff-check-box">@if (MaterielSelectionne != null){<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>}</div>
                                 <span>Produit sélectionné</span>
                             </div>
                             <div class="aff-check-item @(ArticlesSelectionnes.Any() ? "done" : "")">
-                                <div class="aff-check-box">
-                                    @if (ArticlesSelectionnes.Any())
-                                    {
-                                        <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
-                                    }
-                                </div>
+                                <div class="aff-check-box">@if (ArticlesSelectionnes.Any()){<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>}</div>
                                 <span>Article(s) sélectionné(s)</span>
                             </div>
-                            <div class="aff-check-item @(UtilisateurSelectionne != null ? "done" : "")">
-                                <div class="aff-check-box">
-                                    @if (UtilisateurSelectionne != null)
-                                    {
-                                        <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
-                                    }
-                                </div>
-                                <span>Bénéficiaire sélectionné</span>
+                            @* ← ICI : BeneficiaireOk remplace UtilisateurSelectionne != null *@
+                            <div class="aff-check-item @(BeneficiaireOk ? "done" : "")">
+                                <div class="aff-check-box">@if (BeneficiaireOk){<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>}</div>
+                                <span>@(ModeProjet ? "Projet sélectionné" : "Bénéficiaire sélectionné")</span>
                             </div>
                             <div class="aff-check-item @(CanConfirm ? "done" : "")">
-                                <div class="aff-check-box">
-                                    @if (CanConfirm)
-                                    {
-                                        <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
-                                    }
-                                </div>
+                                <div class="aff-check-box">@if (CanConfirm){<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>}</div>
                                 <span>Prêt à confirmer</span>
                             </div>
                         </div>
 
                         <hr class="aff-divider" />
-                        @* Date de retour prévue *@
+
+                        @* Date retour *@
                         <div class="aff-comment-wrap">
                             <label class="aff-comment-label">Date de retour prévue (facultatif)</label>
-                            <input type="date"
-                                class="aff-comment-ta"
-                                style="cursor:pointer;"
-                                min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
-                                @bind="DateRetourPrevue" />
+                            <input type="date" class="aff-comment-ta" style="cursor:pointer;"
+                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
+                                   @bind="DateRetourPrevue" />
                         </div>
 
                         @* Commentaire *@
                         <div class="aff-comment-wrap">
                             <label class="aff-comment-label">Commentaire (facultatif)</label>
-                            <textarea class="aff-comment-ta"
-                                      placeholder="Ajouter une note..."
-                                      rows="3"
-                                      @bind="Commentaire"></textarea>
+                            <textarea class="aff-comment-ta" placeholder="Ajouter une note..." rows="3" @bind="Commentaire"></textarea>
                         </div>
 
                         @* Bouton confirmer *@
@@ -525,10 +465,7 @@
                             }
                             else
                             {
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                    <path d="m9 11 3 3L22 4"/>
-                                </svg>
+                                <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
                                 <span>Confirmer l'affectation</span>
                             }
                         </button>
@@ -536,11 +473,15 @@
                         <p class="aff-disclaimer">
                             En confirmant, un e-mail de notification sera envoyé au bénéficiaire avec les termes de l'affectation.
                         </p>
+
                     </div>
                 </div>
             </div>
+            @* FIN COLONNE DROITE *@
 
         </div>
+        @* FIN aff-body *@
+
     </main>
 </div>
 </RoleAuthGuard>

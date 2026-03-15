@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / IT / Affectation.razor.cs
-// Logique de la page d'affectation de matériel
+// MISE À JOUR : mode projet avec sélection de projet
 // ============================================================
 
 using AssetFlow.BlazorUI.Services;
@@ -15,58 +15,77 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private NavigationManager        Navigation          { get; set; } = default!;
         [Inject] private ILocalStorageService     LocalStorage        { get; set; } = default!;
 
-        // ── Mode ───────────────────────────────────────────────
+        // ── Mode ──────────────────────────────────────────────
         private bool ModeProjet { get; set; } = false;
 
-        // ── Données matériels ──────────────────────────────────
-        private List<MaterielDisponibleDto>  MaterielsDisponibles { get; set; } = new();
-        private MaterielDisponibleDto?       MaterielSelectionne  { get; set; } = null;
-        private HashSet<int>                 ArticlesSelectionnes { get; set; } = new();
-        private string                       MaterielSearch       { get; set; } = string.Empty;
-        private bool                         LoadingMateriels     { get; set; } = false;
-        private System.Timers.Timer?         _materielDebounce;
-        private bool                          _menuOpen = false;
+        // ── Matériels ─────────────────────────────────────────
+        private List<MaterielDisponibleDto> MaterielsDisponibles { get; set; } = new();
+        private MaterielDisponibleDto?      MaterielSelectionne  { get; set; } = null;
+        private HashSet<int>                ArticlesSelectionnes { get; set; } = new();
+        private string                      MaterielSearch       { get; set; } = string.Empty;
+        private bool                        LoadingMateriels     { get; set; } = false;
+        private System.Timers.Timer?        _materielDebounce;
+        private bool                        _menuOpen            = false;
 
-        // ── Données utilisateurs ───────────────────────────────
+        // ── Utilisateurs ──────────────────────────────────────
         private List<UtilisateurDisponibleDto> UtilisateursDisponibles { get; set; } = new();
         private List<UtilisateurDisponibleDto> UtilisateursFiltres     { get; set; } = new();
         private UtilisateurDisponibleDto?      UtilisateurSelectionne  { get; set; } = null;
         private string                         EmployeSearch           { get; set; } = string.Empty;
         private bool                           LoadingUtilisateurs     { get; set; } = false;
 
-        // ── Formulaire ─────────────────────────────────────────
-        private string Commentaire    { get; set; } = string.Empty;
-        private DateTime? DateRetourPrevue { get; set; }
-        private bool   IsSubmitting   { get; set; } = false;
-        private string SuccessMessage { get; set; } = string.Empty;
-        private string ErrorMessage   { get; set; } = string.Empty;
+        // ── Projets ← NOUVEAU ─────────────────────────────────
+        private List<ProjetDisponibleDto> ProjetsDisponibles { get; set; } = new();
+        private List<ProjetDisponibleDto> ProjetsFiltres     { get; set; } = new();
+        private ProjetDisponibleDto?      ProjetSelectionne  { get; set; } = null;
+        private string                    ProjetSearch       { get; set; } = string.Empty;
+        private bool                      LoadingProjets     { get; set; } = false;
 
-        // ── User info ──────────────────────────────────────────
+        // ── Formulaire ────────────────────────────────────────
+        private string    Commentaire      { get; set; } = string.Empty;
+        private DateTime? DateRetourPrevue { get; set; }
+        private bool      IsSubmitting     { get; set; } = false;
+        private string    SuccessMessage   { get; set; } = string.Empty;
+        private string    ErrorMessage     { get; set; } = string.Empty;
+
+        // ── User info ─────────────────────────────────────────
         private string UserName { get; set; } = "Utilisateur";
 
-        // ── Computed ───────────────────────────────────────────
+        // ── Computed ──────────────────────────────────────────
+        private bool BeneficiaireOk => ModeProjet
+            ? ProjetSelectionne != null
+            : UtilisateurSelectionne != null;
+
         private bool CanConfirm =>
             MaterielSelectionne != null &&
             ArticlesSelectionnes.Any()  &&
-            UtilisateurSelectionne != null;
+            BeneficiaireOk;
 
-        // ── Init ───────────────────────────────────────────────
+        // ── Init ──────────────────────────────────────────────
         protected override async Task OnInitializedAsync()
         {
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             await Task.WhenAll(
                 LoadMaterielsAsync(),
-                LoadUtilisateursAsync()
+                LoadUtilisateursAsync(),
+                LoadProjetsAsync()
             );
         }
 
-        // ── Mode toggle ────────────────────────────────────────
-        private void SetMode(bool projet) => ModeProjet = projet;
+        // ── Mode toggle ───────────────────────────────────────
+        private void SetMode(bool projet)
+        {
+            ModeProjet = projet;
+            // Reset bénéficiaire à chaque changement de mode
+            UtilisateurSelectionne = null;
+            ProjetSelectionne      = null;
+            ErrorMessage           = string.Empty;
+        }
 
-        // ── Matériels ──────────────────────────────────────────
+        // ── Matériels ─────────────────────────────────────────
         private async Task LoadMaterielsAsync(string? search = null)
         {
-            LoadingMateriels = true;
+            LoadingMateriels     = true;
             StateHasChanged();
             MaterielsDisponibles = await AffectationService.GetMaterielsAsync(search);
             LoadingMateriels     = false;
@@ -108,7 +127,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 ArticlesSelectionnes.Add(articleId);
         }
 
-        // ── Utilisateurs ───────────────────────────────────────
+        // ── Utilisateurs ──────────────────────────────────────
         private async Task LoadUtilisateursAsync()
         {
             LoadingUtilisateurs     = true;
@@ -135,7 +154,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             var q = EmployeSearch.Trim().ToLower();
             UtilisateursFiltres = UtilisateursDisponibles
                 .Where(u =>
-                    u.FullName.ToLower().Contains(q) ||
+                    u.FullName.ToLower().Contains(q)   ||
                     u.Department.ToLower().Contains(q) ||
                     u.Email.ToLower().Contains(q))
                 .ToList();
@@ -147,7 +166,45 @@ namespace AssetFlow.BlazorUI.Pages.IT
             ErrorMessage           = string.Empty;
         }
 
-        // ── Confirmation ───────────────────────────────────────
+        // ── Projets ← NOUVEAU ─────────────────────────────────
+        private async Task LoadProjetsAsync()
+        {
+            LoadingProjets     = true;
+            StateHasChanged();
+            ProjetsDisponibles = await AffectationService.GetProjetsAsync();
+            ProjetsFiltres     = ProjetsDisponibles;
+            LoadingProjets     = false;
+            StateHasChanged();
+        }
+
+        private void OnProjetSearchInput(ChangeEventArgs e)
+        {
+            ProjetSearch = e.Value?.ToString() ?? string.Empty;
+            FiltrerProjets();
+        }
+
+        private void FiltrerProjets()
+        {
+            if (string.IsNullOrWhiteSpace(ProjetSearch))
+            {
+                ProjetsFiltres = ProjetsDisponibles;
+                return;
+            }
+            var q = ProjetSearch.Trim().ToLower();
+            ProjetsFiltres = ProjetsDisponibles
+                .Where(p =>
+                    p.Nom.ToLower().Contains(q) ||
+                    (p.Responsable ?? "").ToLower().Contains(q))
+                .ToList();
+        }
+
+        private void SelectProjet(ProjetDisponibleDto projet)
+        {
+            ProjetSelectionne = ProjetSelectionne?.Id == projet.Id ? null : projet;
+            ErrorMessage      = string.Empty;
+        }
+
+        // ── Confirmation ──────────────────────────────────────
         private async Task ConfirmerAffectation()
         {
             if (!CanConfirm) return;
@@ -159,11 +216,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             var request = new CreerAffectationRequest
             {
-                MaterielId    = MaterielSelectionne!.Id,
-                UtilisateurId = UtilisateurSelectionne!.Id,
-                ArticleIds    = ArticlesSelectionnes.ToList(),
-                Observations  = string.IsNullOrWhiteSpace(Commentaire) ? null : Commentaire.Trim(),
-                DateRetourPrevue  = DateRetourPrevue
+                MaterielId       = MaterielSelectionne!.Id,
+                UtilisateurId    = ModeProjet ? 1 : UtilisateurSelectionne!.Id, // 1 = placeholder si projet
+                ProjetId         = ModeProjet ? ProjetSelectionne!.Id : null,
+                ArticleIds       = ArticlesSelectionnes.ToList(),
+                Observations     = string.IsNullOrWhiteSpace(Commentaire) ? null : Commentaire.Trim(),
+                DateRetourPrevue = DateRetourPrevue
             };
 
             var result = await AffectationService.CreerAffectationAsync(request);
@@ -172,14 +230,13 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             if (result.Succes)
             {
-                SuccessMessage       = result.Message;
-                // Reset form
-                MaterielSelectionne  = null;
+                SuccessMessage         = result.Message;
+                MaterielSelectionne    = null;
                 UtilisateurSelectionne = null;
-                ArticlesSelectionnes = new HashSet<int>();
-                Commentaire          = string.Empty;
-                DateRetourPrevue = null;
-                // Recharger les matériels pour mettre à jour les stocks
+                ProjetSelectionne      = null;
+                ArticlesSelectionnes   = new HashSet<int>();
+                Commentaire            = string.Empty;
+                DateRetourPrevue       = null;
                 await LoadMaterielsAsync(MaterielSearch);
             }
             else
@@ -190,7 +247,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             StateHasChanged();
         }
 
-        // ── Helpers ────────────────────────────────────────────
+        // ── Helpers ───────────────────────────────────────────
         private string GetInitials()
         {
             var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -199,9 +256,23 @@ namespace AssetFlow.BlazorUI.Pages.IT
             return "IT";
         }
 
-        public void Dispose()
+        private static string GetStatutProjetClass(string statut) => statut switch
         {
-            _materielDebounce?.Dispose();
-        }
+            "EnCours"  => "statut-encours",
+            "Planifie" => "statut-planifie",
+            "Suspendu" => "statut-suspendu",
+            _          => ""
+        };
+
+        private static string GetPrioriteClass(string priorite) => priorite switch
+        {
+            "Critique" => "priorite-critique",
+            "Haute"    => "priorite-haute",
+            "Moyenne"  => "priorite-moyenne",
+            "Faible"   => "priorite-faible",
+            _          => ""
+        };
+
+        public void Dispose() => _materielDebounce?.Dispose();
     }
 }

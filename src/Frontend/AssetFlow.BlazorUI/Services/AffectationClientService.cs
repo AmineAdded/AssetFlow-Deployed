@@ -1,14 +1,12 @@
 // ============================================================
 // AssetFlow.BlazorUI / Services / AffectationClientService.cs
-// Client HTTP pour les opérations d'affectation
+// MISE À JOUR : ajout ProjetDisponibleDto + GetProjetsAsync
 // ============================================================
 
 using System.Net.Http.Json;
 
 namespace AssetFlow.BlazorUI.Services
 {
-    // ── DTOs Frontend ────────────────────────────────────────
-
     public class UtilisateurDisponibleDto
     {
         public int    Id         { get; set; }
@@ -36,13 +34,24 @@ namespace AssetFlow.BlazorUI.Services
         public List<ArticleDisponibleDto> Articles { get; set; } = new();
     }
 
+    // ← NOUVEAU
+    public class ProjetDisponibleDto
+    {
+        public int    Id           { get; set; }
+        public string Nom          { get; set; } = string.Empty;
+        public string Statut       { get; set; } = string.Empty;
+        public string Priorite     { get; set; } = string.Empty;
+        public string? Responsable { get; set; }
+    }
+
     public class CreerAffectationRequest
     {
-        public int         MaterielId    { get; set; }
-        public int         UtilisateurId { get; set; }
-        public List<int>   ArticleIds    { get; set; } = new();
-        public string?     Observations  { get; set; }
+        public int       MaterielId       { get; set; }
+        public int       UtilisateurId    { get; set; }
+        public List<int> ArticleIds       { get; set; } = new();
+        public string?   Observations     { get; set; }
         public DateTime? DateRetourPrevue { get; set; }
+        public int?      ProjetId         { get; set; } // ← NOUVEAU
     }
 
     public class AffectationResultDto
@@ -52,8 +61,6 @@ namespace AssetFlow.BlazorUI.Services
         public int    AffectationId { get; set; }
     }
 
-    // ── Service ───────────────────────────────────────────────
-
     public class AffectationClientService
     {
         private readonly HttpClient _http;
@@ -61,40 +68,39 @@ namespace AssetFlow.BlazorUI.Services
 
         public AffectationClientService(HttpClient http) => _http = http;
 
-        /// <summary>Récupère les employés disponibles</summary>
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursAsync(string? search = null)
         {
             var url = string.IsNullOrWhiteSpace(search)
                 ? $"{Base}/utilisateurs"
                 : $"{Base}/utilisateurs?search={Uri.EscapeDataString(search)}";
-            try
-            {
-                var result = await _http.GetFromJsonAsync<List<UtilisateurDisponibleDto>>(url);
-                return result ?? new();
-            }
+            try { return await _http.GetFromJsonAsync<List<UtilisateurDisponibleDto>>(url) ?? new(); }
             catch { return new(); }
         }
 
-        /// <summary>Récupère les matériels disponibles</summary>
         public async Task<List<MaterielDisponibleDto>> GetMaterielsAsync(string? search = null)
         {
             var url = string.IsNullOrWhiteSpace(search)
                 ? $"{Base}/materiels"
                 : $"{Base}/materiels?search={Uri.EscapeDataString(search)}";
-            try
-            {
-                var result = await _http.GetFromJsonAsync<List<MaterielDisponibleDto>>(url);
-                return result ?? new();
-            }
+            try { return await _http.GetFromJsonAsync<List<MaterielDisponibleDto>>(url) ?? new(); }
             catch { return new(); }
         }
 
-        /// <summary>Crée une affectation</summary>
+        // ← NOUVEAU
+        public async Task<List<ProjetDisponibleDto>> GetProjetsAsync(string? search = null)
+        {
+            var url = string.IsNullOrWhiteSpace(search)
+                ? $"{Base}/projets"
+                : $"{Base}/projets?search={Uri.EscapeDataString(search)}";
+            try { return await _http.GetFromJsonAsync<List<ProjetDisponibleDto>>(url) ?? new(); }
+            catch { return new(); }
+        }
+
         public async Task<AffectationResultDto> CreerAffectationAsync(CreerAffectationRequest request)
         {
             try
             {
-                var resp = await _http.PostAsJsonAsync(Base, request);
+                var resp   = await _http.PostAsJsonAsync(Base, request);
                 var result = await resp.Content.ReadFromJsonAsync<AffectationResultDto>();
                 return result ?? new AffectationResultDto { Succes = false, Message = "Réponse vide." };
             }

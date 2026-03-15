@@ -67,6 +67,11 @@ namespace AssetFlow.Infrastructure.Data
                           .HasConversion<string>()
                           .HasMaxLength(20)
                           .HasDefaultValue(EtatAffectation.Courante);
+                        entity.HasOne(a => a.Projet)
+                          .WithMany()
+                          .HasForeignKey(a => a.ProjetId)
+                          .OnDelete(DeleteBehavior.SetNull)
+                          .IsRequired(false);
                   });
 
                   // === INCIDENT ===

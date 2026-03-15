@@ -1,7 +1,6 @@
 // ============================================================
 // AssetFlow.WebAPI / Controllers / AffectationController.cs
-// Endpoints pour la gestion des affectations de matériel
-// Accès : rôle IT uniquement
+// MISE À JOUR : ajout endpoint GET projets
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -17,35 +16,24 @@ namespace AssetFlow.WebAPI.Controllers
     public class AffectationController : ControllerBase
     {
         private readonly IAffectationService _svc;
-
         public AffectationController(IAffectationService svc) => _svc = svc;
 
-        /// <summary>
-        /// GET api/affectation/utilisateurs?search=...
-        /// Retourne la liste des employés disponibles (filtrée si search fourni)
-        /// </summary>
+        // GET api/affectation/utilisateurs?search=...
         [HttpGet("utilisateurs")]
         public async Task<IActionResult> GetUtilisateurs([FromQuery] string? search = null)
-        {
-            var result = await _svc.GetUtilisateursDisponiblesAsync(search);
-            return Ok(result);
-        }
+            => Ok(await _svc.GetUtilisateursDisponiblesAsync(search));
 
-        /// <summary>
-        /// GET api/affectation/materiels?search=...
-        /// Retourne les matériels ayant au moins un article disponible
-        /// </summary>
+        // GET api/affectation/materiels?search=...
         [HttpGet("materiels")]
         public async Task<IActionResult> GetMateriels([FromQuery] string? search = null)
-        {
-            var result = await _svc.GetMaterielsDisponiblesAsync(search);
-            return Ok(result);
-        }
+            => Ok(await _svc.GetMaterielsDisponiblesAsync(search));
 
-        /// <summary>
-        /// POST api/affectation
-        /// Crée une nouvelle affectation
-        /// </summary>
+        // GET api/affectation/projets?search=...  ← NOUVEAU
+        [HttpGet("projets")]
+        public async Task<IActionResult> GetProjets([FromQuery] string? search = null)
+            => Ok(await _svc.GetProjetsDisponiblesAsync(search));
+
+        // POST api/affectation
         [HttpPost]
         public async Task<IActionResult> CreerAffectation([FromBody] CreerAffectationDto dto)
         {
@@ -53,10 +41,7 @@ namespace AssetFlow.WebAPI.Controllers
                 return BadRequest("MaterielId et UtilisateurId sont requis.");
 
             var result = await _svc.CreerAffectationAsync(dto);
-
-            return result.Succes
-                ? Ok(result)
-                : BadRequest(result);
+            return result.Succes ? Ok(result) : BadRequest(result);
         }
     }
 }

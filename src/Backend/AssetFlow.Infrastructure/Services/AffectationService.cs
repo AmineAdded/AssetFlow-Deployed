@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.Infrastructure / Services / AffectationService.cs
-// Implémentation du service d'affectation de matériel
+// MISE À JOUR : GetProjetsDisponiblesAsync + ProjetId dans création
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -14,15 +14,12 @@ namespace AssetFlow.Infrastructure.Services
     public class AffectationService : IAffectationService
     {
         private readonly AppDbContext _db;
-
         public AffectationService(AppDbContext db) => _db = db;
 
-        // ── Utilisateurs disponibles ──────────────────────────────
+        // ── Utilisateurs ─────────────────────────────────────
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursDisponiblesAsync(string? search = null)
         {
-            var query = _db.Users
-                .AsNoTracking()
-                .Where(u => u.Role == "Employe");
+            var query = _db.Users.AsNoTracking().Where(u => u.Role == "Employe");
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -46,13 +43,10 @@ namespace AssetFlow.Infrastructure.Services
             }).ToList();
         }
 
-        // ── Matériels disponibles ─────────────────────────────────
+        // ── Matériels ────────────────────────────────────────
         public async Task<List<MaterielDisponibleDto>> GetMaterielsDisponiblesAsync(string? search = null)
         {
-            var query = _db.Materiels
-                .AsNoTracking()
-                .Include(m => m.Affectations)
-                .AsQueryable();
+            var query = _db.Materiels.AsNoTracking().AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -64,20 +58,18 @@ namespace AssetFlow.Infrastructure.Services
             }
 
             var materiels = await query.OrderBy(m => m.Designation).ToListAsync();
-
-            // Charger les articles disponibles par matériel
             var materielIds = materiels.Select(m => m.Id).ToList();
+
             var articles = await _db.ArticlesIndividuels
                 .AsNoTracking()
                 .Where(a => materielIds.Contains(a.MaterielId) && a.Statut == StatutArticle.Disponible)
                 .ToListAsync();
 
             var result = new List<MaterielDisponibleDto>();
-
             foreach (var m in materiels)
             {
-                var articlesMatériel = articles.Where(a => a.MaterielId == m.Id).ToList();
-                if (articlesMatériel.Count == 0) continue; // Ignorer si aucun article dispo
+                var arts = articles.Where(a => a.MaterielId == m.Id).ToList();
+                if (arts.Count == 0) continue;
 
                 result.Add(new MaterielDisponibleDto
                 {
@@ -86,8 +78,8 @@ namespace AssetFlow.Infrastructure.Services
                     Designation        = m.Designation,
                     Categorie          = m.Categorie,
                     ImageUrl           = m.ImageUrl,
-                    QuantiteDisponible = articlesMatériel.Count,
-                    Articles           = articlesMatériel.Select(a => new ArticleDisponibleDto
+                    QuantiteDisponible = arts.Count,
+                    Articles           = arts.Select(a => new ArticleDisponibleDto
                     {
                         Id          = a.Id,
                         NumeroSerie = a.NumeroSerie ?? $"S/N #{a.Id}",
@@ -99,10 +91,35 @@ namespace AssetFlow.Infrastructure.Services
             return result;
         }
 
-        // ── Créer affectation ─────────────────────────────────────
+        // ── Projets ← NOUVEAU ────────────────────────────────
+        public async Task<List<ProjetDisponibleDto>> GetProjetsDisponiblesAsync(string? search = null)
+        {
+            var query = _db.Projects.AsNoTracking()
+                .Where(p => p.Statut != StatutProjet.Termine);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(p =>
+                    p.Nom.ToLower().Contains(s) ||
+                    (p.Responsable != null && p.Responsable.ToLower().Contains(s)));
+            }
+
+            var projets = await query.OrderBy(p => p.Nom).ToListAsync();
+
+            return projets.Select(p => new ProjetDisponibleDto
+            {
+                Id          = p.Id,
+                Nom         = p.Nom,
+                Statut      = p.Statut.ToString(),
+                Priorite    = p.Priorite.ToString(),
+                Responsable = p.Responsable
+            }).ToList();
+        }
+
+        // ── Créer affectation ────────────────────────────────
         public async Task<AffectationResultDto> CreerAffectationAsync(CreerAffectationDto dto)
         {
-            // Validation
             if (dto.ArticleIds == null || dto.ArticleIds.Count == 0)
                 return new AffectationResultDto { Succes = false, Message = "Aucun article sélectionné." };
 
@@ -114,7 +131,14 @@ namespace AssetFlow.Infrastructure.Services
             if (materiel == null)
                 return new AffectationResultDto { Succes = false, Message = "Matériel introuvable." };
 
-            // Vérifier que tous les articles sont disponibles
+            // Vérifier projet si fourni
+            if (dto.ProjetId.HasValue)
+            {
+                var projet = await _db.Projects.FindAsync(dto.ProjetId.Value);
+                if (projet == null)
+                    return new AffectationResultDto { Succes = false, Message = "Projet introuvable." };
+            }
+
             var articles = await _db.ArticlesIndividuels
                 .Where(a => dto.ArticleIds.Contains(a.Id))
                 .ToListAsync();
@@ -122,49 +146,49 @@ namespace AssetFlow.Infrastructure.Services
             if (articles.Count != dto.ArticleIds.Count)
                 return new AffectationResultDto { Succes = false, Message = "Certains articles sont introuvables." };
 
-            var articlesNonDisponibles = articles.Where(a => a.Statut != StatutArticle.Disponible).ToList();
-            if (articlesNonDisponibles.Any())
+            var nonDispo = articles.Where(a => a.Statut != StatutArticle.Disponible).ToList();
+            if (nonDispo.Any())
                 return new AffectationResultDto
                 {
                     Succes  = false,
-                    Message = $"{articlesNonDisponibles.Count} article(s) ne sont plus disponibles."
+                    Message = $"{nonDispo.Count} article(s) ne sont plus disponibles."
                 };
 
-            // Créer l'affectation
             var affectation = new Affectation
             {
                 MaterielId       = dto.MaterielId,
                 UtilisateurId    = dto.UtilisateurId,
+                ProjetId         = dto.ProjetId,      // ← NOUVEAU
                 DateAffectation  = DateTime.UtcNow,
                 QuantiteAffectee = articles.Count,
                 Observations     = dto.Observations?.Trim(),
-                DateRetour = dto.DateRetourPrevue
+                DateRetour       = dto.DateRetourPrevue
             };
 
             _db.Affectations.Add(affectation);
-            await _db.SaveChangesAsync(); // Pour obtenir l'Id
+            await _db.SaveChangesAsync();
 
-            // Lier les articles à cette affectation
             foreach (var article in articles)
             {
                 article.Statut        = StatutArticle.Affecte;
                 article.AffectationId = affectation.Id;
             }
 
-            // Décrémenter le stock
             materiel.QuantiteStock = Math.Max(0, materiel.QuantiteStock - articles.Count);
-
             await _db.SaveChangesAsync();
+
+            var beneficiaire = dto.ProjetId.HasValue
+                ? (await _db.Projects.FindAsync(dto.ProjetId.Value))?.Nom ?? "projet"
+                : $"{utilisateur.FirstName} {utilisateur.LastName}";
 
             return new AffectationResultDto
             {
                 Succes        = true,
-                Message       = $"Affectation créée avec succès pour {utilisateur.FirstName} {utilisateur.LastName}.",
+                Message       = $"Affectation créée avec succès pour {beneficiaire}.",
                 AffectationId = affectation.Id
             };
         }
 
-        // ── Helper ────────────────────────────────────────────────
         private static string GetInitials(string firstName, string lastName)
         {
             var f = string.IsNullOrEmpty(firstName) ? "" : firstName[0].ToString().ToUpper();

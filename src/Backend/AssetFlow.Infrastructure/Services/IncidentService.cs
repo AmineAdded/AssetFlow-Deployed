@@ -116,7 +116,7 @@ namespace AssetFlow.Infrastructure.Services
                 .ToListAsync();
 
             var query = _context.Users.AsNoTracking()
-                .Where(u => u.IsApproved && u.Role == "Employe");
+                .Where(u => u.IsApproved && u.Role != "Admin");
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -124,7 +124,7 @@ namespace AssetFlow.Infrastructure.Services
                 query = query.Where(u =>
                     u.FirstName.ToLower().Contains(s) ||
                     u.LastName.ToLower().Contains(s)  ||
-                    u.Department.ToLower().Contains(s));
+                    u.Role.ToLower().Contains(s));
             }
 
             var users = await query.OrderBy(u => u.FirstName).ToListAsync();
@@ -142,7 +142,7 @@ namespace AssetFlow.Infrastructure.Services
             {
                 UtilisateurId    = u.Id,
                 FullName         = $"{u.FirstName} {u.LastName}",
-                Department       = u.Department,
+                Role       = u.Role,
                 Initials         = $"{u.FirstName[0]}{u.LastName[0]}".ToUpper(),
                 NbIncidentsActifs = counts.FirstOrDefault(c => c.UserId == u.Id)?.Count ?? 0
             }).ToList();

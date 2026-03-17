@@ -321,6 +321,36 @@
                                 </div>
                             </div>
                         }
+                        else if (!confirmed && !string.IsNullOrEmpty(offre.PrixTotal))
+                        {
+                            @* Données SQL persistées (après navigation) *@
+                            <div class="oda-sel-metrics">
+                                <div class="oda-metric">
+                                    <span class="oda-metric-label">PRIX TOTAL</span>
+                                    <span class="oda-metric-val primary">@offre.PrixTotal</span>
+                                </div>
+                                <div class="oda-metric">
+                                    <span class="oda-metric-label">DÉLAI</span>
+                                    @if (!string.IsNullOrEmpty(offre.DelaiLivraison))
+                                    {
+                                        <span class="oda-metric-val @(IsDelaiRapide(offre.DelaiLivraison) ? "green" : "orange")">@offre.DelaiLivraison jours</span>
+                                    }
+                                    else { <span class="oda-metric-val oda-metric-na">Non renseigné</span> }
+                                </div>
+                                <div class="oda-metric">
+                                    <span class="oda-metric-label">GARANTIE</span>
+                                    @if (!string.IsNullOrEmpty(offre.Garantie))
+                                    { <span class="oda-metric-val">@offre.Garantie</span> }
+                                    else { <span class="oda-metric-val oda-metric-na">Non renseigné</span> }
+                                </div>
+                                <div class="oda-metric">
+                                    <span class="oda-metric-label">FRAIS LIVRAISON</span>
+                                    @if (!string.IsNullOrEmpty(offre.FraisLivraison))
+                                    { <span class="oda-metric-val">@offre.FraisLivraison</span> }
+                                    else { <span class="oda-metric-val oda-metric-na">Non renseigné</span> }
+                                </div>
+                            </div>
+                        }
                         else if (ocrSt != OcrStatus.Done)
                         {
                             <p class="oda-sel-hint">Cliquez sur "Analyser" pour voir les détails</p>

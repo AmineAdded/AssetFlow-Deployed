@@ -16,11 +16,13 @@ namespace AssetFlow.Infrastructure.Services
     {
         private readonly HttpClient      _http;
         private readonly IConfiguration _config;
+        private readonly IRedisOffreService _redis;
 
-        public OcrInvoiceService(HttpClient http, IConfiguration config)
+        public OcrInvoiceService(HttpClient http, IConfiguration config,IRedisOffreService redis)
         {
             _http   = http;
             _config = config;
+            _redis = redis;
         }
 
         // ── 1. Mistral OCR → Markdown ────────────────────────────
@@ -180,6 +182,19 @@ Facture (Markdown OCR) :
             };
             
             return JsonSerializer.Deserialize<InvoiceOcrDto>(rawText, options);
+        }
+
+        public async Task SaveOcrCacheAsync(Guid offreId, InvoiceOcrDto data)
+        {
+            var json = JsonSerializer.Serialize(data);
+            await _redis.SaveOffreSelectionAsync($"ocr_cache:{offreId}", json, TimeSpan.FromHours(24));
+        }
+
+        public async Task<InvoiceOcrDto?> GetOcrCacheAsync(Guid offreId)
+        {
+            var json = await _redis.GetOffreSelectionAsync($"ocr_cache:{offreId}");
+            if (json == null) return null;
+            return JsonSerializer.Deserialize<InvoiceOcrDto>(json);
         }
     }
 }

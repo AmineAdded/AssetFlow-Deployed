@@ -10,6 +10,7 @@ namespace AssetFlow.Application.DTOs
         public string NomPdf  { get; set; } = string.Empty;
         public object Contenu { get; set; } = new();   // l'objet complet des champs OCR
         public string UserId  { get; set; } = string.Empty;
+        public Guid OffreId { get; set; }
     }
 
     /// <summary>Contenu détaillé de l'offre (champs OCR + lignes).</summary>

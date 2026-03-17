@@ -13,5 +13,7 @@ namespace AssetFlow.Application.Interfaces
         
         /// <summary>Send markdown to Llama 4 and return structured invoice data.</summary>
         Task<InvoiceOcrDto?> ExtractStructuredDataAsync(string markdownText);
+        Task SaveOcrCacheAsync(Guid offreId, InvoiceOcrDto data);
+        Task<InvoiceOcrDto?> GetOcrCacheAsync(Guid offreId);
     }
 }

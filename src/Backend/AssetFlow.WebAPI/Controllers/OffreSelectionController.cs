@@ -47,7 +47,12 @@ namespace AssetFlow.WebAPI.Controllers
                 savedAt = DateTime.UtcNow
             });
 
+             // Sauvegarde sélection
             await _redis.SaveOffreSelectionAsync(key, json, TimeSpan.FromDays(30));
+
+            // Supprimer le cache OCR de cette offre
+            if (dto.OffreId != Guid.Empty)
+                await _redis.DeleteOffreSelectionAsync($"ocr_cache:{dto.OffreId}");
 
             return Ok(new { success = true, key });
         }

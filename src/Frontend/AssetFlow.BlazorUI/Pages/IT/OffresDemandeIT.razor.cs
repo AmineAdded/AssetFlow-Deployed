@@ -57,6 +57,30 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 {
                     _selectedId = _offres.First().IdOffre;
                     _expandedId = _offres.First().IdOffre;
+
+                    // Récupérer silencieusement les caches OCR existants
+                    foreach (var offre in _offres)
+                    {
+                        try
+                        {
+                            var response = await Http.GetAsync($"api/ocr/cache/{offre.IdOffre}");
+
+                            // 204 = pas de cache → on skip sans erreur
+                            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                                continue;
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var invoice = await response.Content.ReadFromJsonAsync<InvoiceOcrDto>();
+                                if (invoice != null)
+                                {
+                                    ApplyInvoiceToState(offre.IdOffre, invoice);
+                                    _ocrStatus[offre.IdOffre] = OcrStatus.Done;
+                                }
+                            }
+                        }
+                        catch { /* cache absent ou erreur réseau → on ignore */ }
+                    }
                 }
             }
             catch (Exception ex)
@@ -67,6 +91,28 @@ namespace AssetFlow.BlazorUI.Pages.IT
             {
                 _isLoading = false;
             }
+        }
+
+        // Méthode utilitaire pour éviter la duplication dans RunOcr et LoadOffres
+        private void ApplyInvoiceToState(Guid offreId, InvoiceOcrDto invoice)
+        {
+            var fs = GetOrCreate(offreId);
+            fs.FraisLivraison = invoice.InformationsAdditionnelles.FraisLivraison ?? "";
+            fs.DelaiLivraison = invoice.InformationsAdditionnelles.DelaiLivraison ?? "";
+            fs.Garantie       = invoice.InformationsAdditionnelles.Garantie       ?? "";
+            fs.TotalHt        = invoice.Totaux.TotalHt;
+            fs.TotalTva       = invoice.Totaux.TotalTva;
+            fs.TotalTtc       = invoice.Totaux.TotalTtc;
+            fs.Lignes = invoice.Lignes.Select(l => new LigneFormState
+            {
+                Description    = l.Description,
+                Quantite       = l.Quantite,
+                Unite          = l.Unite,
+                PrixUnitaireHt = l.PrixUnitaireHt,
+                TvaPct         = l.TvaPct,
+                TotalTva       = l.TotalTva,
+                TotalTtc       = l.TotalTtc
+            }).ToList();
         }
 
         // ── Sélection radio ──────────────────────────────────────
@@ -130,24 +176,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     return;
                 }
 
-                var fs = GetOrCreate(offre.IdOffre);
-                fs.FraisLivraison = invoice.InformationsAdditionnelles.FraisLivraison ?? "";
-                fs.DelaiLivraison = invoice.InformationsAdditionnelles.DelaiLivraison ?? "";
-                fs.Garantie       = invoice.InformationsAdditionnelles.Garantie       ?? "";
-                fs.Lignes = invoice.Lignes.Select(l => new LigneFormState
-                {
-                    Description    = l.Description,
-                    Quantite       = l.Quantite,
-                    Unite          = l.Unite,
-                    PrixUnitaireHt = l.PrixUnitaireHt,
-                    TvaPct         = l.TvaPct,
-                    TotalTva       = l.TotalTva,
-                    TotalTtc       = l.TotalTtc
-                }).ToList();
-                fs.TotalHt  = invoice.Totaux.TotalHt;
-                fs.TotalTva = invoice.Totaux.TotalTva;
-                fs.TotalTtc = invoice.Totaux.TotalTtc;
-
+                ApplyInvoiceToState(offre.IdOffre, invoice);
                 _ocrStatus[offre.IdOffre] = OcrStatus.Done;
             }
             catch (Exception ex)

@@ -7,10 +7,10 @@ namespace AssetFlow.Application.DTOs
     /// <summary>Payload envoyé par le frontend lors du Confirmer.</summary>
     public class OffreSelectionDto
     {
-        public string NomPdf  { get; set; } = string.Empty;
-        public object Contenu { get; set; } = new();   // l'objet complet des champs OCR
-        public string UserId  { get; set; } = string.Empty;
-        public Guid OffreId { get; set; }
+        public Guid   OffreId   { get; set; }
+        public int    IdDemande { get; set; }
+        public string UserId    { get; set; } = string.Empty;
+        // NomPdf et Contenu ne sont plus nécessaires
     }
 
     /// <summary>Contenu détaillé de l'offre (champs OCR + lignes).</summary>

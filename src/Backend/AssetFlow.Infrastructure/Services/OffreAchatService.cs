@@ -44,5 +44,22 @@ namespace AssetFlow.Infrastructure.Services
 
             return offre?.ContenuPdf;
         }
+        public async Task<bool> ChoisirOffreAsync(Guid offreId, int demandeId)
+        {
+            // S'assurer qu'aucune autre offre de cette demande n'est déjà choisie
+            var offres = await _context.OffreAchat
+                .Where(o => o.IdDemande == demandeId)
+                .ToListAsync();
+
+            foreach (var o in offres)
+                o.EstChoisie = false;  // reset toutes
+
+            var choisie = offres.FirstOrDefault(o => o.IdOffre == offreId);
+            if (choisie == null) return false;
+
+            choisie.EstChoisie = true;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

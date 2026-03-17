@@ -197,46 +197,29 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             try
             {
-                var fs = GetOrCreate(offre.IdOffre);
-
                 var payload = new
                 {
-                    nomPdf  = offre.NomFichier,
-                    contenu = new
-                    {
-                        fraisLivraison = fs.FraisLivraison,
-                        delaiLivraison = fs.DelaiLivraison,
-                        garantie       = fs.Garantie,
-                        totalHt        = fs.TotalHt,
-                        totalTva       = fs.TotalTva,
-                        totalTtc       = fs.TotalTtc,
-                        lignes         = fs.Lignes.Select(l => new
-                        {
-                            description    = l.Description,
-                            quantite       = l.Quantite,
-                            unite          = l.Unite,
-                            prixUnitaireHt = l.PrixUnitaireHt,
-                            tvaPct         = l.TvaPct,
-                            totalTva       = l.TotalTva,
-                            totalTtc       = l.TotalTtc
-                        }).ToList()
-                    },
-                    userId = _userId
+                    offreId   = offre.IdOffre,
+                    idDemande = DemandeId,
+                    userId    = _userId
                 };
 
                 var response = await Http.PostAsJsonAsync("api/offre-selection/confirm", payload);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _saveError = $"Erreur lors de l'enregistrement : {response.StatusCode}";
+                    _saveError = $"Erreur : {response.StatusCode}";
                     _isSaving  = false;
                     StateHasChanged();
                     return;
                 }
 
-                // Marquer UNE SEULE offre comme confirmée
                 _confirmedId = offre.IdOffre;
                 _selectedId  = offre.IdOffre;
+
+                // Vider aussi les états OCR locaux (plus besoin)
+                foreach (var o in _offres)
+                    _ocrStatus.Remove(o.IdOffre);
             }
             catch (Exception ex)
             {

@@ -18,53 +18,40 @@ namespace AssetFlow.WebAPI.Controllers
     public class OffreSelectionController : ControllerBase
     {
         private readonly IRedisOffreService _redis;
+        private readonly IOffreAchatService _offres;
+        private readonly IOcrInvoiceService _ocr;
 
-        public OffreSelectionController(IRedisOffreService redis)
+        public OffreSelectionController(
+            IRedisOffreService redis,
+            IOffreAchatService offres,
+            IOcrInvoiceService ocr)
         {
-            _redis = redis;
+            _redis  = redis;
+            _offres = offres;
+            _ocr    = ocr;
         }
 
-        // POST api/offre-selection/confirm
-        // Body : { nomPdf, contenu, userId }
         [HttpPost("confirm")]
         public async Task<IActionResult> Confirm([FromBody] OffreSelectionDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.UserId))
                 return BadRequest("userId est requis.");
+            if (dto.OffreId == Guid.Empty)
+                return BadRequest("offreId est requis.");
+            if (dto.IdDemande == 0)
+                return BadRequest("idDemande est requis.");
 
-            if (string.IsNullOrWhiteSpace(dto.NomPdf))
-                return BadRequest("nomPdf est requis.");
+            // 1. Mettre EstChoisie = true en SQL
+            var success = await _offres.ChoisirOffreAsync(dto.OffreId, dto.IdDemande);
+            if (!success)
+                return NotFound("Offre introuvable.");
 
-            // Clé Redis : offre_selection:{userId}:{nomPdf} (sans espaces)
-            var safeName = dto.NomPdf.Replace(" ", "_").Replace("/", "_");
-            var key      = $"offre_selection:{dto.UserId}:{safeName}";
+            // 2. Supprimer TOUS les caches OCR des offres de cette demande
+            var toutesLesOffres = await _offres.GetByDemandeIdAsync(dto.IdDemande);
+            foreach (var offre in toutesLesOffres)
+                await _redis.DeleteOffreSelectionAsync($"ocr_cache:{offre.IdOffre}");
 
-            var json = JsonSerializer.Serialize(new
-            {
-                nomPdf  = dto.NomPdf,
-                contenu = dto.Contenu,
-                user_id = dto.UserId,
-                savedAt = DateTime.UtcNow
-            });
-
-             // Sauvegarde sélection
-            await _redis.SaveOffreSelectionAsync(key, json, TimeSpan.FromDays(30));
-
-            // Supprimer le cache OCR de cette offre
-            if (dto.OffreId != Guid.Empty)
-                await _redis.DeleteOffreSelectionAsync($"ocr_cache:{dto.OffreId}");
-
-            return Ok(new { success = true, key });
-        }
-
-        // GET api/offre-selection/{userId}
-        // Récupère toutes les sélections d'un utilisateur (pour usage futur)
-        [HttpGet("{userId}")]
-        public async Task<IActionResult> GetByUser(string userId)
-        {
-            // Pour une liste complète, on pourrait utiliser SCAN sur Redis.
-            // Ici on retourne juste un message de succès pour l'instant.
-            return Ok(new { message = $"Sélections de {userId} disponibles dans Redis." });
+            return Ok(new { success = true });
         }
     }
 }

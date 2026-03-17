@@ -10,5 +10,6 @@ namespace AssetFlow.Application.Interfaces
     {
         Task<List<OffreAchatDto>> GetByDemandeIdAsync(int demandeId);
         Task<byte[]?>             GetPdfBytesAsync(Guid offreId);
+        Task<bool> ChoisirOffreAsync(Guid offreId, int demandeId);
     }
 }

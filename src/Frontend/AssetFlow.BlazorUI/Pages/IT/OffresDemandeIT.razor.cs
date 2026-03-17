@@ -89,6 +89,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
                 var fs = GetOrCreate(offre.IdOffre);
 
+                // CORRECTION: Utiliser les méthodes de parsing appropriées
                 if (!string.IsNullOrWhiteSpace(invoice.InformationsAdditionnelles.Garantie))
                     fs.Garantie = ParseIntFromString(invoice.InformationsAdditionnelles.Garantie);
 
@@ -203,22 +204,36 @@ namespace AssetFlow.BlazorUI.Pages.IT
             return "IT";
         }
 
+        // Méthode pour parser les entiers (int?)
         private static int? ParseIntFromString(string? s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
-            var digits = new string(s.Where(c => char.IsDigit(c)).ToArray());
-            return int.TryParse(digits, out var v) ? v : null;
+            
+            // Nettoie la chaîne pour ne garder que les chiffres
+            var cleaned = new string(s.Where(c => char.IsDigit(c)).ToArray());
+            
+            if (int.TryParse(cleaned, out var result))
+                return result;
+            
+            return null;
         }
 
+        // Méthode pour parser les décimaux (decimal?)
         private static decimal? ParseDecimalFromString(string? s)
         {
             if (string.IsNullOrWhiteSpace(s)) return null;
-            var clean = new string(s.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray())
+            
+            // Nettoie la chaîne pour ne garder que les chiffres, points et virgules
+            var cleaned = new string(s.Where(c => char.IsDigit(c) || c == '.' || c == ',').ToArray())
                             .Replace(',', '.');
-            return decimal.TryParse(clean,
-                System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture,
-                out var v) ? v : null;
+            
+            if (decimal.TryParse(cleaned, 
+                System.Globalization.NumberStyles.Any, 
+                System.Globalization.CultureInfo.InvariantCulture, 
+                out var result))
+                return result;
+            
+            return null;
         }
     }
 

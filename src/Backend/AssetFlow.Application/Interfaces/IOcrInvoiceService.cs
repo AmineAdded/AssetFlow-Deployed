@@ -10,8 +10,8 @@ namespace AssetFlow.Application.Interfaces
     {
         /// <summary>Run Mistral OCR on a single PDF and return full markdown text.</summary>
         Task<string> ExtractMarkdownAsync(byte[] pdfBytes, string fileName);
-
-        /// <summary>Send markdown to Gemini and return structured invoice data.</summary>
+        
+        /// <summary>Send markdown to Llama 4 and return structured invoice data.</summary>
         Task<InvoiceOcrDto?> ExtractStructuredDataAsync(string markdownText);
     }
 }

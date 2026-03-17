@@ -54,7 +54,7 @@ namespace AssetFlow.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(502, $"Erreur Gemini : {ex.Message}");
+                return StatusCode(502, $"Erreur Groq : {ex.Message}");
             }
 
             if (result == null)

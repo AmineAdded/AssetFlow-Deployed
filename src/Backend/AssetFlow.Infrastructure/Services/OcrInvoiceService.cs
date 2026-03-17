@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.Infrastructure / Services / OcrInvoiceService.cs
-// Single-PDF OCR via Mistral + structured extraction via Gemini
+// Single-PDF OCR via Mistral + structured extraction via Groq (Llama 4)
 // ============================================================
 
 using System.Net.Http.Headers;
@@ -43,7 +43,6 @@ namespace AssetFlow.Infrastructure.Services
             var json    = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Clone / set header per-request to stay thread-safe
             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.mistral.ai/v1/ocr")
             {
                 Content = content
@@ -56,7 +55,6 @@ namespace AssetFlow.Infrastructure.Services
             var responseJson = await response.Content.ReadAsStringAsync();
             var doc          = JsonDocument.Parse(responseJson);
 
-            // Concatenate all pages into one markdown string
             var sb = new StringBuilder();
             foreach (var page in doc.RootElement.GetProperty("pages").EnumerateArray())
             {
@@ -66,17 +64,24 @@ namespace AssetFlow.Infrastructure.Services
             return sb.ToString();
         }
 
-        // ── 2. Gemini → structured InvoiceOcrDto ─────────────────
+        // ── 2. Llama 4 (via Groq API) → structured InvoiceOcrDto ─────────────────
         public async Task<InvoiceOcrDto?> ExtractStructuredDataAsync(string markdownText)
         {
-            var geminiKey = _config["GeminiApiKey"] ?? "";
+            var groqKey = _config["GroqApiKey"] ?? "";
 
-            var prompt = $@"
-Tu es un expert en traitement de factures.
+            var prompt = $@"Tu es un expert en traitement de factures.
 Voici le contenu OCR d'une facture au format Markdown.
 
 Extrais TOUTES les informations et retourne UNIQUEMENT un JSON valide,
 sans texte autour, sans balises markdown, sans explication.
+
+IMPORTANT - RÈGLES DE FORMATAGE :
+1. Pour le champ Garantie : extrais uniquement le nombre (ex: ""12"" au lieu de ""12 mois"", ""1"" au lieu de ""1 an"")
+2. Pour le champ Frais de livraison : 
+   - Si le symbole € ou EUR apparaît, conserve uniquement le nombre (ex: ""25.50"" au lieu de ""25.50 EUR"")
+   - Si le symbole $ ou USD apparaît, conserve uniquement le nombre
+   - Si DT ou TND apparaît, conserve uniquement le nombre
+3. Pour le champ Délai de livraison : extrais uniquement le nombre (ex: ""5"" au lieu de ""5 jours"")
 
 Structure JSON attendue :
 {{
@@ -127,50 +132,59 @@ Structure JSON attendue :
 }}
 
 Facture (Markdown OCR) :
-{markdownText}
-";
+{markdownText}";
 
-            var geminiPayload = new
+            var payload = new
             {
-                contents = new[]
+                model = "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+                messages = new[]
                 {
-                    new { parts = new[] { new { text = prompt } } }
-                }
+                    new { role = "system", content = "You are a precise invoice data extraction assistant. Return only valid JSON without any explanation or markdown formatting." },
+                    new { role = "user", content = prompt }
+                },
+                temperature = 0.1,
+                max_completion_tokens = 4096,  // Note: max_completion_tokens (pas max_tokens)
+                top_p = 1,
+                stop = (string?)null,
+                stream = false,  // Désactivé car on veut une réponse complète
+                response_format = new { type = "json_object" }
             };
 
-            var json    = JsonSerializer.Serialize(geminiPayload);
+            var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var url     = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={geminiKey}";
+            
+            // Changement de l'URL pour Groq API
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions")
+            {
+                Content = content
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", groqKey);
 
-            var response = await _http.PostAsync(url, content);
+            var response = await _http.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var responseJson = await response.Content.ReadAsStringAsync();
-            var doc          = JsonDocument.Parse(responseJson);
-
+            var doc = JsonDocument.Parse(responseJson);
+            
             var rawText = doc.RootElement
-                .GetProperty("candidates")[0]
+                .GetProperty("choices")[0]
+                .GetProperty("message")
                 .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
                 .GetString() ?? "";
 
-            // Strip markdown fences if present
+            // Nettoyage du texte
             rawText = rawText.Trim();
-            if (rawText.StartsWith("```"))
-            {
-                var lines = rawText.Split('\n').ToList();
-                lines.RemoveAt(0);
-                if (lines.Count > 0 && lines.Last().Trim() == "```")
-                    lines.RemoveAt(lines.Count - 1);
-                rawText = string.Join('\n', lines);
-            }
+            if (rawText.StartsWith("```json"))
+                rawText = rawText.Replace("```json", "").Replace("```", "").Trim();
+            else if (rawText.StartsWith("```"))
+                rawText = rawText.Replace("```", "").Trim();
 
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy        = JsonNamingPolicy.SnakeCaseLower
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
+            
             return JsonSerializer.Deserialize<InvoiceOcrDto>(rawText, options);
         }
     }

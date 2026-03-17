@@ -1,5 +1,6 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / IT / OffresDemandeIT.razor.cs
+// FINAL: sélection unique, modal confirm, Redis save
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -19,22 +20,28 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private bool   _isLoading = true;
         private bool   _menuOpen  = false;
+        private bool   _isSaving  = false;
         private string _userName  = "IT";
+        private string _userId    = string.Empty;
+        private string? _saveError;
 
         private List<OffreAchatDto>              _offres    = new();
         private Guid?                            _expandedId;
+        private Guid?                            _selectedId;          // offre sélectionnée (radio)
+        private Guid?                            _confirmedId;         // UNE SEULE offre confirmée
         private Dictionary<Guid, string>         _pdfUrls   = new();
         private Dictionary<Guid, OffreFormState> _states    = new();
         private Dictionary<Guid, OcrStatus>      _ocrStatus = new();
         private Dictionary<Guid, string>         _ocrError  = new();
-        private Dictionary<Guid, bool>           _confirmed = new();
 
-        private string? _pdfModalUrl;
-        private string  _pdfModalName = string.Empty;
+        private string?       _pdfModalUrl;
+        private string        _pdfModalName = string.Empty;
+        private OffreAchatDto? _confirmModalOffre;   // null = modal fermé
 
         protected override async Task OnInitializedAsync()
         {
             _userName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
+            _userId   = await LocalStorage.GetItemAsync<string>("user_id")   ?? "unknown";
             await LoadOffres();
         }
 
@@ -47,7 +54,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     $"api/offreachat/demande/{DemandeId}") ?? new();
 
                 if (_offres.Any())
+                {
+                    _selectedId = _offres.First().IdOffre;
                     _expandedId = _offres.First().IdOffre;
+                }
             }
             catch (Exception ex)
             {
@@ -59,9 +69,42 @@ namespace AssetFlow.BlazorUI.Pages.IT
             }
         }
 
+        // ── Sélection radio ──────────────────────────────────────
+        private void SelectOffre(Guid offreId)
+        {
+            // Bloqué si modal ouvert ou déjà une confirmée
+            if (_confirmModalOffre != null || _confirmedId.HasValue) return;
+            _selectedId = offreId;
+            StateHasChanged();
+        }
+
+        // ── Modal de confirmation ────────────────────────────────
+        private void OpenConfirmModal(OffreAchatDto offre)
+        {
+            if (_confirmedId.HasValue) return;   // déjà une confirmée → bloquer
+            _confirmModalOffre = offre;
+            StateHasChanged();
+        }
+
+        private void CloseConfirmModal()
+        {
+            if (_isSaving) return;
+            _confirmModalOffre = null;
+            StateHasChanged();
+        }
+
+        private async Task DoConfirm()
+        {
+            if (_confirmModalOffre == null) return;
+            await ConfirmForm(_confirmModalOffre);
+            _confirmModalOffre = null;
+        }
+
         // ── OCR ──────────────────────────────────────────────────
         private async Task RunOcr(OffreAchatDto offre)
         {
+            if (_confirmedId.HasValue) return;
+
             _ocrStatus[offre.IdOffre] = OcrStatus.Running;
             _ocrError.Remove(offre.IdOffre);
             StateHasChanged();
@@ -88,12 +131,9 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 }
 
                 var fs = GetOrCreate(offre.IdOffre);
-
-                // Maintenant ces champs sont des strings - on assigne directement
                 fs.FraisLivraison = invoice.InformationsAdditionnelles.FraisLivraison ?? "";
                 fs.DelaiLivraison = invoice.InformationsAdditionnelles.DelaiLivraison ?? "";
-                fs.Garantie = invoice.InformationsAdditionnelles.Garantie ?? "";
-
+                fs.Garantie       = invoice.InformationsAdditionnelles.Garantie       ?? "";
                 fs.Lignes = invoice.Lignes.Select(l => new LigneFormState
                 {
                     Description    = l.Description,
@@ -104,7 +144,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     TotalTva       = l.TotalTva,
                     TotalTtc       = l.TotalTtc
                 }).ToList();
-
                 fs.TotalHt  = invoice.Totaux.TotalHt;
                 fs.TotalTva = invoice.Totaux.TotalTva;
                 fs.TotalTtc = invoice.Totaux.TotalTtc;
@@ -120,14 +159,66 @@ namespace AssetFlow.BlazorUI.Pages.IT
             StateHasChanged();
         }
 
-        // ── Confirmer ────────────────────────────────────────────
-        private void ConfirmForm(Guid offreId)
+        // ── Confirmer → Redis ────────────────────────────────────
+        private async Task ConfirmForm(OffreAchatDto offre)
         {
-            _confirmed[offreId] = true;
+            _isSaving  = true;
+            _saveError = null;
+            StateHasChanged();
+
+            try
+            {
+                var fs = GetOrCreate(offre.IdOffre);
+
+                var payload = new
+                {
+                    nomPdf  = offre.NomFichier,
+                    contenu = new
+                    {
+                        fraisLivraison = fs.FraisLivraison,
+                        delaiLivraison = fs.DelaiLivraison,
+                        garantie       = fs.Garantie,
+                        totalHt        = fs.TotalHt,
+                        totalTva       = fs.TotalTva,
+                        totalTtc       = fs.TotalTtc,
+                        lignes         = fs.Lignes.Select(l => new
+                        {
+                            description    = l.Description,
+                            quantite       = l.Quantite,
+                            unite          = l.Unite,
+                            prixUnitaireHt = l.PrixUnitaireHt,
+                            tvaPct         = l.TvaPct,
+                            totalTva       = l.TotalTva,
+                            totalTtc       = l.TotalTtc
+                        }).ToList()
+                    },
+                    userId = _userId
+                };
+
+                var response = await Http.PostAsJsonAsync("api/offre-selection/confirm", payload);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _saveError = $"Erreur lors de l'enregistrement : {response.StatusCode}";
+                    _isSaving  = false;
+                    StateHasChanged();
+                    return;
+                }
+
+                // Marquer UNE SEULE offre comme confirmée
+                _confirmedId = offre.IdOffre;
+                _selectedId  = offre.IdOffre;
+            }
+            catch (Exception ex)
+            {
+                _saveError = $"Erreur réseau : {ex.Message}";
+            }
+
+            _isSaving = false;
             StateHasChanged();
         }
 
-        // ── PDF modal ─────────────────────────────────────────────
+        // ── PDF modal ────────────────────────────────────────────
         private async Task OpenPdfModal(OffreAchatDto offre)
         {
             if (!_pdfUrls.ContainsKey(offre.IdOffre))
@@ -168,10 +259,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private void ResetForm(Guid offreId)
         {
+            if (_confirmedId.HasValue) return;
             _states[offreId]    = new OffreFormState();
             _ocrStatus[offreId] = OcrStatus.Idle;
             _ocrError.Remove(offreId);
-            _confirmed.Remove(offreId);
+            _saveError = null;
             StateHasChanged();
         }
 
@@ -181,8 +273,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string? GetOcrError(Guid id) =>
             _ocrError.TryGetValue(id, out var e) ? e : null;
 
-        private bool IsConfirmed(Guid id) =>
-            _confirmed.TryGetValue(id, out var c) && c;
+        private static bool IsDelaiRapide(string delai)
+        {
+            if (int.TryParse(delai.Replace(" jours", "").Replace(" j", "").Trim(), out var d))
+                return d <= 5;
+            return false;
+        }
 
         private static string FormatBytes(long bytes) => bytes switch
         {
@@ -204,9 +300,9 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
     public class OffreFormState
     {
-        public string FraisLivraison { get; set; } = string.Empty;  // Changé en string
-        public string DelaiLivraison { get; set; } = string.Empty;  // Changé en string
-        public string Garantie       { get; set; } = string.Empty;  // Changé en string
+        public string FraisLivraison { get; set; } = string.Empty;
+        public string DelaiLivraison { get; set; } = string.Empty;
+        public string Garantie       { get; set; } = string.Empty;
         public string TotalHt        { get; set; } = string.Empty;
         public string TotalTva       { get; set; } = string.Empty;
         public string TotalTtc       { get; set; } = string.Empty;

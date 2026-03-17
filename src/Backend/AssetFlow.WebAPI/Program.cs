@@ -9,12 +9,20 @@ using AssetFlow.WebAPI.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // === BASE DE DONNÉES ===
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Connexion Redis
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var connStr = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
+    return ConnectionMultiplexer.Connect(connStr);
+});
 
 // === AUTHENTIFICATION JWT ===
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -85,6 +93,7 @@ builder.Services.AddScoped<IDemandeAchatITService,      DemandeAchatITService>()
 builder.Services.AddScoped<IOffreAchatService,          OffreAchatService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddHttpClient<IOcrInvoiceService, OcrInvoiceService>();
+builder.Services.AddScoped<IRedisOffreService, RedisOffreService>();
 
 // === SIGNALR ===
 builder.Services.AddSignalR();

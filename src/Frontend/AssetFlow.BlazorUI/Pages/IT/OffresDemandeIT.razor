@@ -1,6 +1,6 @@
 @* ============================================================
    AssetFlow.BlazorUI / Pages / IT / OffresDemandeIT.razor
-   UPDATED: OCR per-offre, dynamic lines, Confirmer button
+   FINAL: Sélection unique + modal lock + disabled après confirm
    ============================================================ *@
 
 @page "/it/offres/{DemandeId:int}"
@@ -10,9 +10,6 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})">
 <div class="oda-layout">
 
-    @* ══════════════════════════════════════════
-       SIDEBAR
-    ══════════════════════════════════════════ *@
     <aside class="oda-sidebar">
         <div class="sidebar-logo-wrap">
             <img src="images/logo.png" alt="AssetFlow" class="oda-sidebar-logo" />
@@ -61,7 +58,6 @@
         <LogoutButton />
     </aside>
 
-    @* ── OVERLAY MENU MOBILE ── *@
     @if (_menuOpen)
     {
         <div class="oda-menu-overlay" @onclick="() => _menuOpen = false">
@@ -70,23 +66,16 @@
                     <img src="images/logo.png" alt="AssetFlow" class="oda-sidebar-logo" />
                 </div>
                 <nav class="oda-menu-drawer-nav">
-                    <a href="/dashboard/it" class="mda-nav-link"><svg class="mda-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="mda-nav-text">Dashboard</span></a>
-                    <a href="/it/equipements" class="mda-nav-link"><svg class="mda-nav-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="mda-nav-text">Mes Équipements</span></a>
-                    <a href="/it/demandes-achat" class="oda-nav-link active"><svg class="oda-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="oda-nav-text">Mes achats</span></a>
-                    <a href="/it/messagerie" class="oda-nav-link"><svg class="oda-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="oda-nav-text">Messagerie</span></a>
+                    <a href="/dashboard/it" class="oda-nav-link">Dashboard</a>
+                    <a href="/it/demandes-achat" class="oda-nav-link active">Mes achats</a>
+                    <a href="/it/messagerie" class="oda-nav-link">Messagerie</a>
                 </nav>
-                <div class="oda-sidebar-profile">
-                    <div class="oda-profile-avatar">@GetInitials()</div>
-                    <div class="oda-profile-info"><p class="oda-profile-name">@_userName</p><p class="oda-profile-role">IT</p></div>
-                </div>
                 <LogoutButton />
             </div>
         </div>
     }
 
-    @* ══════════════════════════════════════════
-       MODALE PDF PLEIN ÉCRAN
-    ══════════════════════════════════════════ *@
+    @* ══ MODALE PDF ══ *@
     @if (_pdfModalUrl != null)
     {
         <div class="oda-pdf-modal-overlay" @onclick="ClosePdfModal">
@@ -105,9 +94,41 @@
         </div>
     }
 
-    @* ══════════════════════════════════════════
-       MAIN
-    ══════════════════════════════════════════ *@
+    @* ══ MODALE DE CONFIRMATION ══ *@
+    @if (_confirmModalOffre != null)
+    {
+        <div class="oda-confirm-modal-overlay" @onclick="CloseConfirmModal">
+            <div class="oda-confirm-modal" @onclick:stopPropagation="true">
+                <div class="oda-confirm-modal-icon">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+                <h3 class="oda-confirm-modal-title">Confirmer la sélection</h3>
+                <p class="oda-confirm-modal-sub">Vous êtes sur le point de sélectionner l'offre :</p>
+                <div class="oda-confirm-modal-file">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    @_confirmModalOffre.NomFichier
+                </div>
+                <p class="oda-confirm-modal-warning">Cette action enregistrera votre choix définitivement.</p>
+                <div class="oda-confirm-modal-actions">
+                    <button class="oda-btn-ghost" @onclick="CloseConfirmModal" disabled="@_isSaving">Annuler</button>
+                    <button class="oda-btn-confirm-modal @(_isSaving ? "saving" : "")"
+                            @onclick="DoConfirm" disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <span class="oda-ocr-spin"></span>
+                            <span>Enregistrement...</span>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Confirmer</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="oda-body-wrap">
         <main class="oda-main">
             <header class="oda-header">
@@ -118,10 +139,10 @@
                     <div class="oda-breadcrumb">
                         <a href="/it/demandes-achat" class="oda-bc-link">Mes achats</a>
                         <svg class="oda-bc-sep" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                        <span class="oda-bc-current">Offres fournisseurs</span>
+                        <span class="oda-bc-current">Sélection des offres</span>
                     </div>
-                    <h1 class="oda-page-title">Offres fournisseurs</h1>
-                    <p class="oda-page-sub">Demande&nbsp;#@DemandeId · Consultez les offres reçues</p>
+                    <h1 class="oda-page-title">Sélection des offres</h1>
+                    <p class="oda-page-sub">Demande&nbsp;#@DemandeId · Consultez et sélectionnez la meilleure offre</p>
                 </div>
                 @if (_offres.Count > 0)
                 {
@@ -130,7 +151,6 @@
             </header>
 
             <div class="oda-content">
-
                 @if (_isLoading)
                 {
                     <div class="oda-state">
@@ -141,76 +161,116 @@
                 else if (!_offres.Any())
                 {
                     <div class="oda-state">
-                        <div class="oda-empty-icon">
-                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        </div>
                         <p class="oda-empty-title">Aucune offre disponible</p>
                         <p class="oda-empty-sub">Aucune offre fournisseur n'a été soumise pour cette demande.</p>
                     </div>
                 }
                 else
                 {
-                    <div class="oda-cards">
+                    <div class="oda-selection-cards @(_confirmModalOffre != null ? "oda-cards-locked" : "")">
                         @foreach (var (offre, idx) in _offres.Select((o, i) => (o, i)))
                         {
-                            var fs       = GetOrCreate(offre.IdOffre);
-                            bool isOpen  = _expandedId == offre.IdOffre;
-                            var ocrSt    = GetOcrStatus(offre.IdOffre);
-                            var ocrErr   = GetOcrError(offre.IdOffre);
-                            bool confirmed = IsConfirmed(offre.IdOffre);
+                            var fs          = GetOrCreate(offre.IdOffre);
+                            var ocrSt       = GetOcrStatus(offre.IdOffre);
+                            var ocrErr      = GetOcrError(offre.IdOffre);
+                            bool selected   = _selectedId == offre.IdOffre;
+                            bool confirmed  = _confirmedId == offre.IdOffre;
+                            bool isExpanded = _expandedId == offre.IdOffre;
+                            bool modalOpen  = _confirmModalOffre != null;
+                            // locked = modal ouvert OU une offre déjà confirmée
+                            bool locked     = modalOpen || _confirmedId.HasValue;
 
-                            <div class="oda-card @(isOpen ? "is-open" : "")">
+                            <div class="oda-sel-card @(selected ? "is-selected" : "") @(confirmed ? "is-confirmed" : "") @(locked && !confirmed ? "is-locked" : "")">
 
-                                <div class="oda-card-head" @onclick="() => Toggle(offre.IdOffre)">
-                                    <div class="oda-head-left">
-                                        <div class="oda-num"><span>@(idx + 1)</span></div>
-                                        <div>
-                                            <p class="oda-filename">@offre.NomFichier</p>
-                                            <p class="oda-filesize">@FormatBytes(offre.Taille)</p>
+                                <div class="oda-sel-card-header"
+                                     @onclick="() => { if (!locked) SelectOffre(offre.IdOffre); }">
+                                    <div class="oda-sel-header-top">
+                                        <div class="oda-sel-title-row">
+                                            <div class="oda-sel-radio @(selected ? "checked" : "") @(locked ? "radio-locked" : "")">
+                                                @if (selected)
+                                                {
+                                                    <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                                }
+                                            </div>
+                                            <div>
+                                                <p class="oda-sel-filename">@offre.NomFichier</p>
+                                                <p class="oda-sel-filesize">@FormatBytes(offre.Taille)</p>
+                                            </div>
+                                        </div>
+                                        <div class="oda-sel-badges">
+                                            @if (confirmed)
+                                            {
+                                                <span class="oda-badge-selected">✓ SÉLECTIONNÉ</span>
+                                            }
+                                            @if (ocrSt == OcrStatus.Done)
+                                            {
+                                                <span class="oda-ocr-badge oda-ocr-done">
+                                                    <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                                    OCR extrait
+                                                </span>
+                                            }
+                                            else if (ocrSt == OcrStatus.Running)
+                                            {
+                                                <span class="oda-ocr-badge oda-ocr-running">
+                                                    <span class="oda-ocr-spin"></span>
+                                                    Analyse...
+                                                </span>
+                                            }
                                         </div>
                                     </div>
-                                    @* OCR badge in header *@
-                                    @if (ocrSt == OcrStatus.Done)
+
+                                    @if (ocrSt == OcrStatus.Done && !string.IsNullOrEmpty(fs.TotalTtc))
                                     {
-                                        <span class="oda-ocr-badge oda-ocr-done">
-                                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                            OCR extrait
-                                        </span>
+                                        <div class="oda-sel-metrics">
+                                            <div class="oda-metric">
+                                                <span class="oda-metric-label">PRIX TOTAL</span>
+                                                <span class="oda-metric-val primary">@fs.TotalTtc</span>
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(fs.DelaiLivraison))
+                                            {
+                                                <div class="oda-metric">
+                                                    <span class="oda-metric-label">DÉLAI</span>
+                                                    <span class="oda-metric-val @(IsDelaiRapide(fs.DelaiLivraison) ? "green" : "orange")">@fs.DelaiLivraison jours</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(fs.Garantie))
+                                            {
+                                                <div class="oda-metric">
+                                                    <span class="oda-metric-label">GARANTIE</span>
+                                                    <span class="oda-metric-val">@fs.Garantie</span>
+                                                </div>
+                                            }
+                                        </div>
                                     }
-                                    else if (ocrSt == OcrStatus.Running)
+                                    else if (ocrSt != OcrStatus.Done)
                                     {
-                                        <span class="oda-ocr-badge oda-ocr-running">
-                                            <span class="oda-ocr-spin"></span>
-                                            Analyse en cours…
-                                        </span>
+                                        <p class="oda-sel-hint">Cliquez sur "Analyser" pour voir les détails</p>
                                     }
-                                    else if (ocrSt == OcrStatus.Error)
-                                    {
-                                        <span class="oda-ocr-badge oda-ocr-error">
-                                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                            Erreur OCR
-                                        </span>
-                                    }
-                                    <svg class="oda-chevron @(isOpen ? "open" : "")" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                                 </div>
 
-                                @if (isOpen)
+                                <div class="oda-sel-expand-toggle"
+                                     @onclick="() => { if (!modalOpen) Toggle(offre.IdOffre); }"
+                                     @onclick:stopPropagation="true">
+                                    <span>@(isExpanded ? "Masquer les détails" : "Voir / Analyser les détails")</span>
+                                    <svg class="oda-chevron @(isExpanded ? "open" : "")" viewBox="0 0 24 24" fill="none">
+                                        <polyline points="6 9 12 15 18 9"/>
+                                    </svg>
+                                </div>
+
+                                @if (isExpanded)
                                 {
-                                    <div class="oda-card-body">
+                                    <div class="oda-sel-details">
                                         <div class="oda-two-col">
 
-                                            @* ── Colonne PDF ── *@
                                             <div class="oda-col-pdf">
                                                 <p class="oda-col-label">
                                                     <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                                     Aperçu PDF
                                                 </p>
-
                                                 <div class="oda-pdf-thumb" @onclick="() => OpenPdfModal(offre)" @onclick:stopPropagation="true">
                                                     @if (_pdfUrls.ContainsKey(offre.IdOffre))
                                                     {
-                                                        <iframe src="@_pdfUrls[offre.IdOffre]#toolbar=0&scrollbar=0"
-                                                                class="oda-pdf-thumb-frame" tabindex="-1" title="miniature"></iframe>
+                                                        <iframe src="@_pdfUrls[offre.IdOffre]#toolbar=0&scrollbar=0" class="oda-pdf-thumb-frame" tabindex="-1" title="miniature"></iframe>
                                                         <div class="oda-pdf-thumb-overlay">
                                                             <svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
                                                             Agrandir
@@ -226,42 +286,42 @@
                                                                 </svg>
                                                             </div>
                                                             <p class="oda-pdf-name">@offre.NomFichier</p>
-                                                            <span class="oda-pdf-hint">Cliquer pour charger et visualiser</span>
+                                                            <span class="oda-pdf-hint">Cliquer pour charger</span>
                                                         </div>
                                                     }
                                                 </div>
-
                                                 <div class="oda-pdf-btns">
                                                     <button class="oda-btn-view" @onclick="() => OpenPdfModal(offre)" @onclick:stopPropagation="true">
                                                         <svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-                                                        Visualiser le PDF
+                                                        Visualiser
                                                     </button>
-
-                                                    @* ── OCR button with live state ── *@
                                                     @if (ocrSt == OcrStatus.Running)
                                                     {
                                                         <button class="oda-btn-ocr oda-btn-ocr-running" disabled @onclick:stopPropagation="true">
-                                                            <span class="oda-ocr-spin"></span>
-                                                            Analyse en cours…
+                                                            <span class="oda-ocr-spin"></span>En cours…
                                                         </button>
                                                     }
                                                     else if (ocrSt == OcrStatus.Done)
                                                     {
-                                                        <button class="oda-btn-ocr oda-btn-ocr-success" @onclick="() => RunOcr(offre)" @onclick:stopPropagation="true">
-                                                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                                            Ré-analyser (OCR)
+                                                        <button class="oda-btn-ocr oda-btn-ocr-success"
+                                                                @onclick="() => RunOcr(offre)"
+                                                                @onclick:stopPropagation="true"
+                                                                disabled="@locked">
+                                                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                                            Ré-analyser
                                                         </button>
                                                     }
                                                     else
                                                     {
-                                                        <button class="oda-btn-ocr" @onclick="() => RunOcr(offre)" @onclick:stopPropagation="true">
+                                                        <button class="oda-btn-ocr"
+                                                                @onclick="() => RunOcr(offre)"
+                                                                @onclick:stopPropagation="true"
+                                                                disabled="@locked">
                                                             <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                                                            Analyser avec l'IA (OCR)
+                                                            Analyser (OCR)
                                                         </button>
                                                     }
                                                 </div>
-
-                                                @* OCR error message *@
                                                 @if (ocrSt == OcrStatus.Error && ocrErr != null)
                                                 {
                                                     <div class="oda-ocr-err-msg">
@@ -271,7 +331,6 @@
                                                 }
                                             </div>
 
-                                            @* ── Colonne formulaire ── *@
                                             <div class="oda-col-form">
                                                 <p class="oda-col-label">
                                                     <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -285,10 +344,7 @@
                                                     }
                                                 </p>
 
-                                                @* ── Unified table: conditions + lignes de commande ── *@
                                                 <div class="oda-lignes-section">
-
-                                                    @* ── Section conditions (Frais / Délai / Garantie) ── *@
                                                     <p class="oda-lignes-title">
                                                         <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                                                         Conditions de l'offre
@@ -304,24 +360,14 @@
                                                             </thead>
                                                             <tbody>
                                                                 <tr>
-                                                                    <td>
-                                                                        <input class="oda-tbl-input" type="text" step="0.01" min="0" placeholder="0.00"
-                                                                            @bind="fs.FraisLivraison" @bind:event="oninput" />
-                                                                    </td>
-                                                                    <td>
-                                                                        <input class="oda-tbl-input" type="text" min="0" placeholder="5"
-                                                                            @bind="fs.DelaiLivraison" @bind:event="oninput" />
-                                                                    </td>
-                                                                    <td>
-                                                                        <input class="oda-tbl-input" type="text" min="0" placeholder="12"
-                                                                            @bind="fs.Garantie" @bind:event="oninput" />
-                                                                    </td>
+                                                                    <td><input class="oda-tbl-input" type="text" placeholder="0.00" @bind="fs.FraisLivraison" @bind:event="oninput" disabled="@locked" /></td>
+                                                                    <td><input class="oda-tbl-input" type="text" placeholder="5" @bind="fs.DelaiLivraison" @bind:event="oninput" disabled="@locked" /></td>
+                                                                    <td><input class="oda-tbl-input" type="text" placeholder="12 mois" @bind="fs.Garantie" @bind:event="oninput" disabled="@locked" /></td>
                                                                 </tr>
                                                             </tbody>
                                                         </table>
                                                     </div>
 
-                                                    @* ── Section lignes de commande ── *@
                                                     @if (fs.Lignes.Any())
                                                     {
                                                         <p class="oda-lignes-title oda-lignes-title-border">
@@ -332,72 +378,77 @@
                                                             <table class="oda-lignes-table">
                                                                 <thead>
                                                                     <tr>
-                                                                        <th>Description</th>
-                                                                        <th>Qté</th>
-                                                                        <th>Unité</th>
-                                                                        <th>P.U. HT</th>
-                                                                        <th>TVA %</th>
-                                                                        <th>Total TVA</th>
-                                                                        <th>Total TTC</th>
+                                                                        <th>Description</th><th>Qté</th><th>Unité</th>
+                                                                        <th>P.U. HT</th><th>TVA %</th><th>Total TVA</th><th>Total TTC</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
                                                                     @foreach (var ligne in fs.Lignes)
                                                                     {
                                                                         <tr>
-                                                                            <td><input class="oda-tbl-input" type="text" @bind="ligne.Description" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.Quantite" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.Unite" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.PrixUnitaireHt" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.TvaPct" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.TotalTva" @bind:event="oninput" /></td>
-                                                                            <td><input class="oda-tbl-input oda-tbl-sm oda-tbl-ttc" type="text" @bind="ligne.TotalTtc" @bind:event="oninput" /></td>
+                                                                            <td><input class="oda-tbl-input" type="text" @bind="ligne.Description" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.Quantite" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.Unite" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.PrixUnitaireHt" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.TvaPct" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm" type="text" @bind="ligne.TotalTva" @bind:event="oninput" disabled="@locked" /></td>
+                                                                            <td><input class="oda-tbl-input oda-tbl-sm oda-tbl-ttc" type="text" @bind="ligne.TotalTtc" @bind:event="oninput" disabled="@locked" /></td>
                                                                         </tr>
                                                                     }
                                                                 </tbody>
                                                             </table>
                                                         </div>
 
-                                                    @* Totaux éditables *@
-                                                    <div class="oda-totaux">
-                                                        <div class="oda-totaux-row">
-                                                            <span class="oda-totaux-lbl">Total HT</span>
-                                                            <input class="oda-totaux-input" type="text" @bind="fs.TotalHt" @bind:event="oninput" placeholder="0,00" />
+                                                        <div class="oda-totaux">
+                                                            <div class="oda-totaux-row">
+                                                                <span class="oda-totaux-lbl">Total HT</span>
+                                                                <input class="oda-totaux-input" type="text" @bind="fs.TotalHt" @bind:event="oninput" placeholder="0,00" disabled="@locked" />
+                                                            </div>
+                                                            <div class="oda-totaux-row">
+                                                                <span class="oda-totaux-lbl">Total TVA</span>
+                                                                <input class="oda-totaux-input" type="text" @bind="fs.TotalTva" @bind:event="oninput" placeholder="0,00" disabled="@locked" />
+                                                            </div>
+                                                            <div class="oda-totaux-row oda-totaux-ttc">
+                                                                <span class="oda-totaux-lbl">Total TTC</span>
+                                                                <input class="oda-totaux-input ttc" type="text" @bind="fs.TotalTtc" @bind:event="oninput" placeholder="0,00" disabled="@locked" />
+                                                            </div>
                                                         </div>
-                                                        <div class="oda-totaux-row">
-                                                            <span class="oda-totaux-lbl">Total TVA</span>
-                                                            <input class="oda-totaux-input" type="text" @bind="fs.TotalTva" @bind:event="oninput" placeholder="0,00" />
-                                                        </div>
-                                                        <div class="oda-totaux-row oda-totaux-ttc">
-                                                            <span class="oda-totaux-lbl">Total TTC</span>
-                                                            <input class="oda-totaux-input ttc" type="text" @bind="fs.TotalTtc" @bind:event="oninput" placeholder="0,00" />
-                                                        </div>
-                                                    </div>
-                                                                                                        }
-
+                                                    }
                                                 </div>
 
-                                                @* ── Action buttons ── *@
                                                 <div class="oda-form-actions">
-                                                    <button class="oda-btn-ghost" @onclick="() => ResetForm(offre.IdOffre)" @onclick:stopPropagation="true">
+                                                    <button class="oda-btn-ghost"
+                                                            @onclick="() => ResetForm(offre.IdOffre)"
+                                                            @onclick:stopPropagation="true"
+                                                            disabled="@locked">
                                                         Réinitialiser
                                                     </button>
                                                     @if (confirmed)
                                                     {
                                                         <button class="oda-btn-confirmed" disabled @onclick:stopPropagation="true">
-                                                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
                                                             Confirmé
                                                         </button>
                                                     }
                                                     else
                                                     {
-                                                        <button class="oda-btn-confirm" @onclick="() => ConfirmForm(offre.IdOffre)" @onclick:stopPropagation="true">
-                                                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                                            Confirmer
+                                                        <button class="oda-btn-confirm"
+                                                                @onclick="() => OpenConfirmModal(offre)"
+                                                                @onclick:stopPropagation="true"
+                                                                disabled="@locked">
+                                                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                                            Confirmer la sélection
                                                         </button>
                                                     }
                                                 </div>
 
+                                                @if (_saveError != null && selected)
+                                                {
+                                                    <div class="oda-ocr-err-msg" style="margin-top:0.5rem">
+                                                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                                                        @_saveError
+                                                    </div>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -406,7 +457,6 @@
                         }
                     </div>
                 }
-
             </div>
         </main>
     </div>

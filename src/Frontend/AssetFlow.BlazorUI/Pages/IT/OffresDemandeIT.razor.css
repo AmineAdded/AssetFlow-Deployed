@@ -690,3 +690,16 @@ html.dark .oda-chat-input-wrap { background: #1c2128; border-color: #1e2d42; }
 @media (max-width: 768px) {
     .oda-chat-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 4.5rem; }
 }
+.oda-chat-pdf-name {
+    color: var(--primary);
+    font-weight: 700;
+    background: rgba(19,109,236,0.08);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    font-size: 0.78rem;
+}
+
+.oda-chat-list-item {
+    display: block;
+    padding: 0.1rem 0;
+}

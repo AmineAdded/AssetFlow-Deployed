@@ -119,6 +119,36 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _chatLoading = false;
             StateHasChanged();
         }
+        private static string FormatChatMessage(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return content;
+
+            // Mettre les noms PDF en gras et colorés (entre guillemets doubles)
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                @"""([^""]+\.pdf)""",
+                "<strong class=\"oda-chat-pdf-name\">\"$1\"</strong>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Formatter les [[nom.pdf]] cachés (ne pas les afficher mais les utiliser)
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                @"\[\[([^\]]+)\]\]",
+                "<strong class=\"oda-chat-pdf-name\">$1</strong>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Convertir les tirets de liste en vrais éléments visuels
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                @"^- (.+)$",
+                "<span class=\"oda-chat-list-item\">• $1</span>",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Convertir les sauts de ligne en <br>
+            content = content.Replace("\n", "<br/>");
+
+            return content;
+        }
 
         protected override async Task OnInitializedAsync()
         {
@@ -175,6 +205,15 @@ namespace AssetFlow.BlazorUI.Pages.IT
                         var chatHistory = await Http.GetFromJsonAsync<List<ChatMessageDto>>(
                             $"api/chat-offre/history/{_userId}/{DemandeId}");
                         if (chatHistory != null) _chatMessages = chatHistory;
+                    }
+                    catch { }
+                    // Charger recommandation persistée
+                    try
+                    {
+                        var rec = await Http.GetFromJsonAsync<ChatRecommendationDto>(
+                            $"api/chat-offre/recommendation/{_userId}/{DemandeId}");
+                        if (rec != null && !string.IsNullOrEmpty(rec.RecommendedOffre))
+                            _recommendedOffre = rec.RecommendedOffre;
                     }
                     catch { }
                 }
@@ -453,6 +492,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
     public class ChatResponseDto
     {
         public string  Reply            { get; set; } = string.Empty;
+        public string? RecommendedOffre { get; set; }
+    }
+    public class ChatRecommendationDto
+    {
         public string? RecommendedOffre { get; set; }
     }
 }

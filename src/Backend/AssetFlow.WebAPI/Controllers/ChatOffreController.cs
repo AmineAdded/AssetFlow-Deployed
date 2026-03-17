@@ -41,12 +41,19 @@ namespace AssetFlow.WebAPI.Controllers
                 $"- {o.NomFichier}: Prix={o.PrixTotal ?? "N/A"}, Délai={o.DelaiLivraison ?? "N/A"}, Garantie={o.Garantie ?? "N/A"}, Frais={o.FraisLivraison ?? "N/A"}"));
 
             var systemPrompt = $@"Tu es un assistant d'aide à la décision pour la sélection d'offres fournisseurs.
-    Voici les offres disponibles avec leurs données OCR extraites :
-    {contexte}
 
-    Aide l'utilisateur à choisir la meilleure offre selon ses critères (budget, délai, garantie).
-    Quand tu recommandes une offre spécifique, mentionne son nom exact entre [[ ]] par exemple [[facture.pdf]].
-    Réponds en français, de façon concise et professionnelle.";
+Voici les offres disponibles :
+{contexte}
+
+RÈGLES DE FORMATAGE OBLIGATOIRES :
+- Quand tu mentionnes un nom de fichier PDF, écris-le toujours en MAJUSCULES entre guillemets doubles, ex : ""FACTURE.PDF""
+- Structure toujours ta réponse avec des sections claires séparées par des sauts de ligne
+- Utilise des tirets pour les listes
+- Sois concis : maximum 5 lignes par réponse
+- Quand tu recommandes une offre, écris son nom entre [[ ]] ex : [[facture.pdf]] (nom exact, sensible à la casse)
+- Ne recommande qu'une seule offre à la fois
+
+Réponds en français.";
 
             // 3. Construire messages pour DeepSeek
             var messages = new List<object>
@@ -89,10 +96,18 @@ namespace AssetFlow.WebAPI.Controllers
             history.Add(new ChatMessageDto { Role = "assistant", Content = assistantReply,   SentAt = DateTime.UtcNow });
             await _redis.SaveOffreSelectionAsync(historyKey, JsonSerializer.Serialize(history), TimeSpan.FromHours(24));
 
+
             // 6. Détecter offre recommandée [[nom.pdf]]
             string? recommended = null;
             var match = System.Text.RegularExpressions.Regex.Match(assistantReply, @"\[\[(.+?)\]\]");
             if (match.Success) recommended = match.Groups[1].Value;
+
+            // Après la sauvegarde de l'historique, sauvegarder aussi la recommandation séparément
+            if (!string.IsNullOrEmpty(recommended))
+            {
+                var recKey = $"chat_offre_rec:{dto.UserId}:{dto.IdDemande}";
+                await _redis.SaveOffreSelectionAsync(recKey, recommended, TimeSpan.FromHours(24));
+            }
 
             return Ok(new { reply = assistantReply, recommendedOffre = recommended });
         }
@@ -113,6 +128,14 @@ namespace AssetFlow.WebAPI.Controllers
         {
             await _redis.DeleteOffreSelectionAsync($"chat_offre:{userId}:{idDemande}");
             return Ok();
+        }
+        // GET api/chat-offre/recommendation/{userId}/{idDemande}
+        [HttpGet("recommendation/{userId}/{idDemande:int}")]
+        public async Task<IActionResult> GetRecommendation(string userId, int idDemande)
+        {
+            var key = $"chat_offre_rec:{userId}:{idDemande}";
+            var rec = await _redis.GetOffreSelectionAsync(key);
+            return Ok(new { recommendedOffre = rec });
         }
     } 
 }

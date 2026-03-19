@@ -53,6 +53,7 @@ builder.Services.AddScoped<StockClientService>();
 builder.Services.AddScoped<DemandeAchatITClientService>();
 builder.Services.AddScoped<MessagerieService>();
 builder.Services.AddScoped<ProjectClientService>();
+builder.Services.AddScoped<FaceAuthClientService>();
 
 
 await builder.Build().RunAsync();

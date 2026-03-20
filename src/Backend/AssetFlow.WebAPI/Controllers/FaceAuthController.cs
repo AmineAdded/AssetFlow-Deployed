@@ -7,11 +7,13 @@
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/face-auth")]
+    [AllowAnonymous]
     public class FaceAuthController : ControllerBase
     {
         private readonly IFaceAuthService _faceAuthService;
@@ -30,7 +32,6 @@ namespace AssetFlow.WebAPI.Controllers
         {
             if (string.IsNullOrEmpty(request.Email) || request.Keypoints.Length == 0)
                 return BadRequest("Email et keypoints requis.");
-
             var result = await _faceAuthService.FaceLoginAsync(request);
 
             if (result == null)

@@ -68,6 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly",      p => p.RequireRole("Admin"));
@@ -96,6 +97,7 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddHttpClient<IOcrInvoiceService, OcrInvoiceService>();
 builder.Services.AddScoped<IRedisOffreService, RedisOffreService>();
 builder.Services.AddHttpClient<ChatOffreController>();
+builder.Services.AddScoped<IFaceAuthService, FaceAuthService>();
 
 // === SIGNALR ===
 builder.Services.AddSignalR();

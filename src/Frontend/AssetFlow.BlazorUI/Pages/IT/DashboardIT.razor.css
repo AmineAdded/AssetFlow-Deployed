@@ -1,0 +1,389 @@
+/* ============================================================
+   DashboardIT.razor.css — v1
+   Tableau de bord statistiques IT
+   Même structure que Statistiques.razor.css (achat)
+   hauteur px fixe sur .it-chart-body pour ApexCharts
+   ============================================================ */
+
+
+/* ============================================================
+   1. VARIABLES
+   ============================================================ */
+.it-layout {
+    --primary:        #136dec;
+    --primary-glow:   rgba(19, 109, 236, 0.18);
+    --emerald:        #10b981;
+    --amber:          #f59e0b;
+    --rose:           #f43f5e;
+    --indigo:         #6366f1;
+    --purple:         #a855f7;
+    --cyan:           #06b6d4;
+
+    --bg:             #f0f4f8;
+    --bg-panel:       #ffffff;
+    --bg-header:      rgba(240, 244, 248, 0.95);
+
+    --text-primary:   #0f172a;
+    --text-secondary: #475569;
+    --border:         #cbd5e1;
+    --shadow-card:    0 1px 8px rgba(0,0,0,0.07);
+
+    --radius-sm:   6px;
+    --radius-md:   10px;
+    --radius-lg:   14px;
+    --radius-xl:   18px;
+    --radius-full: 9999px;
+    --t:           0.2s ease;
+
+    display:    flex;
+    height:     100vh;
+    overflow:   hidden;
+    background: var(--bg);
+    color:      var(--text-primary);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    position:   relative;
+}
+
+html.dark .it-layout {
+    --bg:             #101822;
+    --bg-panel:       #1a232e;
+    --bg-header:      rgba(16, 24, 34, 0.95);
+    --text-primary:   #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border:         #2d3f55;
+    --shadow-card:    0 2px 12px rgba(0,0,0,0.4);
+}
+
+
+/* ============================================================
+   2. RESET
+   ============================================================ */
+.it-layout *, .it-layout *::before, .it-layout *::after {
+    box-sizing: border-box; margin: 0; padding: 0;
+}
+.it-layout a      { text-decoration: none; color: inherit; }
+.it-layout button { font-family: inherit; cursor: pointer; border: none; background: none; }
+.it-layout svg    { display: block; }
+.it-layout ::-webkit-scrollbar       { width: 5px; height: 5px; }
+.it-layout ::-webkit-scrollbar-track { background: transparent; }
+.it-layout ::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); }
+
+
+/* ============================================================
+   3. SIDEBAR
+   ============================================================ */
+.it-sidebar {
+    width:          220px;
+    background:     #0F1E3C;
+    display:        flex;
+    flex-direction: column;
+    height:         100vh;
+    position:       sticky;
+    top:            0;
+    flex-shrink:    0;
+    z-index:        100;
+    transition:     transform 0.3s ease;
+    border-right:   1px solid rgba(255,255,255,0.05);
+}
+.it-sidebar-overlay {
+    position:fixed; inset:0; z-index:99;
+    background:rgba(0,0,0,0.45); backdrop-filter:blur(2px);
+}
+.it-sidebar-header {
+    padding:1.5rem 1rem;
+    display:flex; align-items:center; justify-content:center;
+}
+.it-sidebar-logo {
+    width:140px; height:auto; object-fit:contain;
+    filter:drop-shadow(0 0 12px rgba(19,109,236,0.5));
+}
+.it-sidebar-nav {
+    flex:1; margin-top:0.5rem;
+    display:flex; flex-direction:column; gap:0.15rem; overflow-y:auto;
+}
+.it-nav-link {
+    display:flex; align-items:center; gap:0.75rem;
+    padding:0.75rem 1.5rem;
+    color:rgba(255,255,255,0.55) !important;
+    font-size:0.875rem; font-weight:500;
+    transition:all 0.2s ease; border-left:4px solid transparent;
+}
+.it-nav-link:hover  { color:#fff !important; background:rgba(255,255,255,0.06); }
+.it-nav-link.active { color:#fff !important; background:rgba(19,109,236,0.22); border-left:4px solid #136dec; font-weight:700; }
+.it-nav-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.it-nav-icon svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.it-nav-text { font-size:0.875rem; line-height:1.3; }
+.it-sidebar-profile { padding:1rem 1.25rem; border-top:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:0.75rem; }
+.it-profile-avatar  { width:36px; height:36px; border-radius:50%; background:#136dec; color:#fff; font-weight:700; font-size:0.72rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.it-profile-info    { overflow:hidden; }
+.it-profile-name    { font-size:0.8rem; font-weight:600; color:#fff; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.it-profile-role    { font-size:0.7rem; color:#94a3b8; margin:0.1rem 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+
+/* ============================================================
+   4. MAIN
+   ============================================================ */
+.it-main {
+    flex:1; min-width:0;
+    display:flex; flex-direction:column;
+    overflow:hidden; background:var(--bg);
+}
+
+
+/* ============================================================
+   5. TOPBAR
+   ============================================================ */
+.it-topbar {
+    height:56px; flex-shrink:0;
+    display:flex; align-items:center; gap:12px; padding:0 20px;
+    border-bottom:1px solid var(--border);
+    background:var(--bg-header); backdrop-filter:blur(12px);
+    z-index:50;
+}
+.it-topbar-menu-btn {
+    display:none; align-items:center; justify-content:center;
+    width:36px; height:36px; border-radius:var(--radius-md);
+    color:var(--text-secondary); border:1px solid var(--border); flex-shrink:0;
+}
+.it-topbar-menu-btn:hover { background:rgba(255,255,255,0.06); }
+.it-topbar-brand { display:flex; align-items:center; gap:10px; flex:1; }
+.it-topbar-brand h1 { font-size:18px; font-weight:900; color:var(--text-primary); letter-spacing:-0.3px; }
+.it-topbar-role-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:var(--radius-full); background:rgba(19,109,236,0.12); color:#136dec; text-transform:uppercase; letter-spacing:0.06em; }
+.it-topbar-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.it-last-update { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+.it-btn-refresh {
+    width:32px; height:32px; border-radius:var(--radius-md);
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--border); color:var(--text-secondary);
+    transition:all var(--t);
+}
+.it-btn-refresh:hover { border-color:#136dec; color:#136dec; transform:rotate(180deg); }
+.it-btn-refresh svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
+
+
+/* ============================================================
+   6. SCROLL
+   ============================================================ */
+.it-scroll {
+    flex:1; min-height:0;
+    overflow-y:auto; overflow-x:hidden;
+    padding:16px 18px 40px;
+    display:flex; flex-direction:column; gap:14px;
+}
+
+/* ── Loading / Error ── */
+.it-loading {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:16px; color:var(--text-secondary); min-height:300px;
+}
+.it-spinner {
+    width:36px; height:36px;
+    border:3px solid var(--border); border-top:3px solid #136dec;
+    border-radius:50%; animation:it-spin 0.75s linear infinite;
+}
+@keyframes it-spin { to { transform:rotate(360deg); } }
+.it-error {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:14px; color:var(--text-secondary); min-height:300px;
+}
+.it-error svg { width:40px; height:40px; fill:none; stroke:#f43f5e; stroke-width:1.5; }
+.it-error p   { font-size:14px; }
+.it-btn-retry { padding:8px 20px; background:#136dec; color:#fff; border-radius:var(--radius-md); font-size:13px; font-weight:600; }
+
+
+/* ============================================================
+   7. KPI
+   ============================================================ */
+.it-kpi-row {
+    display:grid; grid-template-columns:repeat(6,1fr); gap:12px;
+}
+.it-kpi-card {
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
+    background:var(--bg-panel); border:1px solid var(--border);
+    border-radius:var(--radius-xl); box-shadow:var(--shadow-card);
+    transition:background var(--t), transform 0.15s;
+    animation:it-fadeUp 0.35s ease both; position:relative;
+}
+.it-kpi-card:hover { transform:translateY(-2px); }
+.it-kpi-ico {
+    width:42px; height:42px; border-radius:var(--radius-lg);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.it-kpi-ico svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+.it-kpi-blue   .it-kpi-ico { background:rgba(19,109,236,0.12);  color:#136dec; }
+.it-kpi-indigo .it-kpi-ico { background:rgba(99,102,241,0.12);  color:#6366f1; }
+.it-kpi-rose   .it-kpi-ico { background:rgba(244,63,94,0.12);   color:#f43f5e; }
+.it-kpi-emerald.it-kpi-ico { background:rgba(16,185,129,0.12);  color:#10b981; }
+.it-kpi-amber  .it-kpi-ico { background:rgba(245,158,11,0.12);  color:#f59e0b; }
+.it-kpi-purple .it-kpi-ico { background:rgba(168,85,247,0.12);  color:#a855f7; }
+.it-kpi-emerald .it-kpi-ico { background:rgba(16,185,129,0.12); color:#10b981; }
+.it-kpi-blue    { border-left:3px solid #136dec; }
+.it-kpi-indigo  { border-left:3px solid #6366f1; }
+.it-kpi-rose    { border-left:3px solid #f43f5e; }
+.it-kpi-emerald { border-left:3px solid #10b981; }
+.it-kpi-amber   { border-left:3px solid #f59e0b; }
+.it-kpi-purple  { border-left:3px solid #a855f7; }
+.it-kpi-info { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.it-kpi-val  { font-size:22px; font-weight:900; color:var(--text-primary); line-height:1; letter-spacing:-0.5px; }
+.it-kpi-lbl  { font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.06em; }
+.it-kpi-badge {
+    position:absolute; top:8px; right:8px;
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:900;
+}
+.it-kpi-badge.urgent { background:#f43f5e; color:#fff; animation:it-pulse 1.5s ease infinite; }
+@keyframes it-pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244,63,94,0.4); }
+    50%      { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(244,63,94,0); }
+}
+
+
+/* ============================================================
+   8. GRILLES DE GRAPHES
+   ============================================================ */
+.it-charts-grid  { display:grid; gap:14px; }
+.it-grid-1 { grid-template-columns:1fr; }
+.it-grid-2 { grid-template-columns:1fr 1fr; }
+
+
+/* ============================================================
+   9. CHART CARD + CHART BODY
+   ============================================================ */
+.it-chart-card {
+    background:    var(--bg-panel);
+    border:        1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow:    var(--shadow-card);
+    display:       flex;
+    flex-direction:column;
+    overflow:      hidden;
+    transition:    background var(--t), border-color var(--t);
+    animation:     it-fadeUp 0.35s ease both;
+}
+
+.it-chart-header {
+    padding:    13px 16px 10px;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+    display:    flex; flex-direction:column; gap:5px;
+}
+.it-chart-title-row {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:26px;
+}
+.it-chart-title-row .it-chart-title { flex:1; min-width:0; }
+.it-chart-title {
+    display:flex; align-items:center; gap:7px;
+    font-size:13px; font-weight:800; color:var(--text-primary);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.it-chart-title svg {
+    width:14px; height:14px; flex-shrink:0;
+    fill:none; stroke:#136dec; stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+}
+.it-chart-sub { font-size:11px; color:var(--text-secondary); font-weight:500; }
+
+.it-chart-body {
+    width:   100%;
+    height:  280px;
+    flex-shrink: 0;
+    padding: 4px 2px 2px;
+    overflow:hidden;
+    position:relative;
+}
+.it-grid-1 .it-chart-body { height: 260px; }
+
+
+/* ============================================================
+   10. FILTRES INLINE
+   ============================================================ */
+.it-inline-filters {
+    display:flex; align-items:center; gap:5px; flex-wrap:wrap; flex-shrink:0;
+}
+.it-mini-label {
+    font-size:10px; font-weight:700; color:var(--text-secondary);
+    text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap;
+}
+.it-mini-date {
+    padding:4px 8px; background:var(--bg-panel);
+    border:1px solid var(--border); border-radius:var(--radius-sm);
+    font-size:11px; color:var(--text-primary); outline:none; cursor:pointer;
+    transition:border-color var(--t);
+}
+.it-mini-date:focus { border-color:#136dec; }
+html.dark .it-mini-date { background:#1e2d3f; color:var(--text-primary); }
+.it-btn-apply {
+    padding:4px 10px; background:rgba(19,109,236,0.1);
+    border:1px solid rgba(19,109,236,0.3); border-radius:var(--radius-sm);
+    color:#136dec; font-size:11px; font-weight:700; white-space:nowrap;
+    transition:all var(--t);
+}
+.it-btn-apply:hover { background:rgba(19,109,236,0.2); }
+
+
+/* ============================================================
+   11. TOAST
+   ============================================================ */
+.it-toast {
+    position:fixed; bottom:24px; right:24px; z-index:999;
+    padding:12px 18px; border-radius:var(--radius-md);
+    font-size:13px; font-weight:600; max-width:300px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:it-toastSlide 0.3s ease;
+}
+.it-toast-success { background:#10b981; color:#fff; }
+.it-toast-error   { background:#f43f5e; color:#fff; }
+
+
+/* ============================================================
+   12. ANIMATIONS
+   ============================================================ */
+@keyframes it-fadeUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+@keyframes it-toastSlide {
+    from { opacity:0; transform:translateX(14px); }
+    to   { opacity:1; transform:translateX(0); }
+}
+
+
+/* ============================================================
+   13. RESPONSIVE
+   ============================================================ */
+@media (max-width: 1400px) {
+    .it-kpi-row { grid-template-columns:repeat(3,1fr); }
+}
+
+@media (max-width: 1280px) {
+    .it-chart-body { height:265px; }
+    .it-grid-1 .it-chart-body { height:245px; }
+}
+
+@media (max-width: 1024px) {
+    .it-kpi-row      { grid-template-columns:repeat(3,1fr); }
+    .it-grid-2       { grid-template-columns:1fr; }
+    .it-chart-body   { height:260px; }
+    .it-grid-1 .it-chart-body { height:240px; }
+}
+
+@media (max-width: 768px) {
+    .it-sidebar { position:fixed; left:0; top:0; transform:translateX(-100%); z-index:150; }
+    .it-sidebar.open { transform:translateX(0); }
+    .it-topbar-menu-btn { display:flex; }
+    .it-scroll { padding:12px 10px 30px; gap:10px; }
+    .it-kpi-row { grid-template-columns:repeat(2,1fr); gap:8px; }
+    .it-kpi-val { font-size:18px; }
+    .it-chart-body { height:230px; }
+    .it-grid-1 .it-chart-body { height:220px; }
+    .it-inline-filters { gap:4px; }
+    .it-mini-date { max-width:120px; }
+    .it-last-update { display:none; }
+}
+
+@media (max-width: 480px) {
+    .it-kpi-row { grid-template-columns:1fr 1fr; }
+    .it-chart-body { height:200px; }
+    .it-grid-1 .it-chart-body { height:190px; }
+    .it-chart-title { font-size:11px; }
+    .it-mini-label  { display:none; }
+}

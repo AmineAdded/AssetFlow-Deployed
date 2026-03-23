@@ -102,7 +102,7 @@ namespace AssetFlow.BlazorUI.Pages.Auth
                     "EquipeAchat" => "/statistiques",
                     "Employe" => "/employe/equipements",
                     "Admin" => "/admin/projets",
-                    _ => "/dashboard"
+                    _ => "/dashboard/it"
                 };
                 Navigation.NavigateTo(dashboard);
             }

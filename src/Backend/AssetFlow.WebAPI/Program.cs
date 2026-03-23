@@ -97,6 +97,7 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddHttpClient<IOcrInvoiceService, OcrInvoiceService>();
 builder.Services.AddScoped<IRedisOffreService, RedisOffreService>();
 builder.Services.AddHttpClient<ChatOffreController>();
+builder.Services.AddScoped<IStatistiquesITService, StatistiquesITService>();
 builder.Services.AddHttpClient<IFaceAuthService, FaceAuthService>();
 
 // === SIGNALR ===

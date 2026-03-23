@@ -52,6 +52,7 @@ builder.Services.AddScoped<StockClientService>();
 builder.Services.AddScoped<DemandeAchatITClientService>();
 builder.Services.AddScoped<MessagerieService>();
 builder.Services.AddScoped<ProjectClientService>();
+builder.Services.AddScoped<StatistiquesITService>();
 builder.Services.AddScoped<FaceAuthClientService>();
 
 

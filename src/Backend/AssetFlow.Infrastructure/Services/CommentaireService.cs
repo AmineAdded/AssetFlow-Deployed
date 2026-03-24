@@ -53,11 +53,11 @@ namespace AssetFlow.Infrastructure.Services
             }
         }
 
-        public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId)
+        public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId,int userId)
         {
             var commentaires = await _context.CommentairesMateriel
                 .Include(c => c.Utilisateur)
-                .Where(c => c.MaterielId == materielId)
+                .Where(c => c.MaterielId == materielId && c.UtilisateurId==userId)
                 .OrderByDescending(c => c.DateCreation)
                 .ToListAsync();
 

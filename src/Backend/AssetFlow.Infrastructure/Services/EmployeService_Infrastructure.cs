@@ -92,7 +92,7 @@ namespace AssetFlow.Infrastructure.Services
             // Récupérer les compteurs de commentaires pour tous les matériels concernés
             var materielIds = affectations.Select(a => a.MaterielId).Distinct().ToList();
             var compteurs = await _context.CommentairesMateriel
-                .Where(c => materielIds.Contains(c.MaterielId))
+                .Where(c => materielIds.Contains(c.MaterielId) && c.UtilisateurId==utilisateurId)
                 .GroupBy(c => c.MaterielId)
                 .Select(g => new { MaterielId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.MaterielId, x => x.Count);

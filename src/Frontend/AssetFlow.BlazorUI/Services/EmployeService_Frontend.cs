@@ -45,6 +45,7 @@ namespace AssetFlow.BlazorUI.Services
     public class MaterielAffecteGroupeDto
     {
         public int      MaterielId          { get; set; }
+        public int      userId              {get;set;}
         public string   Reference           { get; set; } = string.Empty;
         public string   Designation         { get; set; } = string.Empty;
         public string   Categorie           { get; set; } = string.Empty;
@@ -164,10 +165,11 @@ namespace AssetFlow.BlazorUI.Services
         /// <summary>Récupère tous les commentaires d'un matériel</summary>
         public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId)
         {
+            int userId = await GetCurrentUserIdAsync();
             try
             {
                 var result = await _http.GetFromJsonAsync<List<CommentaireDto>>(
-                    $"api/commentaire/materiel/{materielId}");
+                    $"api/commentaire/materiel/{materielId}/{userId}");
                 return result ?? new();
             }
             catch { return new(); }

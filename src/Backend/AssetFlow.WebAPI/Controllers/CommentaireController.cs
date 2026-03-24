@@ -41,11 +41,11 @@ namespace AssetFlow.WebAPI.Controllers
         /// GET api/commentaire/materiel/{materielId}
         /// Récupère tous les commentaires d'un matériel
         /// </summary>
-        [HttpGet("materiel/{materielId}")]
-        public async Task<IActionResult> GetCommentaires(int materielId)
+        [HttpGet("materiel/{materielId}/{userId}")]
+        public async Task<IActionResult> GetCommentaires(int materielId,int userId)
         {
             if (materielId <= 0) return BadRequest("ID matériel invalide.");
-            var commentaires = await _service.GetCommentairesMaterielAsync(materielId);
+            var commentaires = await _service.GetCommentairesMaterielAsync(materielId,userId);
             return Ok(commentaires);
         }
     }

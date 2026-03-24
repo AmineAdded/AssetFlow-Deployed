@@ -1,5 +1,6 @@
 // ============================================================
 // AssetFlow.Infrastructure / Services / CommentaireService.cs
+// MISE À JOUR : ajout SupprimerCommentaireAsync
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -53,17 +54,17 @@ namespace AssetFlow.Infrastructure.Services
             }
         }
 
-        public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId,int userId)
+        public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId, int userId)
         {
             var commentaires = await _context.CommentairesMateriel
                 .Include(c => c.Utilisateur)
-                .Where(c => c.MaterielId == materielId && c.UtilisateurId==userId)
+                .Where(c => c.MaterielId == materielId && c.UtilisateurId == userId)
                 .OrderByDescending(c => c.DateCreation)
                 .ToListAsync();
 
             return commentaires.Select(c => new CommentaireDto
             {
-                Id = c.Id,
+                Id              = c.Id,
                 MaterielId      = c.MaterielId,
                 UtilisateurId   = c.UtilisateurId,
                 AuteurNom       = $"{c.Utilisateur.FirstName} {c.Utilisateur.LastName}",
@@ -71,6 +72,31 @@ namespace AssetFlow.Infrastructure.Services
                 Contenu         = c.Contenu,
                 DateCreation    = c.DateCreation
             }).ToList();
+        }
+
+        public async Task<CommentaireResultDto> SupprimerCommentaireAsync(int commentaireId, int utilisateurId)
+        {
+            try
+            {
+                var commentaire = await _context.CommentairesMateriel
+                    .FirstOrDefaultAsync(c => c.Id == commentaireId);
+
+                if (commentaire == null)
+                    return new CommentaireResultDto { Succes = false, Message = "Commentaire introuvable." };
+
+                // Vérification : seul l'auteur peut supprimer son propre commentaire
+                if (commentaire.UtilisateurId != utilisateurId)
+                    return new CommentaireResultDto { Succes = false, Message = "Vous ne pouvez supprimer que vos propres commentaires." };
+
+                _context.CommentairesMateriel.Remove(commentaire);
+                await _context.SaveChangesAsync();
+
+                return new CommentaireResultDto { Succes = true, Message = "Commentaire supprimé." };
+            }
+            catch (Exception ex)
+            {
+                return new CommentaireResultDto { Succes = false, Message = $"Erreur : {ex.Message}" };
+            }
         }
     }
 }

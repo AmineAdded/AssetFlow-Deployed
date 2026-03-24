@@ -5,6 +5,7 @@
 
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
+using static AssetFlow.BlazorUI.Services.EmployeService;
 
 namespace AssetFlow.BlazorUI.Pages.Employe
 {
@@ -133,5 +134,76 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             if (parts.Length == 1 && parts[0].Length >= 2) return parts[0][..2].ToUpper();
             return "??";
         }
+            // ============================================================
+            // PATCH MesEquipements.razor.cs
+            // Ajoutez ces propriétés et méthodes dans la classe partielle
+            // MesEquipements existante
+            // ============================================================
+
+            // ── Propriétés état du modal commentaire ──────────────────────
+            private bool              ModalCommentaireOuvert  { get; set; } = false;
+            private int               CommentaireMaterielId   { get; set; } = 0;
+            private string            CommentaireNumeroSerie  { get; set; } = string.Empty;
+            private string            CommentaireContenu      { get; set; } = string.Empty;
+            private string            CommentaireFeedback     { get; set; } = string.Empty;
+            private bool              CommentaireSucces       { get; set; } = false;
+            private bool              CommentaireEnvoi        { get; set; } = false;
+            private List<CommentaireDto> CommentairesExistants { get; set; } = new();
+
+            // ── Ouvre le modal commentaire ────────────────────────────────
+            private async Task OuvrirModalCommentaire(int materielId, string numeroSerie)
+            {
+                CommentaireMaterielId  = materielId;
+                CommentaireNumeroSerie = numeroSerie;
+                CommentaireContenu     = string.Empty;
+                CommentaireFeedback    = string.Empty;
+                CommentaireSucces      = false;
+                CommentaireEnvoi       = false;
+
+                // Charger les commentaires existants
+                CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materielId);
+
+                ModalCommentaireOuvert = true;
+            }
+
+            // ── Ferme le modal commentaire ────────────────────────────────
+            private void FermerModalCommentaire()
+            {
+                ModalCommentaireOuvert = false;
+                CommentaireFeedback    = string.Empty;
+                CommentaireContenu     = string.Empty;
+                CommentairesExistants  = new();
+            }
+
+            // ── Envoie le commentaire vers l'API ─────────────────────────
+            private async Task EnvoyerCommentaire()
+            {
+                if (string.IsNullOrWhiteSpace(CommentaireContenu)) return;
+
+                CommentaireEnvoi    = true;
+                CommentaireFeedback = string.Empty;
+                StateHasChanged();
+
+                var result = await EmployeService.AjouterCommentaireAsync(
+                    CommentaireMaterielId, CommentaireContenu);
+
+                CommentaireSucces   = result.Succes;
+                CommentaireEnvoi    = false;
+
+                if (result.Succes)
+                {
+                    CommentaireFeedback = "Commentaire enregistré avec succès !";
+                    CommentaireContenu  = string.Empty;
+                    // Rafraîchir la liste
+                    CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(CommentaireMaterielId);
+                }
+                else
+                {
+                    CommentaireFeedback = result.Message;
+                }
+
+                StateHasChanged();
+            }
     }
+
 }

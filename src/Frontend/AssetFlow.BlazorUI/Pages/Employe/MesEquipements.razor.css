@@ -815,3 +815,267 @@ html.dark .modal-btn-fermer { background: rgba(255, 255, 255, 0.05); }
 
     .modal-backdrop { padding: 0.75rem; }
 }
+/* ============================================================
+   PATCH MesEquipements.razor.css
+   Ajoutez ces règles à la fin du fichier CSS existant
+   ============================================================ */
+
+/* ── Bouton Commenter (dans chaque article-row) ── */
+.article-comment-action {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-commenter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: transparent;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    border-radius: 0.375rem;
+    color: #10B981;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    margin-top: 0.375rem;
+}
+.btn-commenter:hover {
+    background: #10B981;
+    border-color: #10B981;
+    color: white;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+.btn-commenter svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Ajuster la grille des colonnes de l'article-row pour 5 colonnes */
+.articles-table-header {
+    grid-template-columns: 2fr 1fr 1.2fr 1fr 1fr;
+}
+.article-row {
+    grid-template-columns: 2fr 1fr 1.2fr 1fr 1fr;
+}
+
+/* ── Modal commentaire (taille adaptée) ── */
+.modal-commentaire {
+    max-width: 580px;
+}
+
+.modal-icon-comment {
+    background: rgba(16, 185, 129, 0.12) !important;
+    border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.modal-icon-comment svg {
+    stroke: #10B981 !important;
+}
+
+/* ── Corps du modal commentaire ── */
+.commentaire-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+}
+
+/* Groupe input */
+.commentaire-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.commentaire-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.commentaire-textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    color: var(--text);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+.commentaire-textarea::placeholder { color: var(--text-faint); }
+.commentaire-textarea:focus {
+    border-color: #10B981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+/* Compteur caractères */
+.commentaire-counter {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.commentaire-counter.counter-warn {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* ── Feedback message ── */
+.commentaire-feedback {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.825rem;
+    font-weight: 500;
+    animation: fadeIn 0.2s ease;
+}
+.commentaire-feedback svg {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.feedback-success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    color: #10B981;
+}
+.feedback-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+}
+
+/* ── Commentaires existants ── */
+.commentaires-existants {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+}
+html.dark .commentaires-existants { border-top-color: rgba(255,255,255,0.07); }
+
+.existants-titre {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    margin: 0 0 0.875rem;
+}
+
+.existants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+
+.existant-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.existant-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.existant-content {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.875rem;
+}
+html.dark .existant-content { border-color: rgba(255,255,255,0.07); }
+
+.existant-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.375rem;
+    flex-wrap: wrap;
+}
+.existant-auteur {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.existant-date {
+    font-size: 0.7rem;
+    color: var(--text-faint);
+}
+
+.existant-texte {
+    font-size: 0.825rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.55;
+}
+
+/* ── Bouton Envoyer ── */
+.btn-envoyer-commentaire {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    background: #10B981;
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-envoyer-commentaire:hover:not(:disabled) {
+    background: #059669;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+    transform: translateY(-1px);
+}
+.btn-envoyer-commentaire:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+.btn-envoyer-commentaire svg {
+    width: 14px; height: 14px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Spinner inline pour le bouton envoyer */
+.spinner-sm {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+/* ── Responsive commentaire ── */
+@media (max-width: 800px) {
+    .articles-table-header { grid-template-columns: 2fr 1fr; }
+    .article-row            { grid-template-columns: 2fr 1fr; }
+    .article-date, .article-action, .article-comment-action { display: none; }
+}

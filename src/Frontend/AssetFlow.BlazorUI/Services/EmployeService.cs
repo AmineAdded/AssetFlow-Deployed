@@ -140,5 +140,76 @@ namespace AssetFlow.BlazorUI.Services
             }
             catch { return "Employé"; }
         }
+        // ============================================================
+// À AJOUTER dans EmployeService.cs (Frontend Blazor)
+// Collez ces classes et méthodes dans le fichier existant
+// ============================================================
+
+// ── DTOs commentaire (à ajouter avec les autres DTOs) ────────
+
+public class CommentaireDto
+{
+    public int      Id              { get; set; }
+    public int      MaterielId      { get; set; }
+    public int      UtilisateurId   { get; set; }
+    public string   AuteurNom       { get; set; } = string.Empty;
+    public string   AuteurInitiales { get; set; } = string.Empty;
+    public string   Contenu         { get; set; } = string.Empty;
+    public DateTime DateCreation    { get; set; }
+}
+
+public class CreerCommentaireDto
+{
+    public int    MaterielId    { get; set; }
+    public int    UtilisateurId { get; set; }
+    public string Contenu       { get; set; } = string.Empty;
+}
+
+public class CommentaireResultDto
+{
+    public bool   Succes  { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int?   Id      { get; set; }
+}
+
+// ── Méthodes à ajouter dans la classe EmployeService ─────────
+
+// Enregistre un commentaire
+public async Task<CommentaireResultDto> AjouterCommentaireAsync(int materielId, string contenu)
+{
+    var userId = await GetCurrentUserIdAsync();
+    var dto    = new CreerCommentaireDto
+    {
+        MaterielId    = materielId,
+        UtilisateurId = userId,
+        Contenu       = contenu
+    };
+    try
+    {
+        var response = await _http.PostAsJsonAsync("api/commentaire", dto);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<CommentaireResultDto>();
+            return result ?? new CommentaireResultDto { Succes = false, Message = "Réponse vide." };
+        }
+        return new CommentaireResultDto { Succes = false, Message = "Erreur serveur." };
+    }
+    catch (Exception ex)
+    {
+        return new CommentaireResultDto { Succes = false, Message = ex.Message };
+    }
+}
+
+// Récupère les commentaires d'un matériel
+public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId)
+{
+    try
+    {
+        var result = await _http.GetFromJsonAsync<List<CommentaireDto>>(
+            $"api/commentaire/materiel/{materielId}");
+        return result ?? new();
+    }
+    catch { return new(); }
+}
     }
 }

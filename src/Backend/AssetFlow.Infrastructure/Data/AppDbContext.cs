@@ -24,7 +24,8 @@ namespace AssetFlow.Infrastructure.Data
             public DbSet<OffreAchat> OffreAchat { get; set; }
             public DbSet<ChatMessage> ChatMessages { get; set; }
             public DbSet<Project> Projects { get; set; }
-        public DbSet<LigneDemande>  LigneDemande  { get; set; } 
+            public DbSet<LigneDemande>  LigneDemande  { get; set; } 
+            public DbSet<CommentaireMateriel> CommentairesMateriel => Set<CommentaireMateriel>();
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -272,6 +273,21 @@ namespace AssetFlow.Infrastructure.Data
               .HasForeignKey(l => l.IdDemande)
               .OnDelete(DeleteBehavior.Cascade);
     });
+                  // Dans OnModelCreating, ajouter :
+                  modelBuilder.Entity<CommentaireMateriel>(e =>
+                  {
+                  e.ToTable("CommentairesMateriel");
+                  e.HasKey(c => c.Id);
+                  e.Property(c => c.Contenu).HasMaxLength(1000).IsRequired();
+                  e.HasOne(c => c.Materiel)
+                  .WithMany()
+                  .HasForeignKey(c => c.MaterielId)
+                  .OnDelete(DeleteBehavior.Cascade);
+                  e.HasOne(c => c.Utilisateur)
+                  .WithMany()
+                  .HasForeignKey(c => c.UtilisateurId)
+                  .OnDelete(DeleteBehavior.Restrict);
+                  });
 
             }
       }

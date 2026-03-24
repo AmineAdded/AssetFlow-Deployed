@@ -99,6 +99,7 @@ builder.Services.AddScoped<IRedisOffreService, RedisOffreService>();
 builder.Services.AddHttpClient<ChatOffreController>();
 builder.Services.AddScoped<IStatistiquesITService, StatistiquesITService>();
 builder.Services.AddHttpClient<IFaceAuthService, FaceAuthService>();
+builder.Services.AddScoped<ICommentaireService, CommentaireService>();
 
 // === SIGNALR ===
 builder.Services.AddSignalR();

@@ -4,6 +4,7 @@
    ============================================================ *@
 
 @page "/employe/equipements"
+@using AssetFlow.BlazorUI.Pages.Achat
 @using AssetFlow.BlazorUI.Services
 @using AssetFlow.BlazorUI.Components
 <RoleAuthGuard AllowedRoles="@(new[]{"Employe"})">
@@ -266,6 +267,8 @@
                                             }
                                         </div>
                                     </div>
+                                    @* ============================================================
+  
 
                                     @* Badge statut *@
                                     <div class="article-statut">
@@ -289,6 +292,19 @@
                                             <svg viewBox="0 0 24 24">
                                                 <path d="M5 12h14M12 5l7 7-7 7" />
                                             </svg>
+                                        </button>
+                                    </div>
+                                                                       
+
+                                    @* ── À placer juste après le div class="article-action" existant ── *@
+                                    <div class="article-comment-action">
+                                        <button class="btn-commenter"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => OuvrirModalCommentaire(MaterielSelectionne.MaterielId, article.NumeroSerie)">
+                                            <svg viewBox="0 0 24 24">
+                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                            </svg>
+                                            Commenter
                                         </button>
                                     </div>
                                 </div>

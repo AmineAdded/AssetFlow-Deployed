@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / Achat / MesEquipements.razor.cs
-// MISE À JOUR : Groupement par matériel + gestion modal articles
+// MISE À JOUR : Ajout modal commentaire (même logique que Employé)
 // ============================================================
 
 using AssetFlow.BlazorUI.Services;
@@ -14,7 +14,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private NavigationManager Navigation     { get; set; } = default!;
 
         // ── Données ────────────────────────────────────────────
-        private List<MaterielAffecteGroupeDto> MaterielsGroupes       { get; set; } = new();
+        private List<MaterielAffecteGroupeDto> MaterielsGroupes        { get; set; } = new();
         private List<MaterielAffecteGroupeDto> MaterielsGroupesFiltres { get; set; } = new();
 
         private bool   IsLoading     { get; set; } = true;
@@ -23,14 +23,24 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── Recherche principale ───────────────────────────────
         private string SearchQuery { get; set; } = string.Empty;
 
-        // ── Modal ──────────────────────────────────────────────
-        private bool                     ModalOuvert          { get; set; } = false;
+        // ── Modal articles ─────────────────────────────────────
+        private bool                      ModalOuvert         { get; set; } = false;
         private MaterielAffecteGroupeDto? MaterielSelectionne  { get; set; } = null;
-        private string                   ModalSearchQuery      { get; set; } = string.Empty;
+        private string                    ModalSearchQuery     { get; set; } = string.Empty;
+
+        // ── Modal commentaire ──────────────────────────────────
+        private bool                      ModalCommentaireOuvert { get; set; } = false;
+        private MaterielAffecteGroupeDto? MaterielCommentaire    { get; set; } = null;
+        private string                    CommentaireContenu     { get; set; } = string.Empty;
+        private string                    CommentaireFeedback    { get; set; } = string.Empty;
+        private bool                      CommentaireSucces      { get; set; } = false;
+        private bool                      CommentaireEnvoi       { get; set; } = false;
+        private bool                      CommentaireChargement  { get; set; } = false;
+        private List<CommentaireDto>      CommentairesExistants  { get; set; } = new();
 
         // ── Info utilisateur ───────────────────────────────────
         private string UserName { get; set; } = "Utilisateur";
-        private string UserRole { get; set; } = "Employé";
+        private string UserRole { get; set; } = "Achat";
 
         // ── Init ───────────────────────────────────────────────
         protected override async Task OnInitializedAsync()
@@ -89,7 +99,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 .ToList();
         }
 
-        // ── Modal ──────────────────────────────────────────────
+        // ── Modal articles ─────────────────────────────────────
         private void OuvrirModal(MaterielAffecteGroupeDto materiel)
         {
             MaterielSelectionne = materiel;
@@ -107,6 +117,68 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private void OnModalSearchInput(ChangeEventArgs e)
         {
             ModalSearchQuery = e.Value?.ToString() ?? string.Empty;
+            StateHasChanged();
+        }
+
+        // ── Modal commentaire ──────────────────────────────────
+        private async Task OuvrirModalCommentaire(MaterielAffecteGroupeDto materiel)
+        {
+            MaterielCommentaire    = materiel;
+            CommentaireContenu     = string.Empty;
+            CommentaireFeedback    = string.Empty;
+            CommentaireSucces      = false;
+            CommentaireEnvoi       = false;
+            CommentaireChargement  = true;
+            ModalCommentaireOuvert = true;
+            StateHasChanged();
+
+            // Charger les commentaires existants sur ce matériel
+            CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materiel.MaterielId);
+            CommentaireChargement = false;
+            StateHasChanged();
+        }
+
+        private void FermerModalCommentaire()
+        {
+            ModalCommentaireOuvert = false;
+            MaterielCommentaire    = null;
+            CommentaireContenu     = string.Empty;
+            CommentaireFeedback    = string.Empty;
+            CommentairesExistants  = new();
+        }
+
+        private async Task EnvoyerCommentaire()
+        {
+            if (MaterielCommentaire == null || string.IsNullOrWhiteSpace(CommentaireContenu))
+                return;
+
+            CommentaireEnvoi    = true;
+            CommentaireFeedback = string.Empty;
+            StateHasChanged();
+
+            var result = await EmployeService.AjouterCommentaireAsync(
+                MaterielCommentaire.MaterielId, CommentaireContenu);
+
+            CommentaireEnvoi  = false;
+            CommentaireSucces = result.Succes;
+
+            if (result.Succes)
+            {
+                CommentaireFeedback = "Votre commentaire a bien été enregistré !";
+                CommentaireContenu  = string.Empty;
+
+                // Mettre à jour le compteur sur la carte sans recharger
+                MaterielCommentaire.NombreCommentaires++;
+
+                // Rafraîchir la liste des commentaires dans le modal
+                CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
+                    MaterielCommentaire.MaterielId);
+            }
+            else
+            {
+                CommentaireFeedback = result.Message;
+            }
+
             StateHasChanged();
         }
 

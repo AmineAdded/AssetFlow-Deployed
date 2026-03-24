@@ -1,6 +1,6 @@
 @* ============================================================
-   AssetFlow.BlazorUI / Pages / Employe / MesEquipements.razor
-   MISE À JOUR : Grille groupée par matériel + modal articles
+   AssetFlow.BlazorUI / Pages / Achat / MesEquipements.razor
+   MISE À JOUR : Ajout modal commentaire (même logique que Employé)
    ============================================================ *@
 
 @page "/achat/equipements"
@@ -66,8 +66,12 @@
                     </svg>
                     <span class="nav-text">Scraping Marché</span>
                 </a>
-                <a href="/achat/messagerie"  class="nav-link"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie IT</span></a>
-
+                <a href="/achat/messagerie" class="nav-link">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span>Messagerie IT</span>
+                </a>
             </nav>
 
             <div class="sidebar-profile">
@@ -171,10 +175,6 @@
                                 <div class="card-content">
                                     <div class="card-header">
                                         <h3 class="card-title">@materiel.Designation</h3>
-                                        @* <span class="status-badge" style="--badge-color: @materiel.StatutBadgeColor;">
-                                            <span class="badge-dot"></span>
-                                            @GetStatutLabel(materiel.StatutDominant)
-                                        </span> *@
                                     </div>
 
                                     <p class="card-reference">@materiel.Reference</p>
@@ -188,13 +188,25 @@
                                         Assigné le @materiel.DerniereAffectation.ToString("dd/MM/yyyy")
                                     </div>
 
-                                    @* ── Bouton articles (nouveau) ── *@
+                                    @* ── Bouton Voir les articles ── *@
                                     <button class="card-btn-articles" @onclick="() => OuvrirModal(materiel)">
                                         <svg viewBox="0 0 24 24">
                                             <path d="M9 11l3 3L22 4" />
                                             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
                                         </svg>
                                         Voir les @materiel.NombreArticles article@(materiel.NombreArticles > 1 ? "s" : "")
+                                    </button>
+
+                                    @* ── Bouton Commenter ── *@
+                                    <button class="card-btn-commenter" @onclick="() => OuvrirModalCommentaire(materiel)">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                        Commenter
+                                        @if (materiel.NombreCommentaires > 0)
+                                        {
+                                            <span class="comment-count-pill">@materiel.NombreCommentaires</span>
+                                        }
                                     </button>
                                 </div>
                             </div>
@@ -284,7 +296,7 @@
                         <div class="articles-list">
                             @foreach (var article in articlesFiltres)
                             {
-                                <div class="article-row" @onclick="() => NaviguerVersDetail(article.AffectationId,article.ArticleId)">
+                                <div class="article-row" @onclick="() => NaviguerVersDetail(article.AffectationId, article.ArticleId)">
                                     @* Icône + numéro de série *@
                                     <div class="article-serie">
                                         <div class="article-icon">
@@ -304,10 +316,9 @@
 
                                     @* Badge statut *@
                                     <div class="article-statut">
-                                        @* Badge état dans le modal *@
                                         <span class="statut-pill-sm" style="--pill-color: @article.StatutBadgeColor;">
                                             <span class="pill-dot"></span>
-                                            @article.EtatArticle  @* ← était StatutAffectation *@
+                                            @article.EtatArticle
                                         </span>
                                     </div>
 
@@ -319,7 +330,7 @@
                                     @* Bouton voir détail *@
                                     <div class="article-action">
                                         <button class="btn-voir-detail" @onclick:stopPropagation="true"
-                                                @onclick="() => NaviguerVersDetail(article.AffectationId,article.ArticleId)">
+                                                @onclick="() => NaviguerVersDetail(article.AffectationId, article.ArticleId)">
                                             Voir détail
                                             <svg viewBox="0 0 24 24">
                                                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -338,6 +349,143 @@
                         @articlesFiltres.Count() article@(articlesFiltres.Count() > 1 ? "s" : "") affiché@(articlesFiltres.Count() > 1 ? "s" : "")
                     </span>
                     <button class="modal-btn-fermer" @onclick="FermerModal">Fermer</button>
+                </div>
+
+            </div>
+        </div>
+    }
+
+    @* ═══════════════════════════════════════════════════════
+       MODAL COMMENTAIRE
+    ═══════════════════════════════════════════════════════ *@
+    @if (ModalCommentaireOuvert && MaterielCommentaire != null)
+    {
+        <div class="modal-backdrop" @onclick="FermerModalCommentaire">
+            <div class="modal-container modal-commentaire" @onclick:stopPropagation="true">
+
+                @* ── Header ── *@
+                <div class="modal-header">
+                    <div class="modal-header-left">
+                        <div class="modal-icon modal-icon-comment">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="modal-title">Commenter un équipement</h2>
+                            <p class="modal-subtitle">
+                                <strong>@MaterielCommentaire.Designation</strong>
+                                &nbsp;·&nbsp;
+                                <span class="modal-ref">@MaterielCommentaire.Reference</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button class="modal-close" @onclick="FermerModalCommentaire">
+                        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                @* ── Corps ── *@
+                <div class="modal-body commentaire-body">
+
+                    @* Zone de saisie *@
+                    <div class="commentaire-input-group">
+                        <label class="commentaire-label">Votre avis sur cet équipement</label>
+                        <textarea class="commentaire-textarea"
+                                  placeholder="Décrivez votre expérience, signalez un problème ou donnez votre avis sur @MaterielCommentaire.Designation..."
+                                  maxlength="1000"
+                                  @bind="CommentaireContenu"
+                                  @bind:event="oninput"
+                                  rows="5">
+                        </textarea>
+                        <div class="commentaire-counter @(CommentaireContenu.Length > 900 ? "counter-warn" : "")">
+                            @CommentaireContenu.Length / 1000
+                        </div>
+                    </div>
+
+                    @* Feedback succès / erreur *@
+                    @if (!string.IsNullOrEmpty(CommentaireFeedback))
+                    {
+                        <div class="commentaire-feedback @(CommentaireSucces ? "feedback-success" : "feedback-error")">
+                            <svg viewBox="0 0 24 24">
+                                @if (CommentaireSucces)
+                                {
+                                    <path d="M20 6L9 17l-5-5"/>
+                                }
+                                else
+                                {
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 8v4M12 16h.01"/>
+                                }
+                            </svg>
+                            @CommentaireFeedback
+                        </div>
+                    }
+
+                    @* Commentaires existants *@
+                    @if (CommentaireChargement)
+                    {
+                        <div class="loading-state" style="min-height:80px;">
+                            <div class="spinner"></div>
+                        </div>
+                    }
+                    else if (CommentairesExistants.Any())
+                    {
+                        <div class="commentaires-existants">
+                            <h4 class="existants-titre">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Commentaires précédents (@CommentairesExistants.Count)
+                            </h4>
+                            <div class="existants-list">
+                                @foreach (var c in CommentairesExistants)
+                                {
+                                    <div class="existant-item">
+                                        <div class="existant-avatar">@c.AuteurInitiales</div>
+                                        <div class="existant-content">
+                                            <div class="existant-meta">
+                                                <span class="existant-auteur">@c.AuteurNom</span>
+                                                <span class="existant-date">@c.DateCreation.ToString("dd MMM yyyy · HH:mm")</span>
+                                            </div>
+                                            <p class="existant-texte">@c.Contenu</p>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-comments">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <p>Aucun commentaire pour le moment. Soyez le premier à donner votre avis !</p>
+                        </div>
+                    }
+
+                </div>
+
+                @* ── Footer ── *@
+                <div class="modal-footer">
+                    <button class="modal-btn-fermer" @onclick="FermerModalCommentaire">Annuler</button>
+                    <button class="btn-envoyer-commentaire"
+                            disabled="@(CommentaireEnvoi || string.IsNullOrWhiteSpace(CommentaireContenu))"
+                            @onclick="EnvoyerCommentaire">
+                        @if (CommentaireEnvoi)
+                        {
+                            <span class="spinner-sm"></span>
+                            <span>Envoi...</span>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                            <span>Envoyer</span>
+                        }
+                    </button>
                 </div>
 
             </div>

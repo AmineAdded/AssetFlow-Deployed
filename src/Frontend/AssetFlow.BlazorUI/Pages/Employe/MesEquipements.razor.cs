@@ -169,10 +169,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                 CommentaireContenu  = string.Empty;
 
                 // Mettre à jour le compteur sur la carte sans recharger
-                MaterielCommentaire.NombreCommentaires++;
-                var carte = MaterielsGroupes.FirstOrDefault(
-                    m => m.MaterielId == MaterielCommentaire.MaterielId);
-                if (carte != null) carte.NombreCommentaires++;
+                 MaterielCommentaire.NombreCommentaires++;
 
                 // Rafraîchir la liste des commentaires dans le modal
                 CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(

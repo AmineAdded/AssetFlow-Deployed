@@ -27,20 +27,18 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
 
-        private string UserName  { get; set; } = "Employé";
-        private string UserRole  { get; set; } = "Employé";
-        private int    CurrentUserId             = 0;
-        private bool   _hubConnected             = false;
-        private bool   _conversationOpen         = false;
-        private bool   LoadingITUsers            = true;
-        private bool   LoadingMessages           = false;
+        private int  CurrentUserId     = 0;
+        private bool _hubConnected     = false;
+        private bool _conversationOpen = false;
+        private bool LoadingITUsers    = true;
+        private bool LoadingMessages   = false;
 
-        private string SearchIT    { get; set; } = string.Empty;
-        private string NewMessage  { get; set; } = string.Empty;
+        private string SearchIT   { get; set; } = string.Empty;
+        private string NewMessage { get; set; } = string.Empty;
 
-        private List<ITUserConvDto>  ITUsers  { get; set; } = new();
+        private List<ITUserConvDto>  ITUsers    { get; set; } = new();
         private ITUserConvDto?       SelectedIT { get; set; }
-        private List<ChatMessageDto> Messages { get; set; } = new();
+        private List<ChatMessageDto> Messages   { get; set; } = new();
 
         private HubConnection?       _hub;
         private System.Timers.Timer? _typingTimer;
@@ -58,10 +56,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         protected override async Task OnInitializedAsync()
         {
-            UserName      = await LocalStorage.GetItemAsync<string>("user_name") ?? "Employé";
-            UserRole      = await LocalStorage.GetItemAsync<string>("user_role") ?? "Employé";
             CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
-
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
@@ -127,7 +122,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                     });
                 });
 
-                // ── NOUVEAU : recevoir la liste des IT connectés ──────────────
                 _hub.On<List<int>>("OnlineUsers", async (onlineUserIds) =>
                 {
                     await InvokeAsync(() =>
@@ -147,10 +141,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                 await _hub.StartAsync();
                 _hubConnected = true;
                 await _hub.SendAsync("UserConnected", CurrentUserId);
-
-                // ── NOUVEAU : demander les statuts des IT connectés ───────────
                 await _hub.SendAsync("GetOnlineUsers");
-
                 StateHasChanged();
             }
             catch { _hubConnected = false; StateHasChanged(); }
@@ -198,7 +189,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             StateHasChanged();
 
             Messages = await MsgSvc.GetHistoryAsync(CurrentUserId, it.Id);
-
             LoadingMessages = false;
             await MarkMessagesAsReadAsync(it.Id);
             StateHasChanged();
@@ -299,14 +289,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             if (dt.Value.Date == today) return dt.Value.ToString("HH:mm");
             if (dt.Value.Date == today.AddDays(-1)) return "Hier";
             return dt.Value.ToString("dd/MM");
-        }
-
-        private string GetInitials()
-        {
-            var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2) return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-            if (parts.Length == 1 && parts[0].Length >= 2) return parts[0][..2].ToUpper();
-            return "EM";
         }
 
         public async ValueTask DisposeAsync()

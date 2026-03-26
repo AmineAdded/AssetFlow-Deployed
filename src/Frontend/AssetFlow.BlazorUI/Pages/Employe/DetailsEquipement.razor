@@ -1,6 +1,5 @@
 @* ============================================================
    Pages/Employe/DetailsEquipement.razor
-   MISE À JOUR : Ajout de la liste des incidents sous les spécifications
    ============================================================ *@
 @namespace AssetFlow.BlazorUI.Pages.Employe
 @page "/employe/equipement/{AffectationId:int}"
@@ -11,50 +10,8 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"Employe"})">
     <div class="employe-layout">
 
-        @* ══════════════════════════════════════════════════════
-        SIDEBAR
-        ══════════════════════════════════════════════════════ *@
-        <aside class="employe-sidebar">
+        <EmployeSidebar ActivePage="equipements" />
 
-            <div class="sidebar-header">
-                <img src="images/logo.png" alt="AssetFlow" class="sidebar-logo" />
-            </div>
-
-            <nav class="sidebar-nav">
-                <a href="/employe/equipements" class="nav-link active">
-                    <svg class="nav-icon" viewBox="0 0 24 24">
-                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                        <path d="M8 21h8M12 17v4" />
-                    </svg>
-                    <span class="nav-text">Mes Équipements</span>
-                </a>
-                <a href="/employe/incident" class="nav-link">
-                    <svg class="nav-icon" viewBox="0 0 24 24">
-                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01" />
-                    </svg>
-                    <span class="nav-text">Signaler un Incident</span>
-                </a>
-                <a href="/employe/messagerie" class="nav-link">
-                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span class="nav-text">Messagerie</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-profile">
-                <div class="profile-avatar">@GetInitials()</div>
-                <div class="profile-info">
-                    <p class="profile-name">@UserName</p>
-                    <p class="profile-role">@UserRole</p>
-                </div>
-            </div>
-
-            <LogoutButton />
-
-        </aside>
-
-        @* ══════════════════════════════════════════════════════
-        CONTENU PRINCIPAL
-        ══════════════════════════════════════════════════════ *@
         <main class="detail-main">
 
             <header class="detail-header">
@@ -94,13 +51,10 @@
                 }
                 else
                 {
-                    @* ═══ GRILLE PRINCIPALE 60 / 40 ═══ *@
                     <div class="detail-grid">
 
-                        @* ════ COLONNE GAUCHE (60%) ════ *@
                         <section class="col-left">
 
-                            @* Titre + badge statut *@
                             <div class="equip-heading">
                                 <div>
                                     <h2 class="equip-title">@Equipement.Designation</h2>
@@ -112,7 +66,6 @@
                                 </span>
                             </div>
 
-                            @* Photo *@
                             <div class="equip-photo-box">
                                 @if (!string.IsNullOrEmpty(Equipement.ImageUrl))
                                 {
@@ -130,7 +83,6 @@
                                 }
                             </div>
 
-                            @* Table spécifications techniques *@
                             <div class="specs-card">
                                 <div class="specs-header">
                                     <svg viewBox="0 0 24 24">
@@ -149,9 +101,7 @@
                                         <tr>
                                             <td class="spec-lbl">Numéro de série</td>
                                             <td class="spec-val spec-mono">
-                                                @(string.IsNullOrEmpty(Equipement.NumeroSerie) 
-                                                    ? "Non renseigné" 
-                                                    : Equipement.NumeroSerie)
+                                                @(string.IsNullOrEmpty(Equipement.NumeroSerie) ? "Non renseigné" : Equipement.NumeroSerie)
                                             </td>
                                         </tr>
                                         <tr>
@@ -168,9 +118,7 @@
                                         </tr>
                                         <tr>
                                             <td class="spec-lbl">Date d'affectation</td>
-                                            <td class="spec-val">
-                                                @Equipement.DateAffectation.ToString("dd MMMM yyyy")
-                                            </td>
+                                            <td class="spec-val">@Equipement.DateAffectation.ToString("dd MMMM yyyy")</td>
                                         </tr>
                                         @if (!string.IsNullOrEmpty(Equipement.Observations))
                                         {
@@ -183,9 +131,6 @@
                                 </table>
                             </div>
 
-                            @* ══════════════════════════════════════════════
-                            SECTION HISTORIQUE DES INCIDENTS
-                            ══════════════════════════════════════════════ *@
                             <div class="incidents-section">
                                 <div class="incidents-section-header">
                                     <div class="incidents-title-group">
@@ -224,7 +169,6 @@
                                         @foreach (var incident in Incidents)
                                         {
                                             <div class="timeline-item">
-                                                @* Icône colorée selon le statut *@
                                                 <div class="timeline-dot dot-@GetIncidentDotClass(incident.Statut)">
                                                     <svg viewBox="0 0 24 24">
                                                         @if (incident.Statut == "Resolu" || incident.Statut == "Cloture")
@@ -243,31 +187,19 @@
                                                         }
                                                     </svg>
                                                 </div>
-
-                                                @* Contenu de l'incident *@
                                                 <div class="timeline-content">
                                                     <div class="timeline-top-row">
                                                         <div class="timeline-badges">
-                                                            <span class="incident-type-badge type-@incident.TypeIncident.ToLower()">
-                                                                @incident.TypeIncident
-                                                            </span>
-                                                            <span class="incident-statut-badge statut-badge-@incident.Statut.ToLower()">
-                                                                @incident.StatutLabel
-                                                            </span>
-                                                            <span class="incident-urgence-badge urgence-@GetUrgenceClass(incident.Urgence)">
-                                                                @incident.UrgenceLabel
-                                                            </span>
+                                                            <span class="incident-type-badge type-@incident.TypeIncident.ToLower()">@incident.TypeIncident</span>
+                                                            <span class="incident-statut-badge statut-badge-@incident.Statut.ToLower()">@incident.StatutLabel</span>
+                                                            <span class="incident-urgence-badge urgence-@GetUrgenceClass(incident.Urgence)">@incident.UrgenceLabel</span>
                                                         </div>
                                                         <div class="timeline-meta">
                                                             <span class="timeline-numero">@incident.NumeroIncident</span>
-                                                            <span class="timeline-date">
-                                                                @incident.DateIncident.ToString("dd MMM yyyy")
-                                                            </span>
+                                                            <span class="timeline-date">@incident.DateIncident.ToString("dd MMM yyyy")</span>
                                                         </div>
                                                     </div>
-
                                                     <p class="timeline-description">@incident.Description</p>
-
                                                     @if (incident.DateResolution.HasValue && !string.IsNullOrEmpty(incident.CommentairesResolution))
                                                     {
                                                         <div class="timeline-resolution">
@@ -287,15 +219,11 @@
 
                         </section>
 
-                        @* ════ COLONNE DROITE (40%) ════ *@
                         <aside class="col-right">
 
-                            @* ── QR Code ── *@
                             <div class="qr-card">
                                 <div class="qr-frame">
-                                    <div class="qr-svg-wrap">
-                                        @((MarkupString)QrSvg)
-                                    </div>
+                                    <div class="qr-svg-wrap">@((MarkupString)QrSvg)</div>
                                 </div>
                                 <h4 class="qr-title">Code d'Identification</h4>
                                 <p class="qr-desc">
@@ -319,7 +247,6 @@
                                 </button>
                             </div>
 
-                            @* ── Signaler un incident ── *@
                             <div class="incident-card">
                                 <div class="incident-top">
                                     <div class="incident-icon-box">
@@ -336,7 +263,6 @@
                                         </p>
                                     </div>
                                 </div>
-
                                 <button class="btn-incident" @onclick="NaviguerVersSignalement">
                                     <svg viewBox="0 0 24 24">
                                         <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />

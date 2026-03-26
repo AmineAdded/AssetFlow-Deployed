@@ -1,6 +1,5 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / Employe / MesEquipements.razor.cs
-// FICHIER COMPLET
 // ============================================================
 
 using AssetFlow.BlazorUI.Services;
@@ -23,12 +22,12 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         // ── Recherche principale ───────────────────────────────
         private string SearchQuery { get; set; } = string.Empty;
 
-        // ── Modal articles (existant) ──────────────────────────
-        private bool                      ModalOuvert        { get; set; } = false;
+        // ── Modal articles ─────────────────────────────────────
+        private bool                      ModalOuvert         { get; set; } = false;
         private MaterielAffecteGroupeDto? MaterielSelectionne { get; set; } = null;
         private string                    ModalSearchQuery    { get; set; } = string.Empty;
 
-        // ── Modal commentaire (NOUVEAU) ────────────────────────
+        // ── Modal commentaire ──────────────────────────────────
         private bool                      ModalCommentaireOuvert { get; set; } = false;
         private MaterielAffecteGroupeDto? MaterielCommentaire    { get; set; } = null;
         private string                    CommentaireContenu     { get; set; } = string.Empty;
@@ -38,21 +37,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private bool                      CommentaireChargement  { get; set; } = false;
         private List<CommentaireDto>      CommentairesExistants  { get; set; } = new();
 
-        // ── Info utilisateur ───────────────────────────────────
-        private string UserName { get; set; } = "Utilisateur";
-        private string UserRole { get; set; } = "Employé";
-
         // ── Initialisation ─────────────────────────────────────
         protected override async Task OnInitializedAsync()
         {
-            await LoadUserInfoAsync();
             await LoadMaterielsGroupesAsync();
-        }
-
-        private async Task LoadUserInfoAsync()
-        {
-            UserName = await EmployeService.GetCurrentUserNameAsync();
-            UserRole = await EmployeService.GetCurrentUserRoleAsync();
         }
 
         private async Task LoadMaterielsGroupesAsync()
@@ -99,7 +87,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                 .ToList();
         }
 
-        // ── Modal articles (existant) ──────────────────────────
+        // ── Modal articles ─────────────────────────────────────
         private void OuvrirModal(MaterielAffecteGroupeDto materiel)
         {
             MaterielSelectionne = materiel;
@@ -120,8 +108,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             StateHasChanged();
         }
 
-        // ── Modal commentaire (NOUVEAU) ────────────────────────
-
+        // ── Modal commentaire ──────────────────────────────────
         private async Task OuvrirModalCommentaire(MaterielAffecteGroupeDto materiel)
         {
             MaterielCommentaire    = materiel;
@@ -133,7 +120,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             ModalCommentaireOuvert = true;
             StateHasChanged();
 
-            // Charger les commentaires existants sur ce matériel
             CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materiel.MaterielId);
             CommentaireChargement = false;
             StateHasChanged();
@@ -167,11 +153,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             {
                 CommentaireFeedback = "Votre commentaire a bien été enregistré !";
                 CommentaireContenu  = string.Empty;
-
-                // Mettre à jour le compteur sur la carte sans recharger
-                 MaterielCommentaire.NombreCommentaires++;
-
-                // Rafraîchir la liste des commentaires dans le modal
+                MaterielCommentaire.NombreCommentaires++;
                 CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
                     MaterielCommentaire.MaterielId);
             }
@@ -183,28 +165,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             StateHasChanged();
         }
 
-        // ── Navigation vers détail article ────────────────────
+        // ── Navigation ─────────────────────────────────────────
         private void NaviguerVersDetail(int affectationId, int articleId)
         {
             Navigation.NavigateTo($"/employe/equipement/{affectationId}/article/{articleId}");
-        }
-
-        // ── Helpers UI ─────────────────────────────────────────
-        private string GetStatutLabel(string statut) => statut switch
-        {
-            "EnCours"   => "BON",
-            "Retourne"  => "RETOURNÉ",
-            "Perdu"     => "PERDU",
-            "Endommage" => "ENDOMMAGÉ",
-            _           => statut.ToUpper()
-        };
-
-        private string GetInitials()
-        {
-            var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length >= 2) return $"{parts[0][0]}{parts[1][0]}".ToUpper();
-            if (parts.Length == 1 && parts[0].Length >= 2) return parts[0][..2].ToUpper();
-            return "??";
         }
     }
 }

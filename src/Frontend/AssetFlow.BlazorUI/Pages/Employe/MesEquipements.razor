@@ -1,6 +1,5 @@
 @* ============================================================
    AssetFlow.BlazorUI / Pages / Employe / MesEquipements.razor
-   FICHIER COMPLET — bouton Commenter sur la carte + modal
    ============================================================ *@
 
 @page "/employe/equipements"
@@ -10,50 +9,8 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"Employe"})">
     <div class="employe-layout">
 
-        @* ═══════════════════════
-           SIDEBAR
-        ═══════════════════════ *@
-        <aside class="employe-sidebar">
-            <div class="sidebar-header">
-                <img src="images/logo.png" alt="AssetFlow" class="sidebar-logo" />
-            </div>
+        <EmployeSidebar ActivePage="equipements" />
 
-            <nav class="sidebar-nav">
-                <a href="/employe/equipements" class="nav-link active">
-                    <svg class="nav-icon" viewBox="0 0 24 24">
-                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                        <path d="M8 21h8M12 17v4" />
-                    </svg>
-                    <span class="nav-text">Mes Équipements</span>
-                </a>
-                <a href="/employe/incident" class="nav-link">
-                    <svg class="nav-icon" viewBox="0 0 24 24">
-                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01" />
-                    </svg>
-                    <span class="nav-text">Signaler un Incident</span>
-                </a>
-                <a href="/employe/messagerie" class="nav-link">
-                    <svg class="nav-icon" viewBox="0 0 24 24">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span class="nav-text">Messagerie</span>
-                </a>
-            </nav>
-
-            <div class="sidebar-profile">
-                <div class="profile-avatar">@GetInitials()</div>
-                <div class="profile-info">
-                    <p class="profile-name">@UserName</p>
-                    <p class="profile-role">@UserRole</p>
-                </div>
-            </div>
-
-            <LogoutButton />
-        </aside>
-
-        @* ═══════════════════════
-           MAIN CONTENT
-        ═══════════════════════ *@
         <main class="employe-main">
 
             <header class="employe-header">
@@ -118,7 +75,6 @@
                         {
                             <div class="equipment-card @(materiel.StatutDominant == "Endommage" ? "card-damaged" : "")">
 
-                                @* ── Image ── *@
                                 <div class="card-image">
                                     @if (!string.IsNullOrEmpty(materiel.ImageUrl))
                                     {
@@ -132,7 +88,6 @@
                                             </svg>
                                         </div>
                                     }
-                                    @* Badge nombre d'articles *@
                                     <div class="articles-count-badge">
                                         <svg viewBox="0 0 24 24">
                                             <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 3H8"/>
@@ -141,15 +96,12 @@
                                     </div>
                                 </div>
 
-                                @* ── Contenu ── *@
                                 <div class="card-content">
                                     <div class="card-header">
                                         <h3 class="card-title">@materiel.Designation</h3>
                                     </div>
-
                                     <p class="card-reference">@materiel.Reference</p>
                                     <p class="card-categorie">@materiel.Categorie</p>
-
                                     <div class="card-date">
                                         <svg class="date-icon" viewBox="0 0 24 24">
                                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -158,7 +110,6 @@
                                         Assigné le @materiel.DerniereAffectation.ToString("dd/MM/yyyy")
                                     </div>
 
-                                    @* ── Bouton Voir les articles ── *@
                                     <button class="card-btn-articles" @onclick="() => OuvrirModal(materiel)">
                                         <svg viewBox="0 0 24 24">
                                             <path d="M9 11l3 3L22 4" />
@@ -167,7 +118,6 @@
                                         Voir les @materiel.NombreArticles article@(materiel.NombreArticles > 1 ? "s" : "")
                                     </button>
 
-                                    @* ── Bouton Commenter (sur le matériel entier) ── *@
                                     <button class="card-btn-commenter" @onclick="() => OuvrirModalCommentaire(materiel)">
                                         <svg viewBox="0 0 24 24">
                                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -189,9 +139,7 @@
         </main>
     </div>
 
-    @* ═══════════════════════════════════════════════════════
-       MODAL ARTICLES (existant — inchangé)
-    ═══════════════════════════════════════════════════════ *@
+    @* ── Modal Articles ── *@
     @if (ModalOuvert && MaterielSelectionne != null)
     {
         <div class="modal-backdrop" @onclick="FermerModal">
@@ -256,7 +204,6 @@
                             <span>Date affectation</span>
                             <span></span>
                         </div>
-
                         <div class="articles-list">
                             @foreach (var article in articlesFiltres)
                             {
@@ -276,18 +223,15 @@
                                             }
                                         </div>
                                     </div>
-
                                     <div class="article-statut">
                                         <span class="statut-pill-sm" style="--pill-color: @article.StatutBadgeColor;">
                                             <span class="pill-dot"></span>
                                             @article.EtatArticle
                                         </span>
                                     </div>
-
                                     <div class="article-date">
                                         @article.DateAffectation.ToString("dd MMM yyyy")
                                     </div>
-
                                     <div class="article-action">
                                         <button class="btn-voir-detail"
                                                 @onclick:stopPropagation="true"
@@ -315,15 +259,12 @@
         </div>
     }
 
-    @* ═══════════════════════════════════════════════════════
-       MODAL COMMENTAIRE MATÉRIEL (NOUVEAU)
-    ═══════════════════════════════════════════════════════ *@
+    @* ── Modal Commentaire ── *@
     @if (ModalCommentaireOuvert && MaterielCommentaire != null)
     {
         <div class="modal-backdrop" @onclick="FermerModalCommentaire">
             <div class="modal-container modal-commentaire" @onclick:stopPropagation="true">
 
-                @* ── Header ── *@
                 <div class="modal-header">
                     <div class="modal-header-left">
                         <div class="modal-icon modal-icon-comment">
@@ -345,10 +286,7 @@
                     </button>
                 </div>
 
-                @* ── Corps ── *@
                 <div class="modal-body commentaire-body">
-
-                    @* Zone de saisie *@
                     <div class="commentaire-input-group">
                         <label class="commentaire-label">Votre avis sur cet équipement</label>
                         <textarea class="commentaire-textarea"
@@ -363,7 +301,6 @@
                         </div>
                     </div>
 
-                    @* Feedback succès / erreur *@
                     @if (!string.IsNullOrEmpty(CommentaireFeedback))
                     {
                         <div class="commentaire-feedback @(CommentaireSucces ? "feedback-success" : "feedback-error")">
@@ -382,7 +319,6 @@
                         </div>
                     }
 
-                    @* Commentaires existants *@
                     @if (CommentaireChargement)
                     {
                         <div class="loading-state" style="min-height:80px;">
@@ -424,10 +360,8 @@
                             <p>Aucun commentaire pour le moment. Soyez le premier à donner votre avis !</p>
                         </div>
                     }
-
                 </div>
 
-                @* ── Footer ── *@
                 <div class="modal-footer">
                     <button class="modal-btn-fermer" @onclick="FermerModalCommentaire">Annuler</button>
                     <button class="btn-envoyer-commentaire"

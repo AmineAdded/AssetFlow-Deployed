@@ -159,12 +159,35 @@ html.dark .msg-input-wrap { background:#0d1520; border-color:#1e2d42; }
 @keyframes msgSpin { to { transform:rotate(360deg); } }
 
 /* Responsive */
-@media (max-width:768px) {
-    .msg-body { position:relative; overflow:hidden; }
-    .msg-col-left { width:100%; border-right:none; }
-    .msg-col-left.mobile-hidden { display:none; }
-    .msg-col-right { position:absolute; inset:0; display:none; flex-direction:column; z-index:10; }
-    .msg-col-right.mobile-visible { display:flex; }
-    .msg-back-btn { display:flex; }
-    .msg-bubble { max-width:80%; }
+@media (max-width: 768px) {
+
+    /* ✅ AJOUT : passer le layout en colonne pour que la sidebar
+       devienne la barre de navigation horizontale en haut */
+    .employe-layout {
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* ✅ AJOUT : employe-main doit prendre le reste de la hauteur */
+    .employe-main {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* ✅ AJOUT : le header doit avoir un padding réduit sur mobile */
+    .employe-header {
+        padding: 0 1rem;
+        height: 3.5rem;
+    }
+
+    /* Le reste de vos règles existantes */
+    .msg-body { position: relative; overflow: hidden; }
+    .msg-col-left { width: 100%; border-right: none; }
+    .msg-col-left.mobile-hidden { display: none; }
+    .msg-col-right { position: absolute; inset: 0; display: none; flex-direction: column; z-index: 10; }
+    .msg-col-right.mobile-visible { display: flex; }
+    .msg-back-btn { display: flex; }
+    .msg-bubble { max-width: 80%; }
 }

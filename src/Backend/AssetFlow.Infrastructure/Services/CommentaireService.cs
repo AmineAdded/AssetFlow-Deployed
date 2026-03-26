@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.Infrastructure / Services / CommentaireService.cs
-// MISE À JOUR : ajout SupprimerCommentaireAsync
+// MISE À JOUR : ajout GetTousLesCommentairesAsync
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -20,6 +20,7 @@ namespace AssetFlow.Infrastructure.Services
             _context = context;
         }
 
+        // ── Ajouter ──────────────────────────────────────────────
         public async Task<CommentaireResultDto> AjouterCommentaireAsync(CreerCommentaireDto dto)
         {
             try
@@ -41,12 +42,7 @@ namespace AssetFlow.Infrastructure.Services
                 _context.CommentairesMateriel.Add(commentaire);
                 await _context.SaveChangesAsync();
 
-                return new CommentaireResultDto
-                {
-                    Succes  = true,
-                    Message = "Commentaire enregistré avec succès.",
-                    Id      = commentaire.Id
-                };
+                return new CommentaireResultDto { Succes = true, Message = "Commentaire enregistré.", Id = commentaire.Id };
             }
             catch (Exception ex)
             {
@@ -54,6 +50,7 @@ namespace AssetFlow.Infrastructure.Services
             }
         }
 
+        // ── Lire (vue utilisateur) ────────────────────────────────
         public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId, int userId)
         {
             var commentaires = await _context.CommentairesMateriel
@@ -62,18 +59,10 @@ namespace AssetFlow.Infrastructure.Services
                 .OrderByDescending(c => c.DateCreation)
                 .ToListAsync();
 
-            return commentaires.Select(c => new CommentaireDto
-            {
-                Id              = c.Id,
-                MaterielId      = c.MaterielId,
-                UtilisateurId   = c.UtilisateurId,
-                AuteurNom       = $"{c.Utilisateur.FirstName} {c.Utilisateur.LastName}",
-                AuteurInitiales = $"{(c.Utilisateur.FirstName.Length > 0 ? c.Utilisateur.FirstName[0] : ' ')}{(c.Utilisateur.LastName.Length > 0 ? c.Utilisateur.LastName[0] : ' ')}".ToUpper().Trim(),
-                Contenu         = c.Contenu,
-                DateCreation    = c.DateCreation
-            }).ToList();
+            return commentaires.Select(c => MapToDto(c)).ToList();
         }
 
+        // ── Supprimer ─────────────────────────────────────────────
         public async Task<CommentaireResultDto> SupprimerCommentaireAsync(int commentaireId, int utilisateurId)
         {
             try
@@ -84,7 +73,6 @@ namespace AssetFlow.Infrastructure.Services
                 if (commentaire == null)
                     return new CommentaireResultDto { Succes = false, Message = "Commentaire introuvable." };
 
-                // Vérification : seul l'auteur peut supprimer son propre commentaire
                 if (commentaire.UtilisateurId != utilisateurId)
                     return new CommentaireResultDto { Succes = false, Message = "Vous ne pouvez supprimer que vos propres commentaires." };
 
@@ -97,6 +85,83 @@ namespace AssetFlow.Infrastructure.Services
             {
                 return new CommentaireResultDto { Succes = false, Message = $"Erreur : {ex.Message}" };
             }
+        }
+
+        // ── Lire (vue IT — tous les commentaires) ─────────────────
+        public async Task<List<CommentaireITDto>> GetTousLesCommentairesAsync(string? referenceFiltre = null)
+        {
+            var query = _context.CommentairesMateriel
+                .Include(c => c.Utilisateur)
+                .Include(c => c.Materiel)
+                .AsQueryable();
+
+            // Filtre par référence matériel (insensible à la casse)
+            if (!string.IsNullOrWhiteSpace(referenceFiltre))
+            {
+                var filtre = referenceFiltre.Trim().ToLower();
+                query = query.Where(c =>
+                    c.Materiel.Reference.ToLower().Contains(filtre) ||
+                    c.Materiel.Designation.ToLower().Contains(filtre));
+            }
+
+            var commentaires = await query
+                .OrderByDescending(c => c.DateCreation)
+                .ToListAsync();
+
+            return commentaires.Select(c => new CommentaireITDto
+            {
+                Id                = c.Id,
+                MaterielId        = c.MaterielId,
+                MaterielRef       = c.Materiel.Reference,
+                MaterielNom       = c.Materiel.Designation,
+                MaterielCategorie = c.Materiel.Categorie,
+                UtilisateurId     = c.UtilisateurId,
+                AuteurNom         = $"{c.Utilisateur.FirstName} {c.Utilisateur.LastName}",
+                AuteurInitiales   = BuildInitiales(c.Utilisateur.FirstName, c.Utilisateur.LastName),
+                AuteurRole        = c.Utilisateur.Role,
+                Contenu           = c.Contenu,
+                DateCreation      = c.DateCreation
+            }).ToList();
+        }
+        //Suppression de tous les commentaires pour l'it
+        public async Task<CommentaireResultDto> SupprimerCommentaireAdminAsync(int commentaireId)
+        {
+            try
+            {
+                var commentaire = await _context.CommentairesMateriel
+                    .FirstOrDefaultAsync(c => c.Id == commentaireId);
+        
+                if (commentaire == null)
+                    return new CommentaireResultDto { Succes = false, Message = "Commentaire introuvable." };
+        
+                _context.CommentairesMateriel.Remove(commentaire);
+                await _context.SaveChangesAsync();
+        
+                return new CommentaireResultDto { Succes = true, Message = "Commentaire supprimé." };
+            }
+            catch (Exception ex)
+            {
+                return new CommentaireResultDto { Succes = false, Message = $"Erreur : {ex.Message}" };
+            }
+        }
+
+        // ── Helpers ───────────────────────────────────────────────
+        private static CommentaireDto MapToDto(CommentaireMateriel c) => new()
+        {
+            Id              = c.Id,
+            MaterielId      = c.MaterielId,
+            UtilisateurId   = c.UtilisateurId,
+            AuteurNom       = $"{c.Utilisateur.FirstName} {c.Utilisateur.LastName}",
+            AuteurInitiales = BuildInitiales(c.Utilisateur.FirstName, c.Utilisateur.LastName),
+            Contenu         = c.Contenu,
+            DateCreation    = c.DateCreation
+        };
+
+        private static string BuildInitiales(string first, string last)
+        {
+            var a = first.Length > 0 ? first[0].ToString() : "";
+            var b = last.Length  > 0 ? last[0].ToString()  : "";
+            return (a + b).ToUpper().Trim();
         }
     }
 }

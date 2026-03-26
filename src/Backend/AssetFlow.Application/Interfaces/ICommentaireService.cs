@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.Application / Interfaces / ICommentaireService.cs
-// MISE À JOUR : ajout SupprimerCommentaireAsync
+// MISE À JOUR : ajout GetTousLesCommentairesAsync
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -9,8 +9,15 @@ namespace AssetFlow.Application.Interfaces
 {
     public interface ICommentaireService
     {
-        Task<CommentaireResultDto> AjouterCommentaireAsync(CreerCommentaireDto dto);
-        Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId, int userId);
-        Task<CommentaireResultDto> SupprimerCommentaireAsync(int commentaireId, int utilisateurId);
+        Task<CommentaireResultDto>   AjouterCommentaireAsync(CreerCommentaireDto dto);
+        Task<List<CommentaireDto>>   GetCommentairesMaterielAsync(int materielId, int userId);
+        Task<CommentaireResultDto>   SupprimerCommentaireAsync(int commentaireId, int utilisateurId);
+
+        /// <summary>
+        /// Vue IT : tous les commentaires, filtrables par référence matériel.
+        /// </summary>
+        Task<List<CommentaireITDto>> GetTousLesCommentairesAsync(string? referenceFiltre = null);
+        //Suppression de commentaires par IT
+        Task<CommentaireResultDto> SupprimerCommentaireAdminAsync(int commentaireId);
     }
 }

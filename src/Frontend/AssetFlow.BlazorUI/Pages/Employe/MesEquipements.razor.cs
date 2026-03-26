@@ -171,9 +171,6 @@ private async Task EnvoyerCommentaire()
         CommentaireContenu  = string.Empty;
 
         MaterielCommentaire.NombreCommentaires++;
-        var carte = MaterielsGroupes.FirstOrDefault(
-            m => m.MaterielId == MaterielCommentaire.MaterielId);
-        if (carte != null) carte.NombreCommentaires++;
 
         CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
             MaterielCommentaire.MaterielId);

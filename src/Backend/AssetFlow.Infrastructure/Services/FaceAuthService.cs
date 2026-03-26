@@ -25,7 +25,7 @@ namespace AssetFlow.Infrastructure.Services
         private string KeycloakUrl  => _config["Keycloak:Authority"]!;
         private string ClientId     => _config["Keycloak:ClientId"]!;
         private string ClientSecret => _config["Keycloak:ClientSecret"]!;
-        private string AdminPassword=> _config["Keycloak:AdminPassword"] ?? "maddeh2004";
+        private string AdminPassword=> _config["Keycloak:AdminPassword"] ?? "Moez2004";
 
         public FaceAuthService(AppDbContext dbContext, IConfiguration config, HttpClient httpClient)
         {

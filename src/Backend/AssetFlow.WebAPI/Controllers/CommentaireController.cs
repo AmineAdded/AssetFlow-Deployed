@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.WebAPI / Controllers / CommentaireController.cs
-// MISE À JOUR : ajout DELETE api/commentaire/{id}/{userId}
+// MISE À JOUR : ajout GET api/commentaire/it/tous
 // ============================================================
 
 using AssetFlow.Application.DTOs;
@@ -22,10 +22,7 @@ namespace AssetFlow.WebAPI.Controllers
             _service = service;
         }
 
-        /// <summary>
-        /// POST api/commentaire
-        /// Enregistre un commentaire sur un matériel
-        /// </summary>
+        /// <summary>POST api/commentaire — Enregistre un commentaire</summary>
         [HttpPost]
         public async Task<IActionResult> AjouterCommentaire([FromBody] CreerCommentaireDto dto)
         {
@@ -34,14 +31,10 @@ namespace AssetFlow.WebAPI.Controllers
 
             var result = await _service.AjouterCommentaireAsync(dto);
             if (!result.Succes) return BadRequest(result.Message);
-
             return Ok(result);
         }
 
-        /// <summary>
-        /// GET api/commentaire/materiel/{materielId}/{userId}
-        /// Récupère les commentaires d'un utilisateur pour un matériel
-        /// </summary>
+        /// <summary>GET api/commentaire/materiel/{materielId}/{userId} — Commentaires d'un utilisateur</summary>
         [HttpGet("materiel/{materielId}/{userId}")]
         public async Task<IActionResult> GetCommentaires(int materielId, int userId)
         {
@@ -50,10 +43,7 @@ namespace AssetFlow.WebAPI.Controllers
             return Ok(commentaires);
         }
 
-        /// <summary>
-        /// DELETE api/commentaire/{commentaireId}/{utilisateurId}
-        /// Supprime un commentaire (seulement par son auteur)
-        /// </summary>
+        /// <summary>DELETE api/commentaire/{commentaireId}/{utilisateurId} — Supprime un commentaire (auteur uniquement)</summary>
         [HttpDelete("{commentaireId}/{utilisateurId}")]
         public async Task<IActionResult> SupprimerCommentaire(int commentaireId, int utilisateurId)
         {
@@ -62,7 +52,29 @@ namespace AssetFlow.WebAPI.Controllers
 
             var result = await _service.SupprimerCommentaireAsync(commentaireId, utilisateurId);
             if (!result.Succes) return BadRequest(result.Message);
+            return Ok(result);
+        }
 
+        /// <summary>
+        /// GET api/commentaire/it/tous?reference=SN-200
+        /// Vue IT : tous les commentaires, filtrables par référence/désignation.
+        /// </summary>
+        [HttpGet("it/tous")]
+        public async Task<IActionResult> GetTousLesCommentaires([FromQuery] string? reference = null)
+        {
+            var commentaires = await _service.GetTousLesCommentairesAsync(reference);
+            return Ok(commentaires);
+        }
+        /// <summary>
+        /// DELETE api/commentaire/admin/{commentaireId}
+        /// Suppression par un agent IT (sans vérification d'auteur)
+        /// </summary>
+        [HttpDelete("admin/{commentaireId}")]
+        public async Task<IActionResult> SupprimerCommentaireAdmin(int commentaireId)
+        {
+            if (commentaireId <= 0) return BadRequest("ID invalide.");
+            var result = await _service.SupprimerCommentaireAdminAsync(commentaireId);
+            if (!result.Succes) return BadRequest(result.Message);
             return Ok(result);
         }
     }

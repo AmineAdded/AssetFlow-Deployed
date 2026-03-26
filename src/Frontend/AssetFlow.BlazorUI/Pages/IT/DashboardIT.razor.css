@@ -150,7 +150,7 @@ html.dark .it-layout {
 .it-topbar-brand h1 { font-size:18px; font-weight:900; color:var(--text-primary); letter-spacing:-0.3px; }
 .it-topbar-role-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:var(--radius-full); background:rgba(19,109,236,0.12); color:#136dec; text-transform:uppercase; letter-spacing:0.06em; }
 .it-topbar-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
-.it-last-update { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+.it-last-update { font-size:11px; color:var(--text-secondary); white-space:nowrap; margin-right: 50px;}
 .it-btn-refresh {
     width:32px; height:32px; border-radius:var(--radius-md);
     display:flex; align-items:center; justify-content:center;

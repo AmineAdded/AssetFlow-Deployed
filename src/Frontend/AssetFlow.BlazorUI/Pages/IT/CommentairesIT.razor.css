@@ -99,7 +99,7 @@ html.dark .itc-topbar { background: rgba(16,24,34,0.95); border-bottom-color: rg
 .itc-topbar-sub { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
 
 .itc-topbar-badge-wrap { flex-shrink: 0; }
-.itc-count-badge { padding: 0.25rem 0.75rem; background: rgba(19,109,236,0.1); border: 1px solid rgba(19,109,236,0.2); border-radius: 9999px; font-size: 0.72rem; font-weight: 700; color: #136dec; white-space: nowrap; }
+.itc-count-badge { padding: 0.25rem 0.75rem; background: rgba(19,109,236,0.1); border: 1px solid rgba(19,109,236,0.2); border-radius: 9999px; font-size: 0.72rem; font-weight: 700; color: #136dec; white-space: nowrap;margin-right: 50px; }
 
 /* ══════════════════════════
    BARRE DE FILTRES (hauteur fixe)

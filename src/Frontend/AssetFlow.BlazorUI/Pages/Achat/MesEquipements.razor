@@ -422,48 +422,70 @@
                         </div>
                     }
 
-                    @* Commentaires existants *@
-                    @if (CommentaireChargement)
-                    {
-                        <div class="loading-state" style="min-height:80px;">
-                            <div class="spinner"></div>
-                        </div>
-                    }
-                    else if (CommentairesExistants.Any())
-                    {
-                        <div class="commentaires-existants">
-                            <h4 class="existants-titre">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
-                                Commentaires précédents (@CommentairesExistants.Count)
-                            </h4>
-                            <div class="existants-list">
-                                @foreach (var c in CommentairesExistants)
-                                {
-                                    <div class="existant-item">
-                                        <div class="existant-avatar">@c.AuteurInitiales</div>
-                                        <div class="existant-content">
-                                            <div class="existant-meta">
-                                                <span class="existant-auteur">@c.AuteurNom</span>
-                                                <span class="existant-date">@c.DateCreation.ToString("dd MMM yyyy · HH:mm")</span>
-                                            </div>
-                                            <p class="existant-texte">@c.Contenu</p>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="no-comments">
+                    
+                @* ── Commentaires existants (AVEC bouton supprimer) ── *@
+                @if (CommentaireChargement)
+                {
+                    <div class="loading-state" style="min-height:80px;">
+                        <div class="spinner"></div>
+                    </div>
+                }
+                else if (CommentairesExistants.Any())
+                {
+                    <div class="commentaires-existants">
+                        <h4 class="existants-titre">
                             <svg viewBox="0 0 24 24">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                             </svg>
-                            <p>Aucun commentaire pour le moment. Soyez le premier à donner votre avis !</p>
+                            Mes commentaires (@CommentairesExistants.Count)
+                        </h4>
+                        <div class="existants-list">
+                            @foreach (var c in CommentairesExistants)
+                            {
+                                <div class="existant-item">
+                                    <div class="existant-avatar">@c.AuteurInitiales</div>
+                                    <div class="existant-content">
+                                        <div class="existant-meta">
+                                            <span class="existant-auteur">@c.AuteurNom</span>
+                                            <span class="existant-date">@c.DateCreation.ToString("dd MMM yyyy · HH:mm")</span>
+
+                                            @* ── Bouton Supprimer ── *@
+                                            <button class="btn-supprimer-commentaire"
+                                                    disabled="@(CommentaireSupprimerId == c.Id)"
+                                                    @onclick="() => SupprimerCommentaire(c.Id)"
+                                                    title="Supprimer ce commentaire">
+                                                @if (CommentaireSupprimerId == c.Id)
+                                                {
+                                                    <span class="spinner-xs"></span>
+                                                }
+                                                else
+                                                {
+                                                    <svg viewBox="0 0 24 24">
+                                                        <polyline points="3 6 5 6 21 6"/>
+                                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                                        <path d="M10 11v6M14 11v6"/>
+                                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                                    </svg>
+                                                }
+                                            </button>
+                                        </div>
+                                        <p class="existant-texte">@c.Contenu</p>
+                                    </div>
+                                </div>
+                            }
                         </div>
-                    }
+                    </div>
+                }
+                else
+                {
+                    <div class="no-comments">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <p>Aucun commentaire pour le moment. Soyez le premier à donner votre avis !</p>
+                    </div>
+                }
+
 
                 </div>
 

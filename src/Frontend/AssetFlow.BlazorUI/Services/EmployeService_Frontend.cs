@@ -1,5 +1,6 @@
 // ============================================================
 // AssetFlow.BlazorUI / Services / EmployeService.cs  (FICHIER COMPLET)
+// MISE À JOUR : ajout SupprimerCommentaireAsync
 // ============================================================
 
 using System.Net.Http.Json;
@@ -45,7 +46,6 @@ namespace AssetFlow.BlazorUI.Services
     public class MaterielAffecteGroupeDto
     {
         public int      MaterielId          { get; set; }
-        public int      userId              {get;set;}
         public string   Reference           { get; set; } = string.Empty;
         public string   Designation         { get; set; } = string.Empty;
         public string   Categorie           { get; set; } = string.Empty;
@@ -54,7 +54,7 @@ namespace AssetFlow.BlazorUI.Services
         public string   StatutDominant      { get; set; } = string.Empty;
         public string   StatutBadgeColor    { get; set; } = string.Empty;
         public DateTime DerniereAffectation { get; set; }
-        public int      NombreCommentaires  { get; set; } = 0;   // ← NOUVEAU
+        public int      NombreCommentaires  { get; set; } = 0;
         public List<ArticleAffecteDto> Articles { get; set; } = new();
     }
 
@@ -83,6 +83,26 @@ namespace AssetFlow.BlazorUI.Services
         public string Message { get; set; } = string.Empty;
         public int?   Id      { get; set; }
     }
+            // ============================================================
+        // À AJOUTER dans EmployeService.cs (Frontend Blazor)
+        // Nouveau DTO + nouvelle méthode pour la vue IT
+        // ============================================================
+        
+        // ── DTO à ajouter avec les autres DTOs ───────────────────────
+        public class CommentaireITDto
+        {
+            public int      Id                { get; set; }
+            public int      MaterielId        { get; set; }
+            public string   MaterielRef       { get; set; } = string.Empty;
+            public string   MaterielNom       { get; set; } = string.Empty;
+            public string   MaterielCategorie { get; set; } = string.Empty;
+            public int      UtilisateurId     { get; set; }
+            public string   AuteurNom         { get; set; } = string.Empty;
+            public string   AuteurInitiales   { get; set; } = string.Empty;
+            public string   AuteurRole        { get; set; } = string.Empty;
+            public string   Contenu           { get; set; } = string.Empty;
+            public DateTime DateCreation      { get; set; }
+        }
 
     // ═══════════════════════════════════════════════
     // SERVICE
@@ -162,10 +182,10 @@ namespace AssetFlow.BlazorUI.Services
             }
         }
 
-        /// <summary>Récupère tous les commentaires d'un matériel</summary>
+        /// <summary>Récupère les commentaires d'un utilisateur pour un matériel</summary>
         public async Task<List<CommentaireDto>> GetCommentairesMaterielAsync(int materielId)
         {
-            int userId = await GetCurrentUserIdAsync();
+            var userId = await GetCurrentUserIdAsync();
             try
             {
                 var result = await _http.GetFromJsonAsync<List<CommentaireDto>>(
@@ -173,6 +193,27 @@ namespace AssetFlow.BlazorUI.Services
                 return result ?? new();
             }
             catch { return new(); }
+        }
+
+        /// <summary>Supprime un commentaire (seulement par son auteur)</summary>
+        public async Task<CommentaireResultDto> SupprimerCommentaireAsync(int commentaireId)
+        {
+            var userId = await GetCurrentUserIdAsync();
+            try
+            {
+                var response = await _http.DeleteAsync($"api/commentaire/{commentaireId}/{userId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<CommentaireResultDto>();
+                    return result ?? new CommentaireResultDto { Succes = false, Message = "Réponse vide." };
+                }
+                var erreur = await response.Content.ReadAsStringAsync();
+                return new CommentaireResultDto { Succes = false, Message = erreur };
+            }
+            catch (Exception ex)
+            {
+                return new CommentaireResultDto { Succes = false, Message = ex.Message };
+            }
         }
 
         // ── Helpers localStorage ──────────────────────────────
@@ -204,6 +245,44 @@ namespace AssetFlow.BlazorUI.Services
                 return string.IsNullOrEmpty(role) ? "Employé" : role;
             }
             catch { return "Employé"; }
+        }
+                // ── Méthode à ajouter dans la classe EmployeService ──────────
+        /// <summary>Vue IT : récupère tous les commentaires, filtrables par référence</summary>
+        public async Task<List<CommentaireITDto>> GetTousLesCommentairesAsync(string? reference = null)
+        {
+            try
+            {
+                var url = string.IsNullOrWhiteSpace(reference)
+                    ? "api/commentaire/it/tous"
+                    : $"api/commentaire/it/tous?reference={Uri.EscapeDataString(reference)}";
+        
+                var result = await _http.GetFromJsonAsync<List<CommentaireITDto>>(url);
+                return result ?? new();
+            }
+            catch { return new(); }
+        }
+                // ============================================================
+        // PATCH 4 — EmployeService.cs (Frontend Blazor)
+        // Ajouter la méthode utilisée dans CommentairesIT.razor.cs
+        // ============================================================
+        /// <summary>Suppression admin IT — sans vérification d'auteur</summary>
+        public async Task<CommentaireResultDto> SupprimerCommentaireITAsync(int commentaireId)
+        {
+            try
+            {
+                var response = await _http.DeleteAsync($"api/commentaire/admin/{commentaireId}");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<CommentaireResultDto>();
+                    return result ?? new CommentaireResultDto { Succes = false, Message = "Réponse vide." };
+                }
+                var erreur = await response.Content.ReadAsStringAsync();
+                return new CommentaireResultDto { Succes = false, Message = erreur };
+            }
+            catch (Exception ex)
+            {
+                return new CommentaireResultDto { Succes = false, Message = ex.Message };
+            }
         }
     }
 }

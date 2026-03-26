@@ -149,6 +149,7 @@ namespace AssetFlow.Infrastructure.Services
 
             return groupes;
         }
+        
 
         private string GetEtatColor(EtatArticle etat) => etat switch
         {
@@ -157,4 +158,5 @@ namespace AssetFlow.Infrastructure.Services
             _                 => "#6B7280"
         };
     }
+    
 }

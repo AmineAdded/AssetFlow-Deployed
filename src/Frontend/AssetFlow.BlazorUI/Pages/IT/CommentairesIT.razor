@@ -1,0 +1,395 @@
+@* ============================================================
+   AssetFlow.BlazorUI / Pages / IT / CommentairesIT.razor
+   MISE À JOUR : scroll corrigé + modal détail + suppression IT
+   ============================================================ *@
+
+@page "/it/commentaires"
+@using AssetFlow.BlazorUI.Services
+@using AssetFlow.BlazorUI.Components
+@using Microsoft.JSInterop
+
+<RoleAuthGuard AllowedRoles="@(new[]{"IT"})">
+<div class="itc-layout">
+
+    @* ══════ SIDEBAR ══════ *@
+    <aside class="aff-sidebar">
+        <div class="sidebar-logo-wrap">
+            <img src="images/logo.png" alt="AssetFlow" class="aff-sidebar-logo" />
+        </div>
+        <nav class="aff-sidebar-nav">
+            <a href="/dashboard/it" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span class="aff-nav-text">Dashboard</span>
+            </a>
+            <a href="/it/equipements" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                <span class="aff-nav-text">Mes Équipements</span>
+            </a>
+            <a href="/it/employes" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="aff-nav-text">Matériels affectés</span>
+            </a>
+            <a href="/it/affectation" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                <span class="aff-nav-text">Assigner matériels</span>
+            </a>
+            <a href="/it/incidents" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg>
+                <span class="aff-nav-text">Incidents</span>
+            </a>
+            <a href="/it/inventaire" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/></svg>
+                <span class="aff-nav-text">Inventaire</span>
+            </a>
+            <a href="/it/demandes-achat" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <span class="aff-nav-text">Mes achats</span>
+            </a>
+            <a href="/it/messagerie" class="aff-nav-link">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="aff-nav-text">Messagerie</span>
+            </a>
+            <a href="/it/commentaires" class="aff-nav-link active">
+                <svg class="aff-nav-icon" viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <circle cx="9"  cy="10" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/>
+                    <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+                <span class="aff-nav-text">Commentaires</span>
+            </a>
+        </nav>
+        <div class="aff-sidebar-profile">
+            <div class="aff-profile-avatar">@_initiales</div>
+            <div class="aff-profile-info">
+                <p class="aff-profile-name">@_nomUtilisateur</p>
+                <p class="aff-profile-role">IT</p>
+            </div>
+        </div>
+        <LogoutButton />
+    </aside>
+
+    @* ══════ OVERLAY MENU MOBILE ══════ *@
+    @if (_menuOpen)
+    {
+        <div class="aff-menu-overlay" @onclick="() => _menuOpen = false">
+            <div class="aff-menu-drawer" @onclick:stopPropagation="true">
+                <div class="aff-menu-drawer-logo">
+                    <img src="images/logo.png" alt="AssetFlow" class="aff-sidebar-logo" />
+                </div>
+                <nav class="aff-menu-drawer-nav">
+                    <a href="/dashboard/it"      class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span class="aff-nav-text">Dashboard</span></a>
+                    <a href="/it/equipements"    class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="aff-nav-text">Mes Équipements</span></a>
+                    <a href="/it/employes"       class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="aff-nav-text">Gestion d'affectations</span></a>
+                    <a href="/it/affectation"    class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg><span class="aff-nav-text">Affectations</span></a>
+                    <a href="/it/incidents"      class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01"/></svg><span class="aff-nav-text">Incidents</span></a>
+                    <a href="/it/inventaire"     class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg><span class="aff-nav-text">Inventaire</span></a>
+                    <a href="/it/demandes-achat" class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg><span class="aff-nav-text">Mes achats</span></a>
+                    <a href="/it/messagerie"     class="aff-nav-link" @onclick="() => _menuOpen = false"><svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="aff-nav-text">Messagerie</span></a>
+                    <a href="/it/commentaires"   class="aff-nav-link active" @onclick="() => _menuOpen = false">
+                        <svg class="aff-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/></svg>
+                        <span class="aff-nav-text">Commentaires</span>
+                    </a>
+                </nav>
+                <div class="aff-sidebar-profile">
+                    <div class="aff-profile-avatar">@_initiales</div>
+                    <div class="aff-profile-info"><p class="aff-profile-name">@_nomUtilisateur</p><p class="aff-profile-role">IT</p></div>
+                </div>
+                <LogoutButton />
+            </div>
+        </div>
+    }
+
+    @* ══════ MAIN ══════ *@
+    <main class="itc-main">
+
+        @* ── Topbar ── *@
+        <header class="itc-topbar">
+            <button class="aff-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="itc-topbar-title">
+                <div class="itc-topbar-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div>
+                    <h1>Commentaires Équipements</h1>
+                    <span class="itc-topbar-sub">Vue globale IT · tous les avis</span>
+                </div>
+            </div>
+            <div class="itc-topbar-badge-wrap">
+                <span class="itc-count-badge">@CommentairesFiltres.Count commentaire@(CommentairesFiltres.Count > 1 ? "s" : "")</span>
+            </div>
+        </header>
+
+        @* ── Barre de filtres ── *@
+        <div class="itc-filter-bar">
+            <div class="itc-search-wrap">
+                <svg class="itc-search-icon" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <input type="text"
+                       class="itc-search-input"
+                       placeholder="Filtrer par référence ou désignation du matériel…"
+                       value="@SearchQuery"
+                       @oninput="OnSearchInput" />
+                @if (!string.IsNullOrEmpty(SearchQuery))
+                {
+                    <button class="itc-search-clear" @onclick="ClearSearch" title="Effacer">
+                        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                }
+            </div>
+            <div class="itc-filter-chips">
+                <button class="itc-chip @(_roleFiltre == "" ? "active" : "")" @onclick='() => SetRoleFiltre("")'>
+                    Tous <span class="itc-chip-count">@Commentaires.Count</span>
+                </button>
+                <button class="itc-chip @(_roleFiltre == "Employe" ? "active" : "")" @onclick='() => SetRoleFiltre("Employe")'>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 8 0v2"/></svg>
+                    Employés <span class="itc-chip-count">@Commentaires.Count(c => c.AuteurRole == "Employe")</span>
+                </button>
+                <button class="itc-chip @(_roleFiltre == "IT" ? "active" : "")" @onclick='() => SetRoleFiltre("IT")'>
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    IT <span class="itc-chip-count">@Commentaires.Count(c => c.AuteurRole == "IT")</span>
+                </button>
+                <button class="itc-chip @(_roleFiltre == "EquipeAchat" ? "active" : "")" @onclick='() => SetRoleFiltre("EquipeAchat")'>
+                    <svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
+                    Achat <span class="itc-chip-count">@Commentaires.Count(c => c.AuteurRole == "EquipeAchat")</span>
+                </button>
+                <button class="itc-btn-refresh" @onclick="ChargerCommentaires" title="Actualiser">
+                    <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+                    Actualiser
+                </button>
+            </div>
+        </div>
+
+        @* ── Contenu scrollable ── *@
+        <div class="itc-content">
+            @if (IsLoading)
+            {
+                <div class="itc-state-center">
+                    <div class="itc-spinner"></div>
+                    <p>Chargement des commentaires…</p>
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="itc-state-center itc-state-error">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                    <p>@ErrorMessage</p>
+                    <button class="itc-btn-retry" @onclick="ChargerCommentaires">Réessayer</button>
+                </div>
+            }
+            else if (!CommentairesFiltres.Any())
+            {
+                <div class="itc-state-center">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <p>
+                        @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(_roleFiltre))
+                        { <span>Aucun commentaire ne correspond aux filtres.</span> }
+                        else
+                        { <span>Aucun commentaire enregistré pour le moment.</span> }
+                    </p>
+                    @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(_roleFiltre))
+                    {
+                        <button class="itc-btn-retry" @onclick="ResetFiltres">Réinitialiser les filtres</button>
+                    }
+                </div>
+            }
+            else
+            {
+                @foreach (var groupe in CommentairesFiltres
+                    .GroupBy(c => c.MaterielId)
+                    .OrderByDescending(g => g.Max(c => c.DateCreation)))
+                {
+                    var premierC   = groupe.First();
+                    var materielId = groupe.Key;
+                    var estOuvert  = _groupesOuverts.Contains(materielId);
+
+                    <div class="itc-materiel-group @(estOuvert ? "is-open" : "")">
+
+                        @* ── En-tête accordéon (cliquable) ── *@
+                        <div class="itc-group-header itc-group-toggle"
+                             @onclick="() => ToggleGroupe(materielId)">
+                            <div class="itc-group-header-left">
+                                <div class="itc-group-icon">
+                                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="itc-group-title">@premierC.MaterielNom</h3>
+                                    <div class="itc-group-meta">
+                                        <span class="itc-ref-badge">@premierC.MaterielRef</span>
+                                        <span class="itc-cat-badge">@premierC.MaterielCategorie</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="itc-group-header-right">
+                                <span class="itc-group-count">@groupe.Count() avis</span>
+                                @* Flèche accordéon *@
+                                <span class="itc-chevron @(estOuvert ? "open" : "")">
+                                    <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                                </span>
+                            </div>
+                        </div>
+
+                        @* ── Lignes commentaires (affichées uniquement si ouvert) ── *@
+                        @if (estOuvert)
+                        {
+                            <div class="itc-comments-list">
+                                @foreach (var c in groupe.OrderByDescending(x => x.DateCreation))
+                                {
+                                    <div class="itc-comment-row" @onclick="() => OuvrirModal(c)">
+
+                                        @* Auteur *@
+                                        <div class="itc-comment-author">
+                                            <div class="itc-avatar itc-avatar-@GetRoleClass(c.AuteurRole)">
+                                                @c.AuteurInitiales
+                                            </div>
+                                            <div class="itc-author-info">
+                                                <span class="itc-author-name">@c.AuteurNom</span>
+                                                <span class="itc-role-pill itc-role-@GetRoleClass(c.AuteurRole)">
+                                                    @GetRoleLabel(c.AuteurRole)
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        @* Texte (tronqué) *@
+                                        <div class="itc-comment-body">
+                                            <p class="itc-comment-text">@c.Contenu</p>
+                                        </div>
+
+                                        @* Date + actions *@
+                                        <div class="itc-comment-actions">
+                                            <div class="itc-comment-date">
+                                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                                @c.DateCreation.ToString("dd MMM yyyy")
+                                                <span class="itc-date-time">@c.DateCreation.ToString("HH:mm")</span>
+                                            </div>
+                                            @* Bouton supprimer *@
+                                            <button class="itc-btn-delete @(SupprimerEnCours == c.Id ? "loading" : "")"
+                                                    disabled="@(SupprimerEnCours == c.Id)"
+                                                    title="Supprimer ce commentaire"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="() => SupprimerCommentaire(c.Id)">
+                                                @if (SupprimerEnCours == c.Id)
+                                                {
+                                                    <span class="itc-spinner-xs"></span>
+                                                }
+                                                else
+                                                {
+                                                    <svg viewBox="0 0 24 24">
+                                                        <polyline points="3 6 5 6 21 6"/>
+                                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                                        <path d="M10 11v6M14 11v6"/>
+                                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                                    </svg>
+                                                }
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+    </main>
+</div>
+
+@* ══════════════════════════════════════════════════════
+   MODAL DÉTAIL COMMENTAIRE
+══════════════════════════════════════════════════════ *@
+@if (ModalOuvert && CommentaireSelectionne != null)
+{
+    <div class="itc-modal-backdrop" @onclick="FermerModal">
+        <div class="itc-modal" @onclick:stopPropagation="true">
+
+            @* Header *@
+            <div class="itc-modal-header">
+                <div class="itc-modal-header-left">
+                    <div class="itc-modal-avatar itc-avatar-@GetRoleClass(CommentaireSelectionne.AuteurRole)">
+                        @CommentaireSelectionne.AuteurInitiales
+                    </div>
+                    <div>
+                        <h2 class="itc-modal-auteur">@CommentaireSelectionne.AuteurNom</h2>
+                        <div class="itc-modal-meta">
+                            <span class="itc-role-pill itc-role-@GetRoleClass(CommentaireSelectionne.AuteurRole)">
+                                @GetRoleLabel(CommentaireSelectionne.AuteurRole)
+                            </span>
+                            <span class="itc-modal-date">
+                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                @CommentaireSelectionne.DateCreation.ToString("dd MMM yyyy · HH:mm")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <button class="itc-modal-close" @onclick="FermerModal">
+                    <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            @* Matériel concerné *@
+            <div class="itc-modal-materiel">
+                <div class="itc-modal-mat-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                </div>
+                <div>
+                    <p class="itc-modal-mat-nom">@CommentaireSelectionne.MaterielNom</p>
+                    <div class="itc-modal-mat-meta">
+                        <span class="itc-ref-badge">@CommentaireSelectionne.MaterielRef</span>
+                        <span class="itc-cat-badge">@CommentaireSelectionne.MaterielCategorie</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Corps du commentaire *@
+            <div class="itc-modal-body">
+                <p class="itc-modal-contenu">@CommentaireSelectionne.Contenu</p>
+            </div>
+
+            @* Feedback suppression *@
+            @if (!string.IsNullOrEmpty(ModalFeedback))
+            {
+                <div class="itc-modal-feedback @(ModalFeedbackSucces ? "feedback-success" : "feedback-error")">
+                    <svg viewBox="0 0 24 24">
+                        @if (ModalFeedbackSucces)
+                        { <path d="M20 6L9 17l-5-5"/> }
+                        else
+                        { <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/> }
+                    </svg>
+                    @ModalFeedback
+                </div>
+            }
+
+            @* Footer *@
+            <div class="itc-modal-footer">
+                <button class="itc-modal-btn-fermer" @onclick="FermerModal">Fermer</button>
+                <button class="itc-modal-btn-supprimer"
+                        disabled="@(SupprimerEnCours == CommentaireSelectionne.Id)"
+                        @onclick="() => SupprimerCommentaire(CommentaireSelectionne.Id)">
+                    @if (SupprimerEnCours == CommentaireSelectionne.Id)
+                    {
+                        <span class="itc-spinner-xs itc-spinner-white"></span>
+                        <span>Suppression…</span>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6M14 11v6"/>
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
+                        <span>Supprimer</span>
+                    }
+                </button>
+            </div>
+
+        </div>
+    </div>
+}
+
+</RoleAuthGuard>

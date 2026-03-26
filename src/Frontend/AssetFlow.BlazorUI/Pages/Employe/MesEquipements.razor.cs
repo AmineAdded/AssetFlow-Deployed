@@ -36,6 +36,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private bool                      CommentaireEnvoi       { get; set; } = false;
         private bool                      CommentaireChargement  { get; set; } = false;
         private List<CommentaireDto>      CommentairesExistants  { get; set; } = new();
+        private int?                      CommentaireSupprimerId  { get; set; } = null;
+        // ── Info utilisateur ───────────────────────────────────
+        private string UserName { get; set; } = "Utilisateur";
+        private string UserRole { get; set; } = "Employé";
 
         // ── Initialisation ─────────────────────────────────────
         protected override async Task OnInitializedAsync()
@@ -108,62 +112,107 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             StateHasChanged();
         }
 
-        // ── Modal commentaire ──────────────────────────────────
-        private async Task OuvrirModalCommentaire(MaterielAffecteGroupeDto materiel)
+        // ── Ouvre le modal commentaire ────────────────────────────────
+private async Task OuvrirModalCommentaire(MaterielAffecteGroupeDto materiel)
+{
+    MaterielCommentaire    = materiel;
+    CommentaireContenu     = string.Empty;
+    CommentaireFeedback    = string.Empty;
+    CommentaireSucces      = false;
+    CommentaireEnvoi       = false;
+    CommentaireChargement  = true;
+    CommentaireSupprimerId = null;
+    ModalCommentaireOuvert = true;
+    StateHasChanged();
+
+    CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materiel.MaterielId);
+    CommentaireChargement = false;
+    StateHasChanged();
+}
+
+// ── Ferme le modal commentaire ────────────────────────────────
+private void FermerModalCommentaire()
+{
+    ModalCommentaireOuvert = false;
+    MaterielCommentaire    = null;
+    CommentaireContenu     = string.Empty;
+    CommentaireFeedback    = string.Empty;
+    CommentairesExistants  = new();
+    CommentaireSupprimerId = null;
+}
+
+// ── Envoie un commentaire ─────────────────────────────────────
+private async Task EnvoyerCommentaire()
+{
+    if (MaterielCommentaire == null || string.IsNullOrWhiteSpace(CommentaireContenu))
+        return;
+
+    CommentaireEnvoi    = true;
+    CommentaireFeedback = string.Empty;
+    StateHasChanged();
+
+    var result = await EmployeService.AjouterCommentaireAsync(
+        MaterielCommentaire.MaterielId, CommentaireContenu);
+
+    CommentaireEnvoi  = false;
+    CommentaireSucces = result.Succes;
+
+    if (result.Succes)
+    {
+        CommentaireFeedback = "Votre commentaire a bien été enregistré !";
+        CommentaireContenu  = string.Empty;
+
+        MaterielCommentaire.NombreCommentaires++;
+
+        CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
+            MaterielCommentaire.MaterielId);
+    }
+    else
+    {
+        CommentaireFeedback = result.Message;
+    }
+
+    StateHasChanged();
+}
+
+// ── Supprime un commentaire ───────────────────────────────────
+private async Task SupprimerCommentaire(int commentaireId)
+{
+    CommentaireSupprimerId = commentaireId;   // active le spinner sur le bon bouton
+    CommentaireFeedback    = string.Empty;
+    StateHasChanged();
+
+    var result = await EmployeService.SupprimerCommentaireAsync(commentaireId);
+
+    CommentaireSupprimerId = null;
+    CommentaireSucces      = result.Succes;
+
+    if (result.Succes)
+    {
+        CommentaireFeedback = "Commentaire supprimé.";
+
+        // Mise à jour locale immédiate (sans rechargement complet)
+        CommentairesExistants.RemoveAll(c => c.Id == commentaireId);
+
+        if (MaterielCommentaire != null)
         {
-            MaterielCommentaire    = materiel;
-            CommentaireContenu     = string.Empty;
-            CommentaireFeedback    = string.Empty;
-            CommentaireSucces      = false;
-            CommentaireEnvoi       = false;
-            CommentaireChargement  = true;
-            ModalCommentaireOuvert = true;
-            StateHasChanged();
+            MaterielCommentaire.NombreCommentaires =
+                Math.Max(0, MaterielCommentaire.NombreCommentaires - 1);
 
-            CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materiel.MaterielId);
-            CommentaireChargement = false;
-            StateHasChanged();
+            var carte = MaterielsGroupes.FirstOrDefault(
+                m => m.MaterielId == MaterielCommentaire.MaterielId);
+            if (carte != null)
+                carte.NombreCommentaires = MaterielCommentaire.NombreCommentaires;
         }
+    }
+    else
+    {
+        CommentaireFeedback = result.Message;
+    }
 
-        private void FermerModalCommentaire()
-        {
-            ModalCommentaireOuvert = false;
-            MaterielCommentaire    = null;
-            CommentaireContenu     = string.Empty;
-            CommentaireFeedback    = string.Empty;
-            CommentairesExistants  = new();
-        }
+    StateHasChanged();
+}
 
-        private async Task EnvoyerCommentaire()
-        {
-            if (MaterielCommentaire == null || string.IsNullOrWhiteSpace(CommentaireContenu))
-                return;
-
-            CommentaireEnvoi    = true;
-            CommentaireFeedback = string.Empty;
-            StateHasChanged();
-
-            var result = await EmployeService.AjouterCommentaireAsync(
-                MaterielCommentaire.MaterielId, CommentaireContenu);
-
-            CommentaireEnvoi  = false;
-            CommentaireSucces = result.Succes;
-
-            if (result.Succes)
-            {
-                CommentaireFeedback = "Votre commentaire a bien été enregistré !";
-                CommentaireContenu  = string.Empty;
-                MaterielCommentaire.NombreCommentaires++;
-                CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
-                    MaterielCommentaire.MaterielId);
-            }
-            else
-            {
-                CommentaireFeedback = result.Message;
-            }
-
-            StateHasChanged();
-        }
 
         // ── Navigation ─────────────────────────────────────────
         private void NaviguerVersDetail(int affectationId, int articleId)

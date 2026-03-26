@@ -39,6 +39,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private bool                      CommentaireEnvoi       { get; set; } = false;
         private bool                      CommentaireChargement  { get; set; } = false;
         private List<CommentaireDto>      CommentairesExistants  { get; set; } = new();
+        private int?                      CommentaireSupprimerId  { get; set; } = null;
 
         // ── User info ─────────────────────────────────────────────
         private string UserName  { get; set; } = "Utilisateur";
@@ -117,8 +118,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             StateHasChanged();
         }
 
-        // ── Modal commentaire (NOUVEAU) ───────────────────────────
-
+            // ── Ouvre le modal commentaire ────────────────────────────────
         private async Task OuvrirModalCommentaire(MaterielAffecteGroupeDto materiel)
         {
             MaterielCommentaire    = materiel;
@@ -127,15 +127,16 @@ namespace AssetFlow.BlazorUI.Pages.IT
             CommentaireSucces      = false;
             CommentaireEnvoi       = false;
             CommentaireChargement  = true;
+            CommentaireSupprimerId = null;
             ModalCommentaireOuvert = true;
             StateHasChanged();
 
-            // Charger les commentaires existants sur ce matériel
             CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(materiel.MaterielId);
             CommentaireChargement = false;
             StateHasChanged();
         }
 
+        // ── Ferme le modal commentaire ────────────────────────────────
         private void FermerModalCommentaire()
         {
             ModalCommentaireOuvert = false;
@@ -143,8 +144,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
             CommentaireContenu     = string.Empty;
             CommentaireFeedback    = string.Empty;
             CommentairesExistants  = new();
+            CommentaireSupprimerId = null;
         }
 
+        // ── Envoie un commentaire ─────────────────────────────────────
         private async Task EnvoyerCommentaire()
         {
             if (MaterielCommentaire == null || string.IsNullOrWhiteSpace(CommentaireContenu))
@@ -165,11 +168,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 CommentaireFeedback = "Votre commentaire a bien été enregistré !";
                 CommentaireContenu  = string.Empty;
 
-                // Mettre à jour le compteur sur la carte sans recharger
                 MaterielCommentaire.NombreCommentaires++;
 
-
-                // Rafraîchir la liste des commentaires dans le modal
                 CommentairesExistants = await EmployeService.GetCommentairesMaterielAsync(
                     MaterielCommentaire.MaterielId);
             }
@@ -180,6 +180,45 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             StateHasChanged();
         }
+
+        // ── Supprime un commentaire ───────────────────────────────────
+        private async Task SupprimerCommentaire(int commentaireId)
+        {
+            CommentaireSupprimerId = commentaireId;   // active le spinner sur le bon bouton
+            CommentaireFeedback    = string.Empty;
+            StateHasChanged();
+
+            var result = await EmployeService.SupprimerCommentaireAsync(commentaireId);
+
+            CommentaireSupprimerId = null;
+            CommentaireSucces      = result.Succes;
+
+            if (result.Succes)
+            {
+                CommentaireFeedback = "Commentaire supprimé.";
+
+                // Mise à jour locale immédiate (sans rechargement complet)
+                CommentairesExistants.RemoveAll(c => c.Id == commentaireId);
+
+                if (MaterielCommentaire != null)
+                {
+                    MaterielCommentaire.NombreCommentaires =
+                        Math.Max(0, MaterielCommentaire.NombreCommentaires - 1);
+
+                    var carte = MaterielsGroupes.FirstOrDefault(
+                        m => m.MaterielId == MaterielCommentaire.MaterielId);
+                    if (carte != null)
+                        carte.NombreCommentaires = MaterielCommentaire.NombreCommentaires;
+                }
+            }
+            else
+            {
+                CommentaireFeedback = result.Message;
+            }
+
+            StateHasChanged();
+        }
+
 
         // ── Navigation ────────────────────────────────────────────
         private void NaviguerVersDetail(int affectationId, int articleId)

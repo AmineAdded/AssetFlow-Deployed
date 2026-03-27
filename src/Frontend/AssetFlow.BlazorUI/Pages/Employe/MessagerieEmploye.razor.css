@@ -191,3 +191,32 @@ html.dark .msg-input-wrap { background:#0d1520; border-color:#1e2d42; }
     .msg-back-btn { display: flex; }
     .msg-bubble { max-width: 80%; }
 }
+
+/* ══ HAMBURGER ══ */
+.emp-hamburger-btn {
+    display: none;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+    flex-shrink: 0;
+}
+.emp-hamburger-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+    .emp-hamburger-btn { display: flex; }
+    .employe-sidebar   { display: none; }  /* cachée, le drawer prend le relais */
+}

@@ -40,6 +40,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         // ── Info utilisateur ───────────────────────────────────
         private string UserName { get; set; } = "Utilisateur";
         private string UserRole { get; set; } = "Employé";
+        private bool _menuOpen = false;
 
         // ── Initialisation ─────────────────────────────────────
         protected override async Task OnInitializedAsync()

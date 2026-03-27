@@ -38,6 +38,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         // ── QR Code ────────────────────────────────────────────
         private string FicheUrl => $"{Navigation.BaseUri}fiche/{AffectationId}/article/{ArticleId}";
         private string QrSvg    { get; set; } = string.Empty;
+        private bool _menuOpen = false;
 
         // ── Init ───────────────────────────────────────────────
         protected override async Task OnInitializedAsync()

@@ -12,19 +12,22 @@ namespace AssetFlow.BlazorUI.Components
     {
         [Inject] private EmployeService EmployeService { get; set; } = default!;
 
-        /// <summary>
-        /// Page active pour surligner le bon lien nav.
-        /// Valeurs acceptées : "equipements" | "incident" | "messagerie"
-        /// </summary>
-        [Parameter] public string ActivePage { get; set; } = string.Empty;
+        [Parameter] public string ActivePage  { get; set; } = string.Empty;
+        [Parameter] public bool   ForceOpen   { get; set; } = false;  // ← nouveau
 
-        private string UserName { get; set; } = "Utilisateur";
-        private string UserRole { get; set; } = "Employé";
+        private bool   _drawerOpen = false;
+        private string UserName    { get; set; } = "Utilisateur";
+        private string UserRole    { get; set; } = "Employé";
 
         protected override async Task OnInitializedAsync()
         {
             UserName = await EmployeService.GetCurrentUserNameAsync();
             UserRole = await EmployeService.GetCurrentUserRoleAsync();
+        }
+
+        protected override void OnParametersSet()
+        {
+            if (ForceOpen) _drawerOpen = true;   // ← synchronise avec la page parente
         }
 
         private string GetInitials()

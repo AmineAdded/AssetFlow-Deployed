@@ -43,6 +43,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private HubConnection?       _hub;
         private System.Timers.Timer? _typingTimer;
         private bool                 _isTyping = false;
+        private bool _menuOpen = false;
 
         private List<ITUserConvDto> ITUsersFiltres =>
             string.IsNullOrWhiteSpace(SearchIT)

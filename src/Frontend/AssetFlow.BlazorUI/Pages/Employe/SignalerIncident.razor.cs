@@ -27,6 +27,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         private bool   IsLoading    { get; set; } = true;
         private bool   IsSubmitting { get; set; } = false;
         private string ErrorMessage { get; set; } = string.Empty;
+        private bool _menuOpen = false;
 
         protected override async Task OnInitializedAsync()
         {

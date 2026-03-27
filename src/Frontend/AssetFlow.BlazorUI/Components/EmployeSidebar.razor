@@ -1,32 +1,33 @@
-@* ============================================================
-   AssetFlow.BlazorUI / Components / EmployeSidebar.razor
-   Sidebar réutilisable pour toutes les pages Employé
-   ============================================================ *@
-
 @using AssetFlow.BlazorUI.Services
 @using AssetFlow.BlazorUI.Components
 
-<aside class="employe-sidebar">
+@* ── Overlay ── *@
+@if (_drawerOpen)
+{
+    <div class="emp-drawer-overlay" @onclick="() => _drawerOpen = false"></div>
+}
+
+<aside class="employe-sidebar @(_drawerOpen ? "drawer-open" : "")">
 
     <div class="sidebar-header">
         <img src="images/logo.png" alt="AssetFlow" class="sidebar-logo" />
     </div>
 
     <nav class="sidebar-nav">
-        <a href="/employe/equipements" class="nav-link @(ActivePage == "equipements" ? "active" : "")">
+        <a href="/employe/equipements" class="nav-link @(ActivePage == "equipements" ? "active" : "")" @onclick="() => _drawerOpen = false">
             <svg class="nav-icon" viewBox="0 0 24 24">
                 <rect x="2" y="3" width="20" height="14" rx="2" />
                 <path d="M8 21h8M12 17v4" />
             </svg>
             <span class="nav-text">Mes Équipements</span>
         </a>
-        <a href="/employe/incident" class="nav-link @(ActivePage == "incident" ? "active" : "")">
+        <a href="/employe/incident" class="nav-link @(ActivePage == "incident" ? "active" : "")" @onclick="() => _drawerOpen = false">
             <svg class="nav-icon" viewBox="0 0 24 24">
                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01" />
             </svg>
             <span class="nav-text">Signaler un Incident</span>
         </a>
-        <a href="/employe/messagerie" class="nav-link @(ActivePage == "messagerie" ? "active" : "")">
+        <a href="/employe/messagerie" class="nav-link @(ActivePage == "messagerie" ? "active" : "")" @onclick="() => _drawerOpen = false">
             <svg class="nav-icon" viewBox="0 0 24 24">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>

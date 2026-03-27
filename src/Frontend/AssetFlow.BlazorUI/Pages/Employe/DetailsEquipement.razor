@@ -10,11 +10,14 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"Employe"})">
     <div class="employe-layout">
 
-        <EmployeSidebar ActivePage="equipements" />
+        <EmployeSidebar ActivePage="equipements" ForceOpen="_menuOpen"/>
 
         <main class="detail-main">
 
             <header class="detail-header">
+                <button class="emp-hamburger-btn" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
                 <nav class="breadcrumb">
                     <a href="/employe/equipements" class="breadcrumb-back" title="Retour">
                         <svg viewBox="0 0 24 24">

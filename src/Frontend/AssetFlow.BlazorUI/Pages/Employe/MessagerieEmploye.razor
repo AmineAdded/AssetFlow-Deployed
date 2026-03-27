@@ -6,11 +6,14 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"Employe"})">
 <div class="employe-layout">
 
-    <EmployeSidebar ActivePage="messagerie" />
+    <EmployeSidebar ActivePage="messagerie" ForceOpen="_menuOpen"/>
 
     <main class="employe-main">
 
         <header class="employe-header">
+            <button class="emp-hamburger-btn" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
             <div class="header-title-group">
                 <h1 class="header-title">Messagerie</h1>
                 <p class="emp-page-sub">Communication avec le service IT</p>

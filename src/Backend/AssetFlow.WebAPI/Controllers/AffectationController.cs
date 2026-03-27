@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/affectation")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class AffectationController : ControllerBase
     {
         private readonly IAffectationService _svc;

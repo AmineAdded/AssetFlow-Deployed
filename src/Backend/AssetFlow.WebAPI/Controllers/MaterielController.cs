@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/materiel")]
-    [Authorize(Policy = "EquipeAchatOnly")]
+    [Authorize(Policy = "AchatOrAdmin")]
     public class MaterielController : ControllerBase
     {
         private readonly IMaterielService _svc;

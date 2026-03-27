@@ -10,7 +10,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
    [ApiController]
     [Route("api/chat-offre")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class ChatOffreController : ControllerBase
     {
         private readonly IRedisOffreService _redis;

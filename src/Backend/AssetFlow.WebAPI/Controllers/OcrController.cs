@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class OcrController : ControllerBase
     {
         private readonly IOcrInvoiceService _ocr;

@@ -14,7 +14,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/offre-selection")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class OffreSelectionController : ControllerBase
     {
         private readonly IRedisOffreService _redis;

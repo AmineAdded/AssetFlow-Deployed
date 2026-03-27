@@ -6,7 +6,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/employes")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class EmployesController : ControllerBase
     {
         private readonly IEmployeManagementService _svc;

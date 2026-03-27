@@ -11,7 +11,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/statistiques-it")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class StatistiquesITController : ControllerBase
     {
         private readonly IStatistiquesITService _svc;

@@ -20,7 +20,7 @@ namespace WebApi.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Policy = "EquipeAchatOnly")]
+    [Authorize(Policy = "AchatOrAdmin")]
 
     public class FournisseursController : ControllerBase
     {

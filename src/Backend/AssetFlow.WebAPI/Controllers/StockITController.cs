@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/it/stock")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class StockITController : ControllerBase
     {
         private readonly IMaterielService _svc;

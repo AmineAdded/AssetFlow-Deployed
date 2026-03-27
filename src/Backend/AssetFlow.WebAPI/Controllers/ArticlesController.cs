@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/articles")]
-    [Authorize(Policy = "EquipeAchatOnly")]
+    [Authorize(Policy = "AchatOrAdmin")]
     public class ArticlesController : ControllerBase
     {
         private readonly AppDbContext _db;

@@ -13,7 +13,7 @@ namespace AssetFlow.WebApi.Controllers
 {
     [ApiController]
     [Route("api/demandes")]
-    [Authorize(Policy = "EquipeAchatOnly")]
+    [Authorize(Policy = "AchatOrAdmin")]
     public class DemandesAchatController : ControllerBase
     {
         private readonly IDemandeAchatService _service;

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace AssetFlow.WebAPI.Controllers{
     [ApiController]
     [Route("api/it/incidents")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class ITIncidentController : ControllerBase
     {
         private readonly IIncidentService _svc;

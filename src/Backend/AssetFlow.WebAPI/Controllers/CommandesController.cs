@@ -12,7 +12,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/commandes")]
-    [Authorize(Policy = "EquipeAchatOnly")]
+    [Authorize(Policy = "AchatOrAdmin")]
     public class CommandesController : ControllerBase
     {
         private readonly ICommandeService _svc;

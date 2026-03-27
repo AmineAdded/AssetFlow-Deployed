@@ -10,7 +10,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Policy = "ITOnly")]
+    [Authorize(Policy = "ITOrAdmin")]
     public class OffreAchatController : ControllerBase
     {
         private readonly IOffreAchatService _service;

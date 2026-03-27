@@ -6,7 +6,7 @@
 @page "/achat/fournisseurs"
 @using AssetFlow.BlazorUI.Pages.Achat
 @using AssetFlow.BlazorUI.Components
-<RoleAuthGuard AllowedRoles="@(new[]{"EquipeAchat"})">
+<RoleAuthGuard AllowedRoles="@(new[]{"EquipeAchat","Admin"})">
     <div class="layout-shell">
 
         @if (_sidebarOpen)

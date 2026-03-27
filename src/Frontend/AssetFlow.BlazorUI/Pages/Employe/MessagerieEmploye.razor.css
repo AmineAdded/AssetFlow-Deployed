@@ -190,6 +190,9 @@ html.dark .msg-input-wrap { background:#0d1520; border-color:#1e2d42; }
     .msg-col-right.mobile-visible { display: flex; }
     .msg-back-btn { display: flex; }
     .msg-bubble { max-width: 80%; }
+    .msg-conn-status{display: none;}
+    .employe-header{justify-content: flex-start;}
+    .header-title-group { flex: 1; }
 }
 
 /* ══ HAMBURGER ══ */

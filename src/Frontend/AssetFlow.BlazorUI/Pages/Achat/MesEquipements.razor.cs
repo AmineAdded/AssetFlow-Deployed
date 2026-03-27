@@ -42,7 +42,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── Info utilisateur ───────────────────────────────────
         private string UserName { get; set; } = "Utilisateur";
         private string UserRole { get; set; } = "Achat";
+        private bool        _sidebarOpen     = false;
 
+        private void ToggleSidebar() => _sidebarOpen  = !_sidebarOpen;
         // ── Init ───────────────────────────────────────────────
         protected override async Task OnInitializedAsync()
         {

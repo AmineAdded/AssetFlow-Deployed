@@ -50,6 +50,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private HubConnection?       _hub;
         private System.Timers.Timer? _typingTimer;
         private bool                 _isTyping = false;
+        private bool _sidebarOpen = false;
+        private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
 
         private List<ITUserForAchatDto> ITUsersFiltres =>
             (string.IsNullOrWhiteSpace(SearchIT)

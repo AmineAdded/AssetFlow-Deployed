@@ -907,6 +907,12 @@ html.dark .existant-content { border-color: rgba(255,255,255,0.07); }
     .nav-link.active { border-left: none; border-bottom: 3px solid var(--primary); }
     .nav-text { font-size: 0.6rem; }
     .modal-backdrop { padding: 0.75rem; }
+    /* Masquer la barre de recherche en mobile */
+    .header-search { display: none; }
+
+    /* Titre aligné à gauche en mobile */
+    .employe-header { justify-content: flex-start; }
+    .header-title-group { flex: 1; }
 }
 /* ── Bouton supprimer dans la liste des commentaires ── */
 .btn-supprimer-commentaire {

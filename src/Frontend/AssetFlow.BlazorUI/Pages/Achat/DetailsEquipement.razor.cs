@@ -38,6 +38,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── QR Code ────────────────────────────────────────────
         private string FicheUrl => $"{Navigation.BaseUri}fiche/{AffectationId}/article/{ArticleId}";
         private string QrSvg    { get; set; } = string.Empty;
+        private bool        _sidebarOpen     = false;
+
+        private void ToggleSidebar() => _sidebarOpen  = !_sidebarOpen;
 
         // ── Init ───────────────────────────────────────────────
         protected override async Task OnInitializedAsync()

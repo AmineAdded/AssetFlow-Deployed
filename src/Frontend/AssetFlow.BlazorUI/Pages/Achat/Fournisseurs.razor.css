@@ -85,133 +85,6 @@ html.dark .layout-shell {
 .layout-shell ::-webkit-scrollbar-track { background: transparent; }
 .layout-shell ::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); }
 
-
-/* ============================================================
-   3. SIDEBAR — Design identique au sidebar Employé
-      width: 200px, nav-link avec border-left actif
-   ============================================================ */
-.sidebar {
-    width:          200px;
-    background:     #0F1E3C;
-    display:        flex;
-    flex-direction: column;
-    height:         100vh;
-    position:       sticky;
-    top:            0;
-    flex-shrink:    0;
-    z-index:        100;
-    transition:     transform 0.3s ease;
-    border-right:   1px solid rgba(255,255,255,0.05);
-}
-
-/* ── Header logo ── */
-.sidebar-header {
-    padding:         1.5rem 1rem;
-    display:         flex;
-    align-items:     center;
-    justify-content: center;
-}
-.sidebar-logo-img {
-    width:      140px;
-    height:     auto;
-    object-fit: contain;
-    filter:     drop-shadow(0 0 12px rgba(19,109,236,0.5));
-}
-
-/* ── Navigation ── */
-.sidebar-nav {
-    flex:           1;
-    margin-top:     1rem;
-    padding:        0;
-    display:        flex;
-    flex-direction: column;
-    gap:            0.25rem;
-    overflow-y:     auto;
-}
-
-.nav-link {
-    display:     flex;
-    align-items: center;
-    gap:         0.75rem;
-    padding:     0.75rem 1.5rem;
-    color:       #94a3b8 !important;
-    font-size:   0.875rem;
-    font-weight: 500;
-    transition:  all 0.2s ease;
-    border-left: 4px solid transparent;
-}
-.nav-link:hover {
-    color:      #ffffff !important;
-    background: rgba(255,255,255,0.05);
-}
-.nav-link.active {
-    color:       #ffffff !important;
-    background:  rgba(19,109,236,0.20);
-    border-left: 4px solid #136dec;
-    font-weight: 700;
-}
-
-/* ── Icônes nav ── */
-.nav-icon {
-    width:   20px;
-    height:  20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.nav-icon svg {
-    width:        20px;
-    height:       20px;
-    fill:         none;
-    stroke:       currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-.nav-text { line-height: 1.3; }
-
-/* ── Profil ── */
-.sidebar-profile {
-    padding:     1rem 1.25rem;
-    border-top:  1px solid rgba(255,255,255,0.05);
-    display:     flex;
-    align-items: center;
-    gap:         0.75rem;
-}
-.profile-avatar {
-    width:        36px;
-    height:       36px;
-    border-radius: 50%;
-    background:   #136dec;
-    color:        #fff;
-    font-weight:  700;
-    font-size:    0.75rem;
-    display:      flex;
-    align-items:  center;
-    justify-content: center;
-    flex-shrink:  0;
-}
-.profile-name {
-    font-size:  0.8rem;
-    font-weight: 600;
-    color:      #ffffff;
-    margin:     0;
-    white-space: nowrap;
-    overflow:   hidden;
-    text-overflow: ellipsis;
-}
-.profile-role {
-    font-size:  0.7rem;
-    color:      #94a3b8;
-    margin:     0;
-    margin-top: 0.1rem;
-    white-space: nowrap;
-    overflow:   hidden;
-    text-overflow: ellipsis;
-}
-
-
 /* ============================================================
    4. ZONE PRINCIPALE
    ============================================================ */
@@ -233,7 +106,6 @@ display: flex; flex-direction: column;
     -webkit-backdrop-filter: blur(12px);
     position:        sticky;
     top:             0;
-    z-index:         50;
     padding:         0 68px 0 24px;
     display:         flex;
     align-items:     center;
@@ -777,7 +649,7 @@ html.dark .layout-shell .form-inp { background: rgba(255,255,255,0.06); }
 }
 
 @media (max-width: 480px) {
-    .search-wrap { display: none; }
+    /* .search-wrap { display: none; } */
     .table-toolbar { flex-direction: column; align-items: flex-start; }
     .filter-pills { flex-wrap: wrap; }
 }

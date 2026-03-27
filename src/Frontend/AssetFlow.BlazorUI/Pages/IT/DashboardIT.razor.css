@@ -139,12 +139,15 @@ html.dark .it-layout {
     border-bottom:1px solid var(--border);
     background:var(--bg-header); backdrop-filter:blur(12px);
 }
-.it-topbar-menu-btn {
+/* .it-topbar-menu-btn {
     display:none; align-items:center; justify-content:center;
     width:36px; height:36px; border-radius:var(--radius-md);
     color:var(--text-secondary); border:1px solid var(--border); flex-shrink:0;
 }
-.it-topbar-menu-btn:hover { background:rgba(255,255,255,0.06); }
+.it-topbar-menu-btn:hover { background:rgba(255,255,255,0.06); } */
+.emp-hamburger { display:none; flex-direction:column; justify-content:center; gap:5px; width:36px; height:36px; background:transparent; border:none; cursor:pointer; padding:4px; flex-shrink:0; }
+.emp-hamburger span { display:block; width:22px; height:2px; background:var(--text); border-radius:2px; transition:all 0.2s; }
+
 .it-topbar-brand { display:flex; align-items:center; gap:10px; flex:1; }
 .it-topbar-brand h1 { font-size:18px; font-weight:900; color:var(--text-primary); letter-spacing:-0.3px; }
 .it-topbar-role-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:var(--radius-full); background:rgba(19,109,236,0.12); color:#136dec; text-transform:uppercase; letter-spacing:0.06em; }
@@ -368,7 +371,7 @@ html.dark .it-mini-date { background:#1e2d3f; color:var(--text-primary); }
 @media (max-width: 768px) {
     .it-sidebar { position:fixed; left:0; top:0; transform:translateX(-100%); z-index:150; }
     .it-sidebar.open { transform:translateX(0); }
-    .it-topbar-menu-btn { display:flex; }
+    .emp-hamburger { display:flex; }
     .it-scroll { padding:12px 10px 30px; gap:10px; }
     .it-kpi-row { grid-template-columns:repeat(2,1fr); gap:8px; }
     .it-kpi-val { font-size:18px; }

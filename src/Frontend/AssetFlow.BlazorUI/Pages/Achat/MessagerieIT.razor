@@ -11,34 +11,23 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"EquipeAchat","Admin"})">
 <div class="mai-layout">
 
-    @* ══════ SIDEBAR ══════ *@
-    <aside class="mai-sidebar">
-        <div class="mai-sidebar-logo-wrap">
-            <img src="images/logo.png" alt="AssetFlow" class="mai-sidebar-logo" />
-        </div>
-        <nav class="mai-sidebar-nav">
-            <a href="/statistiques"      class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg><span>Statistiques</span></a>
-            <a href="/achat/equipements" class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Mes Équipements</span></a>
-            <a href="/achat/materiel"    class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Matériel</span></a>
-            <a href="/achat/fournisseurs" class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Fournisseurs</span></a>
-            <a href="/demandes-achat"    class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span>Demandes achat</span></a>
-            <a href="/achat/web-scraping" class="mai-nav-link"><svg class="mai-nav-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Scraping Marché</span></a>
-            <a href="/achat/messagerie"  class="mai-nav-link active"><svg class="mai-nav-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Messagerie IT</span></a>
-        </nav>
-        <div class="mai-sidebar-profile">
-            <div class="mai-profile-avatar">@GetInitials()</div>
-            <div>
-                <p class="mai-profile-name">@UserName</p>
-                <p class="mai-profile-role">Agent Achat</p>
-            </div>
-        </div>
-        <LogoutButton />
-    </aside>
+    @if (_sidebarOpen)
+        {
+            <div class="sidebar-overlay" @onclick="ToggleSidebar"></div>
+        }
+    <AchatSidebar ActivePage="messagerie" ForceOpen="_sidebarOpen" />
 
     @* ══ MAIN ══ *@
     <main class="mai-main">
 
         <header class="mai-header">
+            <button class="topbar-menu-btn" @onclick="ToggleSidebar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="3" y1="6"  x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
             <div>
                 <h1 class="mai-page-title">Messagerie — Service IT</h1>
                 <p class="mai-page-sub">Communication avec les agents IT</p>

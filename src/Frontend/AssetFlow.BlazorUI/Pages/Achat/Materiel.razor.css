@@ -35,9 +35,9 @@
     --r-xl:          0.75rem;
     --r-full:        9999px;
     --t:             0.15s ease;
-    display: flex; background: var(--bg); color: var(--text);
+    display: flex; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    position: relative; overflow: hidden;
+    position: relative;
 }
 html.dark .sk-shell {
     --bg:            #101822; --surface: #1c2533; --surface-2: rgba(255,255,255,0.04);
@@ -63,40 +63,11 @@ html.dark .sk-shell {
 .sk-shell ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
 /* ════════════════════════════════════════════════════════════
-   3. SIDEBAR
-   ════════════════════════════════════════════════════════════ */
-.sk-sidebar {
-    width: 200px; flex-shrink: 0; background: #0F1E3C;
-    display: flex; flex-direction: column;
-    height: 100vh; position: sticky; top: 0;
-    z-index: 100; transition: transform 0.3s ease;
-    border-right: 1px solid rgba(255,255,255,0.05);
-}
-.sk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 90; }
-.sk-sidebar-header { padding: 1.5rem 1rem; display: flex; align-items: center; justify-content: center; }
-.sk-logo { width: 140px; height: auto; object-fit: contain; filter: drop-shadow(0 0 12px rgba(19,109,236,0.45)); }
-.sk-nav { flex: 1; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
-.sk-nav-link {
-    display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1.25rem;
-    color: #94a3b8 !important; font-size: 0.875rem; font-weight: 500;
-    transition: all 0.2s ease; border-left: 3px solid transparent;
-}
-.sk-nav-link:hover  { color: #fff !important; background: rgba(255,255,255,0.05); }
-.sk-nav-link.active { color: #fff !important; background: rgba(19,109,236,0.18); border-left-color: #136dec; font-weight: 700; }
-.sk-nav-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; }
-.sk-nav-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.sk-profile { padding: 0.875rem 1rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 0.625rem; }
-.sk-profile-avatar { width: 34px; height: 34px; border-radius: 50%; background: #136dec; color: #fff; font-weight: 700; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sk-profile-info { min-width: 0; }
-.sk-profile-name { font-size: 0.78rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sk-profile-role { font-size: 0.65rem; color: #64748b; margin-top: 1px; }
-
-/* ════════════════════════════════════════════════════════════
    4. MAIN + TOPBAR
    ════════════════════════════════════════════════════════════ */
 .sk-main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 .sk-topbar {
-    position: sticky; top: 0; z-index: 40; background: var(--topbar-bg);
+    position: sticky; top: 0; background: var(--topbar-bg);
     border-bottom: 1px solid var(--topbar-border); padding: 0.75rem 1.5rem;
     display: flex; align-items: center; gap: 1rem;
 }
@@ -468,9 +439,24 @@ html.dark .sk-shell {
     }
 }
 @media (max-width: 680px) {
-    .sk-topbar { flex-wrap: wrap; gap: 0.5rem; }
+    .sk-topbar { flex-wrap: wrap; gap: 0.5rem; padding: 0.75rem 1rem; }
+    .sk-topbar-left  { width: 100%; }
     .sk-topbar-center { order: 3; flex-basis: 100%; }
-    .sk-topbar-right { margin-left: 0; }
+    .sk-topbar-right {
+        order: 2;
+        margin-left: 0;
+        width: 100%;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+    }
+    .sk-btn-add {
+        margin-left: 0;
+        flex: 1;
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 8px 10px;
+    }
+    .sk-btn-export { flex-shrink: 0; }
     .sk-panel { width: 100%; }
     .sk-field-row { grid-template-columns: 1fr; }
     .sk-content { padding: 1rem; }

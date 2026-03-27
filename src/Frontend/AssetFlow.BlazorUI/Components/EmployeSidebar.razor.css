@@ -108,6 +108,7 @@ html.dark .employe-sidebar { background: #060d18; }
 
 /* ── Overlay ── */
 .emp-drawer-overlay {
+    display: none;;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
@@ -134,6 +135,9 @@ html.dark .employe-sidebar { background: #060d18; }
 
     .employe-sidebar.drawer-open {
         transform: translateX(0);
+    }
+    .emp-drawer-overlay {
+        display: block;
     }
 
     .sidebar-header  { padding: 1.5rem 1rem; display: flex; justify-content: center; }

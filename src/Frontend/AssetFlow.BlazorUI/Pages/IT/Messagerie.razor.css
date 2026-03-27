@@ -234,6 +234,7 @@ html.dark .msg-menu-drawer { background:#060d18; }
     .msg-back-btn { display:flex; }
     .msg-bubble { max-width:80%; }
     .msg-messages-zone { padding:1rem; }
+    .msg-conn-status {display: none;}
 }
 
 /* ── Filtres par rôle ── */

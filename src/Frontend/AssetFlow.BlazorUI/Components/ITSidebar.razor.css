@@ -120,3 +120,78 @@ html.dark .aff-sidebar {
     color: #64748b;
     margin: 0.1rem 0 0;
 }
+
+/* ══════════════════════════
+   HAMBURGER BUTTON
+══════════════════════════ */
+.aff-hamburger {
+    display: none; /* caché sur desktop */
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    background-color: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0;
+}
+
+.aff-hamburger span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: black;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+/* ══════════════════════════
+   OVERLAY
+══════════════════════════ */
+.aff-drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 40;
+    backdrop-filter: blur(2px);
+}
+
+/* ══════════════════════════
+   RESPONSIVE MOBILE
+══════════════════════════ */
+@media (max-width: 768px) {
+
+    /* Bouton hamburger visible */
+    .aff-hamburger {
+        display: flex;
+    }
+
+    /* Sidebar cachée par défaut, glisse depuis la gauche */
+    .aff-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        transform: translateX(-100%);
+        transition: transform 0.28s ease;
+        z-index: 50;
+    }
+
+    /* Sidebar ouverte */
+    .aff-sidebar.drawer-open {
+        transform: translateX(0);
+    }
+
+    /* Overlay visible quand drawer ouvert */
+    .aff-drawer-overlay {
+        display: block;
+    }
+}

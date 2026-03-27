@@ -84,7 +84,7 @@ html.dark .aff-menu-drawer { background: #060d18; }
     height: 60px; flex-shrink: 0;
     display: flex; align-items: center; gap: 1rem; padding: 0 1.5rem;
     border-bottom: 1px solid var(--border);
-    background: var(--surface); backdrop-filter: blur(12px); z-index: 50;
+    background: var(--surface); backdrop-filter: blur(12px);
 }
 html.dark .itc-topbar { background: rgba(16,24,34,0.95); border-bottom-color: rgba(255,255,255,0.07); }
 
@@ -441,6 +441,7 @@ html.dark .itc-modal-btn-fermer { background: rgba(255,255,255,0.05); }
     .itc-comment-actions { flex-direction: row; align-items: center; justify-content: space-between; }
     .itc-topbar-title h1 { font-size: 1rem; }
     .itc-modal-backdrop { padding: 0.75rem; }
+    .itc-topbar-icon {display: none;}
 }
 @media (max-width: 480px) {
     .itc-filter-chips { gap: 0.375rem; }

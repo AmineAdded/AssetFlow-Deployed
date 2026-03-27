@@ -200,4 +200,5 @@ html.dark .mia-input-wrap { background:#0d1520; border-color:#1e2d42; }
     .mia-back-btn { display:flex; }
     .mia-bubble { max-width:80%; }
     .mia-messages-zone { padding:1rem; }
+    .mia-conn-status {display: none;}
 }

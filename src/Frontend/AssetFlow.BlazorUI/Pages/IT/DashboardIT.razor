@@ -11,8 +11,8 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"IT"})">
 <div class="it-layout" data-theme="@_theme">
 
-    @* @if (_sidebarOpen)
-    { <div class="it-sidebar-overlay" @onclick="ToggleSidebar"></div> } *@
+     @if (_sidebarOpen)
+    { <div class="it-sidebar-overlay" @onclick="ToggleSidebar"></div> } 
 
     @* ══════ SIDEBAR ══════ *@
     <ITSidebar ActivePage="dashboard" />

@@ -14,11 +14,13 @@ namespace AssetFlow.BlazorUI.Components
         [Parameter] public string ActivePage { get; set; } = string.Empty;
 
         private string UserName { get; set; } = "IT";
+        private bool _drawerOpen = false;
 
         protected override async Task OnInitializedAsync()
         {
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
         }
+        private void CloseDrawer() => _drawerOpen = false;
 
         private string GetInitials()
         {

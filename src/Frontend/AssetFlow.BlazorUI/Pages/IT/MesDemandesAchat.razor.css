@@ -59,9 +59,26 @@ html.dark .mda-sidebar { background: #060d18; border-right-color: rgba(255,255,2
 ══════════════════════════════════════ */
 .mda-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
 
-.mda-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-shrink: 0; flex-wrap: wrap; }
+.mda-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    flex-shrink: 0;
+}
 html.dark .mda-header { background: rgba(16,24,34,0.9); border-bottom-color: rgba(255,255,255,0.07); }
-.mda-header-left { min-width: 0; flex: 1; }
+.mda-header-top-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+.mda-header-left { flex: 1; min-width: 0; }
+/* Bouton mobile caché par défaut */
+.mda-btn-new-mobile  { display: none; }
+/* Bouton desktop visible par défaut */
+.mda-btn-new-desktop { display: inline-flex; margin-right: 0; }
 .mda-page-title  { font-size: 1.3rem; font-weight: 800; color: var(--text); margin: 0 0 0.15rem; letter-spacing: -0.025em; }
 .mda-page-sub    { font-size: 0.78rem; color: var(--text-muted); margin: 0; }
 
@@ -395,16 +412,30 @@ html.dark .mda-menu-drawer { background: #060d18; }
     .mda-table-head, .mda-row-main { grid-template-columns: minmax(160px, 2fr) 70px 160px 190px; }
 }
 @media (max-width: 768px) {
-    .mda-layout { flex-direction: column; }
-    .mda-sidebar { display: none; }
-    .mda-hamburger { display: flex; }
-    .mda-header { padding: 0.875rem 1rem; flex-wrap: wrap; gap: 0.75rem; }
+    .mda-layout        { flex-direction: column; }
+    .mda-sidebar       { display: none; }
+    .mda-hamburger     { display: flex; }
+    .mda-header        { padding: 0.875rem 1rem; }
+    .mda-page-title    { font-size: 1.05rem; }
+    .mda-page-sub      { font-size: 0.72rem; }
+
+    /* Desktop button caché, mobile button affiché full-width */
+    
+    .mda-btn-new-mobile  {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        margin-right: 0;
+        padding: 0.6rem 1rem;
+        font-size: 0.84rem;
+    }
+
     .mda-stats-bar { padding: 0.75rem 1rem; }
     .mda-toolbar   { padding: 0.75rem 1rem; }
     .mda-content   { padding: 0 1rem 1rem; }
-    .mda-btn-new   { padding: 0.5rem 0.875rem; font-size: 0.78rem; }
     .mda-create-panel.open { width: 100%; position: absolute; right: 0; top: 0; bottom: 0; z-index: 100; }
 }
+
 @media (max-width: 640px) {
     .mda-table-head { display: none; }
     .mda-row-main   { grid-template-columns: 1fr; gap: 0.625rem; padding: 1rem; }

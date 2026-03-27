@@ -134,11 +134,10 @@ html.dark .it-layout {
    5. TOPBAR
    ============================================================ */
 .it-topbar {
-    height:56px; flex-shrink:0;
+    height:66px; flex-shrink:0;
     display:flex; align-items:center; gap:12px; padding:0 20px;
     border-bottom:1px solid var(--border);
     background:var(--bg-header); backdrop-filter:blur(12px);
-    z-index:50;
 }
 .it-topbar-menu-btn {
     display:none; align-items:center; justify-content:center;

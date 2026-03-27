@@ -12,6 +12,8 @@ namespace AssetFlow.BlazorUI.Components
         /// "affectation" | "incidents" | "inventaire" | "achats" | "messagerie"
         /// </summary>
         [Parameter] public string ActivePage { get; set; } = string.Empty;
+        [Parameter] public bool ForceOpen { get; set; } = false;
+[Parameter] public EventCallback OnClose { get; set; }
 
         private string UserName { get; set; } = "IT";
         private bool _drawerOpen = false;
@@ -20,6 +22,11 @@ namespace AssetFlow.BlazorUI.Components
         {
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
         }
+        protected override void OnParametersSet()
+{
+    if (ForceOpen && !_drawerOpen)
+        _drawerOpen = true;
+}
         private void CloseDrawer() => _drawerOpen = false;
 
         private string GetInitials()

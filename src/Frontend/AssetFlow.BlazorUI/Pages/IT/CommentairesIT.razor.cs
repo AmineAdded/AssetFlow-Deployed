@@ -1,6 +1,6 @@
 // ============================================================
 // AssetFlow.BlazorUI / Pages / IT / CommentairesIT.razor.cs
-// MISE À JOUR : modal détail + suppression par IT
+// MISE À JOUR : analyse de sentiment AI par matériel
 // ============================================================
 
 using AssetFlow.BlazorUI.Services;
@@ -16,7 +16,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private ILocalStorageService LocalStorage   { get; set; } = default!;
         [Inject] private IJSRuntime           JS             { get; set; } = default!;
 
-        // ── Données ──────────────────────────────────────────────
+        // ── Données commentaires ──────────────────────────────────
         private List<CommentaireITDto> Commentaires        { get; set; } = new();
         private List<CommentaireITDto> CommentairesFiltres { get; set; } = new();
 
@@ -36,15 +36,21 @@ namespace AssetFlow.BlazorUI.Pages.IT
         // ── Suppression ───────────────────────────────────────────
         private int? SupprimerEnCours { get; set; } = null;
 
-        // ── Sidebar / User ────────────────────────────────────────
-        private bool   _menuOpen       = false;
-        private string _nomUtilisateur = "Agent IT";
-        private string _initiales      = "IT";
-        private string      _roleUtilisateur = "Service IT";
-        private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-
-        // ── Accordéon groupes matériel ────────────────────────────
+        // ── Accordéon groupes ─────────────────────────────────────
         private HashSet<int> _groupesOuverts = new();
+
+        // ── Analyse de sentiment ──────────────────────────────────
+        // Dictionnaire : materielId → résultat sentiment
+        private Dictionary<int, SentimentMaterielDto>  Sentiments          { get; set; } = new();
+        private HashSet<int>                            SentimentEnCours    { get; set; } = new();
+        private HashSet<int>                            SentimentDisponible { get; set; } = new();
+
+        // ── Sidebar / User ────────────────────────────────────────
+        private bool   _menuOpen         = false;
+        private string _nomUtilisateur   = "Agent IT";
+        private string _initiales        = "IT";
+        private string _roleUtilisateur  = "IT";
+        private bool   _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
         // ── Init ──────────────────────────────────────────────────
         protected override async Task OnInitializedAsync()
@@ -60,6 +66,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 var nom = await JS.InvokeAsync<string?>("eval",
                     "localStorage.getItem('user_name') || localStorage.getItem('userFullName')");
                 _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
+
                 if (!string.IsNullOrWhiteSpace(nom))
                 {
                     _nomUtilisateur = Nettoyer(nom);
@@ -68,12 +75,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
                         ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
                         : _nomUtilisateur[..Math.Min(2, _nomUtilisateur.Length)].ToUpper();
                 }
-                
             }
             catch { }
         }
 
-        // ── Chargement ────────────────────────────────────────────
+        // ── Chargement commentaires ───────────────────────────────
         private async Task ChargerCommentaires()
         {
             try
@@ -86,6 +92,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     string.IsNullOrWhiteSpace(SearchQuery) ? null : SearchQuery);
 
                 AppliquerFiltres();
+
+                // Réinitialiser les sentiments quand les données changent
+                Sentiments          = new();
+                SentimentDisponible = new();
+                SentimentEnCours    = new();
             }
             catch (Exception ex)
             {
@@ -98,7 +109,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             }
         }
 
-        // ── Filtres locaux ────────────────────────────────────────
+        // ── Filtres ───────────────────────────────────────────────
         private void AppliquerFiltres()
         {
             var liste = Commentaires.AsEnumerable();
@@ -107,7 +118,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             CommentairesFiltres = liste.ToList();
         }
 
-        // ── Accordéon ────────────────────────────────────────────
         private void ToggleGroupe(int materielId)
         {
             if (_groupesOuverts.Contains(materielId))
@@ -143,6 +153,47 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _ = ChargerCommentaires();
         }
 
+        // ── Analyse de sentiment ──────────────────────────────────
+
+        /// <summary>Lance l'analyse IA pour un matériel spécifique</summary>
+        private async Task AnalyserSentiment(int materielId)
+        {
+            if (SentimentEnCours.Contains(materielId)) return;
+
+            SentimentEnCours.Add(materielId);
+            StateHasChanged();
+
+            try
+            {
+                var result = await EmployeService.GetSentimentMaterielAsync(materielId);
+                if (result != null)
+                {
+                    result.MaterielId = materielId;
+                    Sentiments[materielId] = result;
+                    SentimentDisponible.Add(materielId);
+                }
+            }
+            catch { /* Silencieux — le bouton reste disponible pour réessayer */ }
+            finally
+            {
+                SentimentEnCours.Remove(materielId);
+                StateHasChanged();
+            }
+        }
+
+        /// <summary>Lance l'analyse pour tous les matériels visibles</summary>
+        private async Task AnalyserTousSentiments()
+        {
+            var ids = CommentairesFiltres
+                .GroupBy(c => c.MaterielId)
+                .Select(g => g.Key)
+                .Where(id => !SentimentDisponible.Contains(id))
+                .ToList();
+
+            foreach (var id in ids)
+                await AnalyserSentiment(id);
+        }
+
         // ── Modal détail ──────────────────────────────────────────
         private void OuvrirModal(CommentaireITDto c)
         {
@@ -159,27 +210,27 @@ namespace AssetFlow.BlazorUI.Pages.IT
             ModalFeedback          = string.Empty;
         }
 
-        // ── Suppression (IT peut supprimer tout commentaire) ──────
+        // ── Suppression ───────────────────────────────────────────
         private async Task SupprimerCommentaire(int commentaireId)
         {
             SupprimerEnCours = commentaireId;
             ModalFeedback    = string.Empty;
             StateHasChanged();
 
-            // L'IT utilise un endpoint admin : on passe 0 comme userId
-            // car côté backend, si userId == 0, on bypass la vérification d'auteur.
-            // (Voir note ci-dessous sur le patch backend optionnel)
             var result = await EmployeService.SupprimerCommentaireITAsync(commentaireId);
-
             SupprimerEnCours = null;
 
             if (result.Succes)
             {
-                // Suppression locale immédiate dans toutes les listes
                 Commentaires.RemoveAll(c => c.Id == commentaireId);
                 AppliquerFiltres();
 
-                // Si le modal est ouvert sur ce commentaire, feedback puis fermeture
+                // Invalider le sentiment du matériel concerné
+                var materielId = CommentaireSelectionne?.MaterielId
+                    ?? Commentaires.FirstOrDefault()?.MaterielId ?? 0;
+                Sentiments.Remove(materielId);
+                SentimentDisponible.Remove(materielId);
+
                 if (ModalOuvert && CommentaireSelectionne?.Id == commentaireId)
                 {
                     ModalFeedback       = "Commentaire supprimé avec succès.";
@@ -189,13 +240,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     FermerModal();
                 }
             }
-            else
+            else if (ModalOuvert && CommentaireSelectionne?.Id == commentaireId)
             {
-                if (ModalOuvert && CommentaireSelectionne?.Id == commentaireId)
-                {
-                    ModalFeedback       = result.Message;
-                    ModalFeedbackSucces = false;
-                }
+                ModalFeedback       = result.Message;
+                ModalFeedbackSucces = false;
             }
 
             StateHasChanged();
@@ -216,6 +264,49 @@ namespace AssetFlow.BlazorUI.Pages.IT
             "Employe"     => "Employé",
             _             => role
         };
+
+        // Couleur du sentiment dominant
+        private static string GetSentimentColor(string sentiment) => sentiment switch
+        {
+            "Positif" => "#10b981",
+            "Négatif" => "#ef4444",
+            "Mitigé"  => "#f59e0b",
+            _         => "#6b7280"
+        };
+
+        // Icône du sentiment dominant
+        private static string GetSentimentIcon(string sentiment) => sentiment switch
+        {
+            "Positif" => "M14 10h4.764a2 2 0 0 1 1.789 2.894l-3.5 7A2 2 0 0 1 15.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 0 0-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 0 1-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h2.5",
+            "Négatif" => "M10 14H5.236a2 2 0 0 1-1.789-2.894l3.5-7A2 2 0 0 1 8.736 3h4.018a2 2 0 0 1 .485.06l3.76.94m-7 10v5a2 2 0 0 0 2 2h.096c.5 0 .905-.405.905-.904a3.61 3.61 0 0 1 .608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2.5",
+            "Mitigé"  => "M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",
+            _         => "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+        };
+
+        // Calcul de la position d'un arc SVG pour le donut chart
+        private static (double x, double y) GetArcPoint(double percentage, double startAngle, double radius = 60)
+        {
+            var angle = startAngle + (percentage / 100.0 * 360.0);
+            var rad   = (angle - 90) * Math.PI / 180.0;
+            return (70 + radius * Math.Cos(rad), 70 + radius * Math.Sin(rad));
+        }
+
+        // Génère le path SVG d'un arc de cercle
+        private static string GetArcPath(double startPct, double endPct, double outerR = 60, double innerR = 38)
+        {
+            if (endPct - startPct >= 100) endPct = 99.99;
+            var startAngle = startPct / 100.0 * 360.0 - 90;
+            var endAngle   = endPct   / 100.0 * 360.0 - 90;
+            var largeArc   = (endAngle - startAngle > 180) ? 1 : 0;
+
+            double ToX(double angle, double r) => 70 + r * Math.Cos(angle * Math.PI / 180.0);
+            double ToY(double angle, double r) => 70 + r * Math.Sin(angle * Math.PI / 180.0);
+
+            return $"M {ToX(startAngle, outerR):F2} {ToY(startAngle, outerR):F2} " +
+                   $"A {outerR} {outerR} 0 {largeArc} 1 {ToX(endAngle, outerR):F2} {ToY(endAngle, outerR):F2} " +
+                   $"L {ToX(endAngle, innerR):F2} {ToY(endAngle, innerR):F2} " +
+                   $"A {innerR} {innerR} 0 {largeArc} 0 {ToX(startAngle, innerR):F2} {ToY(startAngle, innerR):F2} Z";
+        }
 
         private static string Nettoyer(string v)
         {

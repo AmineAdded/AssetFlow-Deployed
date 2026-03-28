@@ -140,6 +140,8 @@ builder.Services.AddHttpClient<ChatOffreController>();
 builder.Services.AddScoped<IStatistiquesITService, StatistiquesITService>();
 builder.Services.AddHttpClient<IFaceAuthService, FaceAuthService>();
 builder.Services.AddScoped<ICommentaireService, CommentaireService>();
+// ── PATCH 2 : Enregistrement du service ──
+builder.Services.AddScoped<ISentimentService, SentimentService>();
 
 // === SIGNALR ===
 builder.Services.AddSignalR();
@@ -159,9 +161,18 @@ builder.Services.AddCors(options =>
             .AllowCredentials()); // ← requis par SignalR
 });
 
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// ── PATCH 1 : HttpClient nommé pour HuggingFace ──────────────
+// Ajouter avant builder.Build()
+builder.Services.AddHttpClient("HuggingFaceClient", client =>
+{
+    client.BaseAddress = new Uri("https://api-inference.huggingface.co");
+    // Timeout généreux : cold start du modèle peut prendre ~20s
+    client.Timeout     = TimeSpan.FromSeconds(60);
+});
 
 var app = builder.Build();
 

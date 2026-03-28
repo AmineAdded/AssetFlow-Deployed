@@ -197,99 +197,44 @@
                             }
                             else if (sent != null)
                             {
-                                @* Résultat de l'analyse *@
+                                @* Résultat de l'analyse — ApexCharts donut *@
                                 <div class="itc-sent-result">
 
-                                    @* Donut chart SVG *@
-                                    <div class="itc-donut-wrap">
-                                        <svg viewBox="0 0 140 140" class="itc-donut-svg">
-                                            @{
-                                                double p  = sent.PourcentagePositif;
-                                                double n  = sent.PourcentageNegatif;
-                                                double ne = sent.PourcentageNeutre;
-
-                                                // Si tout est 0 (aucun commentaire), afficher gris
-                                                bool isEmpty = sent.TotalCommentaires == 0;
-
-                                                double startP  = 0;
-                                                double startN  = p;
-                                                double startNe = p + n;
-                                            }
-
-                                            @if (isEmpty)
-                                            {
-                                                <circle cx="70" cy="70" r="60" fill="none" stroke="var(--border)" stroke-width="22"/>
-                                            }
-                                            else
-                                            {
-                                                @* Arc positif (vert) *@
-                                                @if (p > 0)
-                                                {
-                                                    <path d="@GetArcPath(startP, startP + p)" fill="#10b981" class="itc-arc-anim"/>
-                                                }
-                                                @* Arc négatif (rouge) *@
-                                                @if (n > 0)
-                                                {
-                                                    <path d="@GetArcPath(startN, startN + n)" fill="#ef4444" class="itc-arc-anim"/>
-                                                }
-                                                @* Arc neutre (gris) *@
-                                                @if (ne > 0)
-                                                {
-                                                    <path d="@GetArcPath(startNe, startNe + ne)" fill="#94a3b8" class="itc-arc-anim"/>
-                                                }
-                                                @* Anneau de séparation blanc *@
-                                                <circle cx="70" cy="70" r="38" fill="var(--surface)"/>
-                                            }
-
-                                            @* Score central *@
-                                            <text x="70" y="64" text-anchor="middle"
-                                                  class="itc-donut-score"
-                                                  fill="var(--text)">
-                                                @sent.ScoreGlobal.ToString("F1")
-                                            </text>
-                                            <text x="70" y="80" text-anchor="middle"
-                                                  class="itc-donut-sublabel"
-                                                  fill="var(--text-muted)">/ 5</text>
-                                        </svg>
+                                    @* Donut ApexCharts *@
+                                    <div class="itc-apex-wrap">
+                                        <div id="apex-sent-@materielId" class="itc-apex-chart"></div>
+                                        @* Score sous le chart *@
+                                        <div class="itc-apex-score">
+                                            <span class="itc-apex-score-val">@sent.ScoreGlobal.ToString("F1")</span>
+                                            <span class="itc-apex-score-max">/ 5</span>
+                                        </div>
                                     </div>
 
-                                    @* Légende + stats *@
+                                    @* Légende + barres *@
                                     <div class="itc-sent-stats">
-                                        <div class="itc-sent-stat itc-sent-pos">
+                                        <div class="itc-sent-stat">
                                             <span class="itc-sent-dot" style="background:#10b981"></span>
                                             <span class="itc-sent-label">Positifs</span>
                                             <span class="itc-sent-pct">@sent.PourcentagePositif.ToString("F0")%</span>
                                             <span class="itc-sent-count">(@sent.Positifs)</span>
                                         </div>
-                                        <div class="itc-sent-stat itc-sent-neg">
+                                        <div class="itc-bar-track"><div class="itc-bar-fill" style="width:@sent.PourcentagePositif.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%;background:#10b981"></div></div>
+
+                                        <div class="itc-sent-stat">
                                             <span class="itc-sent-dot" style="background:#ef4444"></span>
                                             <span class="itc-sent-label">Négatifs</span>
                                             <span class="itc-sent-pct">@sent.PourcentageNegatif.ToString("F0")%</span>
                                             <span class="itc-sent-count">(@sent.Negatifs)</span>
                                         </div>
-                                        <div class="itc-sent-stat itc-sent-neu">
+                                        <div class="itc-bar-track"><div class="itc-bar-fill" style="width:@sent.PourcentageNegatif.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%;background:#ef4444"></div></div>
+
+                                        <div class="itc-sent-stat">
                                             <span class="itc-sent-dot" style="background:#94a3b8"></span>
                                             <span class="itc-sent-label">Neutres</span>
                                             <span class="itc-sent-pct">@sent.PourcentageNeutre.ToString("F0")%</span>
                                             <span class="itc-sent-count">(@sent.Neutres)</span>
                                         </div>
-
-                                        @* Barres de progression *@
-                                        <div class="itc-bar-row">
-                                            <div class="itc-bar-track">
-                                                <div class="itc-bar-fill" style="width:@sent.PourcentagePositif.ToString("F0")%;background:#10b981"></div>
-                                            </div>
-                                        </div>
-                                        <div class="itc-bar-row">
-                                            <div class="itc-bar-track">
-                                                <div class="itc-bar-fill" style="width:@sent.PourcentageNegatif.ToString("F0")%;background:#ef4444"></div>
-                                            </div>
-                                        </div>
-                                        <div class="itc-bar-row">
-                                            <div class="itc-bar-track">
-                                                <div class="itc-bar-fill" style="width:@sent.PourcentageNeutre.ToString("F0")%;background:#94a3b8"></div>
-                                            </div>
-                                        </div>
+                                        <div class="itc-bar-track"><div class="itc-bar-fill" style="width:@sent.PourcentageNeutre.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%;background:#94a3b8"></div></div>
                                     </div>
 
                                     @* Résumé IA *@

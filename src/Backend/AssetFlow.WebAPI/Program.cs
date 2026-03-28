@@ -165,13 +165,14 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// ── PATCH 1 : HttpClient nommé pour HuggingFace ──────────────
-// Ajouter avant builder.Build()
-builder.Services.AddHttpClient("HuggingFaceClient", client =>
+// ── Remplacer l'ancien AddHttpClient("OpenRouterClient"...) par : ──
+ 
+builder.Services.AddHttpClient("MistralClient", client =>
 {
-    client.BaseAddress = new Uri("https://api-inference.huggingface.co");
-    // Timeout généreux : cold start du modèle peut prendre ~20s
-    client.Timeout     = TimeSpan.FromSeconds(60);
+    client.BaseAddress = new Uri("https://api.mistral.ai");
+    client.Timeout     = TimeSpan.FromSeconds(30);
+    // Pas besoin d'ajouter Authorization ici,
+    // elle est ajoutée dynamiquement dans SentimentService
 });
 
 var app = builder.Build();

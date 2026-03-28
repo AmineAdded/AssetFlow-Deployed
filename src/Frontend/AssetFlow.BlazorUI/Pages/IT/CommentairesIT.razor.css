@@ -60,7 +60,7 @@ html.dark .itc-topbar { background:rgba(16,24,34,0.95);border-bottom-color:rgba(
 .itc-topbar-title h1 { font-size:1.15rem;font-weight:900;color:var(--text);margin:0;letter-spacing:-0.025em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .itc-topbar-sub { font-size:0.72rem;color:var(--text-muted);font-weight:500; }
 
-.itc-topbar-right { display:flex;align-items:center;gap:0.75rem;flex-shrink:0; }
+.itc-topbar-right { display:flex;align-items:center;gap:0.75rem;flex-shrink:0;margin-right: 50px; }
 .itc-count-badge { padding:0.25rem 0.75rem;background:rgba(19,109,236,0.1);border:1px solid rgba(19,109,236,0.2);border-radius:9999px;font-size:0.72rem;font-weight:700;color:#136dec;white-space:nowrap; }
 
 /* Bouton "Analyser tout" */
@@ -203,13 +203,45 @@ html.dark .itc-sentiment-panel { background:rgba(255,255,255,0.01); }
     align-items:start;
 }
 
-/* Donut SVG */
-.itc-donut-wrap { display:flex;align-items:center;justify-content:center; }
-.itc-donut-svg { width:140px;height:140px;overflow:visible; }
-.itc-arc-anim { animation:itcArcIn 0.6s cubic-bezier(0.16,1,0.3,1) both; }
-@keyframes itcArcIn { from{opacity:0;transform:scale(0.85);transform-origin:70px 70px} to{opacity:1;transform:scale(1);transform-origin:70px 70px} }
-.itc-donut-score { font-size:22px;font-weight:900;font-family:'Segoe UI',system-ui,sans-serif; }
-.itc-donut-sublabel { font-size:12px;font-family:'Segoe UI',system-ui,sans-serif; }
+/* ── Panel sentiment résultat ── */
+.itc-sent-result {
+    display: grid;
+    grid-template-columns: 200px 1fr 1fr;
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    align-items: start;
+}
+
+/* Conteneur ApexCharts donut */
+.itc-apex-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+.itc-apex-chart {
+    width: 200px;
+    height: 200px;
+}
+/* Score affiché sous le chart */
+.itc-apex-score {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    margin-top: -0.5rem;
+}
+.itc-apex-score-val {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+.itc-apex-score-max {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    font-weight: 500;
+}
 
 /* Stats + barres */
 .itc-sent-stats { display:flex;flex-direction:column;gap:0.5rem; }
@@ -328,11 +360,11 @@ html.dark .itc-modal-btn-fermer { background:rgba(255,255,255,0.05); }
    RESPONSIVE
 ══════════════════════════ */
 @media (max-width:1200px) {
-    .itc-sent-result { grid-template-columns:120px 1fr; }
+    .itc-sent-result { grid-template-columns:180px 1fr; }
     .itc-sent-resume { grid-column:1/-1; }
 }
 @media (max-width:1024px) { .itc-comment-row { grid-template-columns:170px 1fr auto; } }
-@media (max-width:768px) {
+/*@media (max-width:768px) {
     .aff-sidebar { display:none; } .aff-hamburger { display:flex; }
     .itc-topbar { padding:0 1rem; } .itc-content { padding:1rem; }
     .itc-filter-bar { padding:0.75rem 1rem; }
@@ -342,8 +374,43 @@ html.dark .itc-modal-btn-fermer { background:rgba(255,255,255,0.05); }
     .itc-modal-backdrop { padding:0.75rem; }
     .itc-topbar-icon { display:none; }
     .itc-sent-result { grid-template-columns:1fr; }
-    .itc-donut-wrap { justify-content:flex-start; }
+    .itc-apex-wrap { align-items:flex-start; }
     .itc-btn-analyse-all span:last-child { display:none; }
+}*/
+@media (max-width:768px) {
+
+    /* Permettre le retour à la ligne dans la topbar */
+    .itc-topbar {
+        flex-wrap: wrap;
+        height: auto;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Le titre prend toute la largeur */
+    .itc-topbar-title {
+        width: 100%;
+        flex: 0 0 100%;
+    }
+
+    /* Les actions (boutons + badge) passent en dessous */
+    .itc-topbar-right {
+        width: 100%;
+        justify-content: flex-start;
+        margin-right: 0;
+        order: 2;
+    }
+
+    /* Optionnel : réduire un peu l'espacement */
+    .itc-count-badge {
+        font-size: 0.7rem;
+    }
+
+    .itc-btn-analyse-all {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.8rem;
+    }
+    .aff-hamburger { display:flex; }
 }
 @media (max-width:480px) {
     .itc-filter-chips { gap:0.375rem; }

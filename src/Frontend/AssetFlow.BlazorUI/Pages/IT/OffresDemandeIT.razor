@@ -7,10 +7,9 @@
 @using AssetFlow.Application.DTOs
 @using AssetFlow.BlazorUI.Components
 
-<RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})">
-<div class="oda-layout">
-
- 
+<RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})" Context="userRole">
+    @{ _roleUtilisateur = userRole; }  @* ← assigné avant le premier rendu du contenu *@
+    <div class="oda-layout">
         @if (_estAdmin)
         {
             <AdminSidebar ForceOpen="_menuOpen" />
@@ -19,7 +18,6 @@
         {
             <ITSidebar ActivePage="achats" ForceOpen="_menuOpen" />
         }
-    
 
     @if (_menuOpen)
     { <div  @onclick="() => _menuOpen = !_menuOpen"></div> } 

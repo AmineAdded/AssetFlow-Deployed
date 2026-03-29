@@ -157,7 +157,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             _userName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _userId   = await LocalStorage.GetItemAsync<string>("user_id")   ?? "unknown";
-            _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
 
             await LoadOffres();
         }

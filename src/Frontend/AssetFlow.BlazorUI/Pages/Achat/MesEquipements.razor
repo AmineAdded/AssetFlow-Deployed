@@ -6,7 +6,7 @@
 @page "/achat/equipements"
 @using AssetFlow.BlazorUI.Services
 @using AssetFlow.BlazorUI.Components
-
+<RoleAuthGuard AllowedRoles="@(new[]{"EquipeAchat","Admin"})">
     <div class="employe-layout">
 
         @* === SIDEBAR === *@
@@ -457,3 +457,4 @@
             </div>
         </div>
     }
+</RoleAuthGuard>

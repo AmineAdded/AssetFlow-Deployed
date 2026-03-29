@@ -14,6 +14,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private EmployeService    EmployeService { get; set; } = default!;
         [Inject] private NavigationManager Navigation     { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage   { get; set; } = default!;
+        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         // ── Données ────────────────────────────────────────────
         private List<MaterielAffecteGroupeDto> MaterielsGroupes        { get; set; } = new();
@@ -56,12 +57,81 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             // de sidebar (passage AchatSidebar → AdminSidebar ou absence de sidebar).
             // LocalStorage.GetItemAsync est async mais se résout avant le rendu
             // car OnInitializedAsync est attendu avant le premier paint Blazor.
+            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "Utilisateur";
             UserRole = await LocalStorage.GetItemAsync<string>("user_role") ?? "Achat";
 
             await LoadMaterielsGroupesAsync();
         }
+        private Task HandleVoiceCommand(VoiceCommand cmd)
+        {
+            return InvokeAsync(async () =>
+            {
+                switch (cmd.Type)
+                {
+                    case VoiceCommandType.VoirArticlesEquipement:
+                    {
+                        var m = TrouverMateriel(cmd.Reference, cmd.Designation);
+                        if (m != null) OuvrirModal(m);
+                        else AfficherToastVoice($"Équipement introuvable.");
+                        break;
+                    }
 
+                    case VoiceCommandType.VoirCommentairesEquipement:
+                    {
+                        var m = TrouverMateriel(cmd.Reference, cmd.Designation);
+                        if (m != null) await OuvrirModalCommentaire(m);
+                        else AfficherToastVoice($"Équipement introuvable.");
+                        break;
+                    }
+                }
+                StateHasChanged();
+            });
+        }
+        // Recherche par référence OU par nom approximatif
+        private MaterielAffecteGroupeDto? TrouverMateriel(string? reference, string? designation)
+        {
+            // Priorité à la référence exacte (SN-900)
+            if (!string.IsNullOrWhiteSpace(reference))
+            {
+                var byRef = MaterielsGroupes.FirstOrDefault(m =>
+                    m.Reference.Equals(reference, StringComparison.OrdinalIgnoreCase));
+                if (byRef != null) return byRef;
+            }
+
+            // Sinon recherche par nom approché
+            if (!string.IsNullOrWhiteSpace(designation))
+            {
+                var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                return MaterielsGroupes
+                    .Select(m => new
+                    {
+                        Materiel = m,
+                        Score    = terms.Count(t => m.Designation.ToLower().Contains(t))
+                    })
+                    .Where(x => x.Score > 0)
+                    .OrderByDescending(x => x.Score)
+                    .Select(x => x.Materiel)
+                    .FirstOrDefault();
+            }
+
+            return null;
+        }
+        private async void AfficherToastVoice(string msg)
+        {
+            ErrorMessage = msg;
+            StateHasChanged();
+            await Task.Delay(3000);
+            ErrorMessage = string.Empty;
+            StateHasChanged();
+        }
+
+        // IAsyncDisposable — ajoute ou complète
+        public ValueTask DisposeAsync()
+        {
+            VoiceSvc.OnCommand -= HandleVoiceCommand;
+            return ValueTask.CompletedTask;
+        }
         private async Task LoadMaterielsGroupesAsync()
         {
             try

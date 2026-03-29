@@ -8,36 +8,36 @@ namespace AssetFlow.BlazorUI.Components
     public partial class VoiceButton : ComponentBase, IAsyncDisposable
     {
         [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
-        [Inject] private IJSRuntime JS { get; set; } = default!;
-        [Inject] private NavigationManager Nav { get; set; } = default!;
+        [Inject] private NavigationManager   Nav      { get; set; } = default!;
+        [Inject] private IJSRuntime          JS       { get; set; } = default!;
 
-        private bool   _listening   = false;
-        private string _transcript  = string.Empty;
-        private string _feedback    = string.Empty;
-        private bool   _isError     = false;
+        private bool   _listening  = false;
+        private string _transcript = string.Empty;
+        private string _feedback   = string.Empty;
+        private bool   _isError    = false;
         private DotNetObjectReference<VoiceButton>? _dotNetRef;
 
         protected override void OnInitialized()
         {
-            VoiceSvc.OnCommand += HandleNavigation;
             VoiceSvc.OnListeningChanged += OnListeningChanged;
             VoiceSvc.OnTranscript       += OnTranscript;
-        }
-        private async Task HandleNavigation(VoiceCommand cmd)
-        {
-            if (cmd.Type == VoiceCommandType.Navigation && cmd.NavigateTo != null)
-            {
-                await InvokeAsync(() =>
-                {
-                    Nav.NavigateTo(cmd.NavigateTo);
-                    StateHasChanged();
-                });
-            }
+            VoiceSvc.OnCommand          += HandleNavigation;
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (!firstRender) return;
+
+            // Charger le rôle depuis localStorage et l'injecter dans le service
+            try
+            {
+                var role = await JS.InvokeAsync<string?>("eval",
+                    "localStorage.getItem('user_role')");
+                if (!string.IsNullOrWhiteSpace(role))
+                    VoiceSvc.SetRole(role);
+            }
+            catch { }
+
             _dotNetRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("VoiceAssistant.init", _dotNetRef);
         }
@@ -52,6 +52,16 @@ namespace AssetFlow.BlazorUI.Components
             }
             else
             {
+                // Rafraîchir le rôle à chaque écoute (au cas où il change)
+                try
+                {
+                    var role = await JS.InvokeAsync<string?>("eval",
+                        "localStorage.getItem('user_role')");
+                    if (!string.IsNullOrWhiteSpace(role))
+                        VoiceSvc.SetRole(role);
+                }
+                catch { }
+
                 _transcript = string.Empty;
                 _feedback   = string.Empty;
                 _listening  = true;
@@ -71,7 +81,6 @@ namespace AssetFlow.BlazorUI.Components
             await VoiceSvc.ProcessCommand(transcript);
             StateHasChanged();
 
-            // Effacer transcript après 3s
             await Task.Delay(3000);
             _transcript = string.Empty;
             StateHasChanged();
@@ -88,6 +97,19 @@ namespace AssetFlow.BlazorUI.Components
 
         [JSInvokable("OnFeedback")]
         public async Task OnFeedback(string msg) => await ShowFeedback(msg, false);
+
+        // Gestion navigation globale
+        private Task HandleNavigation(VoiceCommand cmd)
+        {
+            if (cmd.Type != VoiceCommandType.Navigation || cmd.NavigateTo == null)
+                return Task.CompletedTask;
+
+            return InvokeAsync(() =>
+            {
+                Nav.NavigateTo(cmd.NavigateTo);
+                StateHasChanged();
+            });
+        }
 
         private void OnListeningChanged(bool v)
         {
@@ -114,6 +136,7 @@ namespace AssetFlow.BlazorUI.Components
         {
             VoiceSvc.OnListeningChanged -= OnListeningChanged;
             VoiceSvc.OnTranscript       -= OnTranscript;
+            VoiceSvc.OnCommand          -= HandleNavigation;
             try { await JS.InvokeVoidAsync("VoiceAssistant.stop"); } catch { }
             _dotNetRef?.Dispose();
         }

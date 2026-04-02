@@ -5,22 +5,10 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
-    // DTO pour un agent IT vu par l'Achat
-    public class ITUserForAchatDto
-    {
-        public int       Id              { get; set; }
-        public string    FullName        { get; set; } = string.Empty;
-        public string    Initials        { get; set; } = string.Empty;
-        public string?   LastMessage     { get; set; }
-        public DateTime? LastMessageTime { get; set; }
-        public int       UnreadCount     { get; set; }
-        public bool      IsOnline        { get; set; }
-        public bool      IsTyping        { get; set; }
-    }
-
     public partial class MessagerieIT : IAsyncDisposable
     {
         [Inject] private MessagerieService    MsgSvc       { get; set; } = default!;
@@ -336,12 +324,5 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 await _hub.DisposeAsync();
             }
         }
-    }
-
-    public class ITSimpleDto
-    {
-        public int    Id       { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string Initials { get; set; } = string.Empty;
     }
 }

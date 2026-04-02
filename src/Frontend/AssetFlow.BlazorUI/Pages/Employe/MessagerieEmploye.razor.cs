@@ -5,21 +5,10 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Pages.Employe
 {
-    public class ITUserConvDto
-    {
-        public int       Id              { get; set; }
-        public string    FullName        { get; set; } = string.Empty;
-        public string    Initials        { get; set; } = string.Empty;
-        public string?   LastMessage     { get; set; }
-        public DateTime? LastMessageTime { get; set; }
-        public int       UnreadCount     { get; set; }
-        public bool      IsOnline        { get; set; }
-        public bool      IsTyping        { get; set; }
-    }
-
     public partial class MessagerieEmploye : IAsyncDisposable
     {
         [Inject] private MessagerieService    MsgSvc       { get; set; } = default!;
@@ -302,12 +291,5 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                 await _hub.DisposeAsync();
             }
         }
-    }
-
-    public class ITUserSimpleDto
-    {
-        public int    Id       { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string Initials { get; set; } = string.Empty;
     }
 }

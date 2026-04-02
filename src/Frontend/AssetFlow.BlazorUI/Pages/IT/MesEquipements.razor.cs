@@ -1,6 +1,7 @@
 using AssetFlow.BlazorUI.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {

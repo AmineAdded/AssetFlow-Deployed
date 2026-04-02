@@ -5,21 +5,10 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {
-    // DTO pour un agent achat vu par l'IT
-    public class AchatUserConvDto
-    {
-        public int       Id              { get; set; }
-        public string    FullName        { get; set; } = string.Empty;
-        public string    Initials        { get; set; } = string.Empty;
-        public string?   LastMessage     { get; set; }
-        public DateTime? LastMessageTime { get; set; }
-        public int       UnreadCount     { get; set; }
-        public bool      IsOnline        { get; set; }
-        public bool      IsTyping        { get; set; }
-    }
 
     public partial class MessagerieAchat : IAsyncDisposable
     {

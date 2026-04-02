@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
-using AssetFlow.Application.DTOs;
+using AssetFlow.BlazorUI.DTOs;
 using AssetFlow.BlazorUI.Services;
 
 namespace AssetFlow.BlazorUI.Pages.Achat

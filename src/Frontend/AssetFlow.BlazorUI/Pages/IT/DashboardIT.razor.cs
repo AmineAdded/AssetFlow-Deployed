@@ -1,4 +1,4 @@
-using AssetFlow.Application.DTOs;
+using AssetFlow.BlazorUI.DTOs;
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;

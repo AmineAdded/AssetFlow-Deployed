@@ -34,6 +34,7 @@ namespace AssetFlow.Infrastructure.Data
                   // === USER ===
                   modelBuilder.Entity<User>(entity =>
                   {
+                        entity.ToTable("Utilisateurs");
                         entity.HasKey(u => u.Id);
                         entity.Property(u => u.Email).IsRequired().HasMaxLength(200);
                         entity.Property(u => u.FirstName).IsRequired().HasMaxLength(100);
@@ -256,6 +257,7 @@ namespace AssetFlow.Infrastructure.Data
 
                       modelBuilder.Entity<Project>(entity =>
                         {
+                        entity.ToTable("Projets");
                         entity.HasKey(p => p.Id);
                         entity.Property(p => p.Nom).IsRequired().HasMaxLength(200);
                         entity.Property(p => p.Description).HasMaxLength(2000);

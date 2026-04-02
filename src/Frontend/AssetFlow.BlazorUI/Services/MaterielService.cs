@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
-using AssetFlow.Application.DTOs;
-using AssetFlow.Application.Interfaces;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Services
 {

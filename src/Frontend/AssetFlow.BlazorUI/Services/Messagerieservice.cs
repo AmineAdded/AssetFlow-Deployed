@@ -1,25 +1,8 @@
 using System.Net.Http.Json;
+using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Services
 {
-    public class ChatMessageDto
-    {
-        public int      Id         { get; set; }
-        public int      SenderId   { get; set; }
-        public int      ReceiverId { get; set; }
-        public string   Content    { get; set; } = string.Empty;
-        public DateTime SentAt     { get; set; }
-        public bool     IsRead     { get; set; }
-    }
-
-    public class ConversationSummaryDto
-    {
-        public int      OtherUserId     { get; set; }
-        public string?  LastMessage     { get; set; }
-        public DateTime LastMessageTime { get; set; }
-        public int      UnreadCount     { get; set; }
-    }
-
     public class MessagerieService
     {
         private readonly HttpClient _http;

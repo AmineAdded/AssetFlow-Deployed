@@ -1,4 +1,4 @@
-using AssetFlow.Application.DTOs;
+using AssetFlow.BlazorUI.DTOs;
 using System.Net.Http.Json;
 
 namespace AssetFlow.BlazorUI.Services

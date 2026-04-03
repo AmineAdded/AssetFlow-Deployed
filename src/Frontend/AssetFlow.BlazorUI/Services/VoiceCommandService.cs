@@ -55,6 +55,12 @@ namespace AssetFlow.BlazorUI.Services
         ChangerStatutDemande,   
         SupprimerOffre,    
         VisualiserOffre,  
+        // ── Actions WebScraping (EquipeAchat) ───────────────────
+        FiltrerParSite,    
+        FiltrerParDisponibilite,
+        FiltrerParPrix,       
+        LancerRecherche,  
+        ExporterExcelScraping, 
 
         // ── Actions Incident ────────────────────────────────────
         SoumettreIncident,

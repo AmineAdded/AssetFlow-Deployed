@@ -49,7 +49,12 @@ namespace AssetFlow.Infrastructure.Services
                 ChangerStatutDemande,  → désignation = nouveau statut ("en attente", "en cours", "commandée", "traitée", "archivée"),
                 SupprimerOffre,    → désignation = nom du fichier ("facture2", "facture 2.pdf"...)
                 VisualiserOffre,   → désignation = nom du fichier
-            IT → Navigation :
+
+                FiltrerParSite,          → désignation = nom du site ("MyTek", "Spacenet", "Tunisianet")
+                FiltrerParDisponibilite, → désignation = "stock" ou "rupture"
+                FiltrerParPrix,          → désignation = montant ex: "500" ou "500 à 1000"
+                LancerRecherche,         → désignation = nom du produit à rechercher
+                            IT → Navigation :
               Dashboard           → /dashboard/it
               ITEquipements       → /it/equipements
               Employes            → /it/employes
@@ -89,6 +94,13 @@ namespace AssetFlow.Infrastructure.Services
             - "supprimer/effacer offre [nom]" → SupprimerOffre, désignation = nom du fichier
             - "voir/visualiser/ouvrir offre [nom]" → VisualiserOffre, désignation = nom du fichier
             - Si pas de nom précisé : désignation = null (prendra la première offre)
+            - "chercher/rechercher/scraper [produit] sur le marché/web" → LancerRecherche, désignation = produit
+            
+            - "mettre/écrire [produit] dans la recherche" → ScraperProduit, désignation = produit (remplit sans lancer)
+            - "filtrer par site [nom]" → FiltrerParSite, désignation = nom du site
+            - "filtrer disponible/en stock" → FiltrerParDisponibilite, désignation = "stock"
+            - "filtrer rupture/indisponible" → FiltrerParDisponibilite, désignation = "rupture"
+            - "filtrer prix [montant]" → FiltrerParPrix, désignation = montant brut
             """;
 
         public VoiceService(IHttpClientFactory factory, IConfiguration config)

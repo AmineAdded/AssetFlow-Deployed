@@ -3,6 +3,7 @@ using Microsoft.JSInterop;
 using System.Net.Http;
 using System.Net.Http.Json;
 using AssetFlow.BlazorUI.DTOs;
+using AssetFlow.BlazorUI.Services;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
@@ -10,8 +11,10 @@ namespace AssetFlow.BlazorUI.Pages.Achat
     {
         [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private NavigationManager Nav { get; set; } = default!;
-        
+        [Inject] private NavigationManager Navigation    { get; set; } = default!;
         [Inject] private IHttpClientFactory HttpFactory { get; set; } = default!;
+        // ── AJOUTER l'injection
+        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         // ── État ────────────────────────────────────────────────
         private string _theme = "dark";
@@ -40,8 +43,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string      _roleUtilisateur = "Service Achat";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
+        // ── AJOUTER avec les autres variables d'état ───────────
+        private string? _filtreDisponibilite = null; // "stock", "rupture", ou null = tous
+
         protected override async Task OnInitializedAsync()
         {
+            VoiceSvc.OnCommand += HandleVoiceCommand;
             try
             {
                 var isDark = await JS.InvokeAsync<bool>("eval",
@@ -52,6 +59,151 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             await ChargerInfosUtilisateur();
             LireQueryString();
+        }
+        public ValueTask DisposeAsync()
+        {
+            VoiceSvc.OnCommand -= HandleVoiceCommand;
+            return ValueTask.CompletedTask;
+        }
+        private Task HandleVoiceCommand(VoiceCommand cmd)
+        {
+            return InvokeAsync(async () =>
+            {
+                switch (cmd.Type)
+                {
+                    // ── Remplir la barre sans lancer ───────────────
+                    // "MacBook", "mettre souris dans la recherche"
+                    case VoiceCommandType.ScraperProduit:
+                        if (!string.IsNullOrWhiteSpace(cmd.Designation))
+                        {
+                            _recherche = cmd.Designation;
+                            AfficherToast($"Recherche : {_recherche}", "ws-toast-success");
+                        }
+                        break;
+
+                    // ── Remplir ET lancer la recherche ─────────────
+                    // "chercher MacBook sur le marché"
+                    case VoiceCommandType.LancerRecherche:
+                        if (!string.IsNullOrWhiteSpace(cmd.Designation))
+                            _recherche = cmd.Designation;
+                        if (!string.IsNullOrWhiteSpace(_recherche))
+                            await LancerRecherche();
+                        else
+                            AfficherToast("Dites le nom du produit à rechercher.", "ws-toast-warning");
+                        break;
+
+                    // ── Filtrer par site ───────────────────────────
+                    // "filtrer par MyTek"
+                    case VoiceCommandType.FiltrerParSite:
+                    {
+                        if (string.IsNullOrWhiteSpace(cmd.Designation)) break;
+
+                        // Recherche insensible à la casse dans les sites disponibles
+                        var sites = _resultats.Select(r => r.Site).Distinct().ToList();
+                        var site  = sites.FirstOrDefault(s =>
+                            s.ToLower().Contains(cmd.Designation.ToLower()) ||
+                            cmd.Designation.ToLower().Contains(s.ToLower()));
+
+                        if (site != null)
+                        {
+                            ToggleSite(site);
+                            AfficherToast(
+                                _filtresSites.Contains(site)
+                                    ? $"Filtre activé : {site}"
+                                    : $"Filtre désactivé : {site}",
+                                "ws-toast-success");
+                        }
+                        else
+                            AfficherToast($"Site '{cmd.Designation}' introuvable dans les résultats.", "ws-toast-warning");
+                        break;
+                    }
+
+                    // ── Filtrer par disponibilité ──────────────────
+                    // "filtrer disponible" / "filtrer en stock" / "filtrer rupture"
+                    case VoiceCommandType.FiltrerParDisponibilite:
+                    {
+                        var v = NormaliserDisponibilite(cmd.Designation);
+                        if (v == null) break;
+
+                        // Stocke le filtre disponibilité dans une variable
+                        _filtreDisponibilite = v;  // ← voir variable à ajouter
+                        AfficherToast(
+                            v == "stock" ? "Filtre : En stock uniquement" : "Filtre : Rupture de stock",
+                            "ws-toast-success");
+                        break;
+                    }
+
+                    // ── Filtrer par prix ───────────────────────────
+                    // "filtrer prix 500" ou "filtrer prix 500 à 1000"
+                    case VoiceCommandType.FiltrerParPrix:
+                    {
+                        if (string.IsNullOrWhiteSpace(cmd.Designation)) break;
+
+                        var (min, max) = ParsePrix(cmd.Designation);
+                        if (min.HasValue) _prixMin = min.Value;
+                        if (max.HasValue) _prixMax = max.Value;
+
+                        AfficherToast(
+                            $"Prix : {_prixMin:N0} – {_prixMax:N0} DT",
+                            "ws-toast-success");
+                        break;
+                    }
+
+                    // ── Exporter les résultats ─────────────────────
+                    case VoiceCommandType.ExporterExcel:
+                        if (_resultats.Any())
+                            await ExporterCsv();
+                        else
+                            AfficherToast("Aucun résultat à exporter.", "ws-toast-warning");
+                        break;
+                }
+                StateHasChanged();
+            });
+        }
+
+        // Normalise la disponibilité vocale — insensible à la casse et aux accents
+        private static string? NormaliserDisponibilite(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return null;
+
+            var v = input.ToLower().Trim()
+                .Replace("é", "e").Replace("è", "e").Replace("ê", "e");
+
+            if (v.Contains("stock") || v.Contains("dispo") || v.Contains("disponible"))
+                return "stock";
+            if (v.Contains("rupture") || v.Contains("indispo") || v.Contains("epuise"))
+                return "rupture";
+
+            return null;
+        }
+
+        // Parse "500" → (500, null) ou "500 à 1000" → (500, 1000)
+        private static (decimal? min, decimal? max) ParsePrix(string input)
+        {
+            // Nettoyer : enlever "DT", "dinars", espaces insécables
+            var clean = input.ToLower()
+                .Replace("dt", "").Replace("dinar", "").Replace("à", "a")
+                .Replace("a", " ").Trim();
+
+            var parts = clean.Split(new[] { ' ', '-' },
+                StringSplitOptions.RemoveEmptyEntries);
+
+            var numbers = parts
+                .Select(p => decimal.TryParse(
+                    p.Replace(",", "."),
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var n) ? n : (decimal?)null)
+                .Where(n => n.HasValue)
+                .Select(n => n!.Value)
+                .ToList();
+
+            return numbers.Count switch
+            {
+                0 => (null, null),
+                1 => (numbers[0], null),      // "500" → prix max = 500
+                _ => (numbers[0], numbers[1]) // "500 à 1000"
+            };
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)

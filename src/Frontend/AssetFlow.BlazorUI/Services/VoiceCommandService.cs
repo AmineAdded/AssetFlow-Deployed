@@ -3,7 +3,27 @@ namespace AssetFlow.BlazorUI.Services
 {
     public enum VoiceCommandType
     {
+        // Navigation
         Navigation,
+        MesEquipements,
+        Statistiques,
+        Materiel,
+        Fournisseurs,
+        DemandesAchat,
+        ScrapingMarche,
+        Messagerie,
+        Dashboard,
+        ITEquipements,
+        Employes,
+        Affectation,
+        Incidents,
+        Inventaire,
+        Achats,
+        Commentaires,
+        Projets,
+        Incident,
+
+        // Actions
         AjouterMateriel,
         ModifierMateriel,
         SupprimerMateriel,
@@ -14,6 +34,7 @@ namespace AssetFlow.BlazorUI.Services
         ExporterPdf,
         VoirArticlesEquipement,
         VoirCommentairesEquipement,
+
         Unknown
     }
 
@@ -66,11 +87,49 @@ namespace AssetFlow.BlazorUI.Services
                 await OnCommand.Invoke(cmd);
         }
 
+        // Intents qui sont des navigations (ont un navigateTo)
+        private static readonly HashSet<VoiceCommandType> NavigationIntents = new()
+        {
+            VoiceCommandType.MesEquipements,
+            VoiceCommandType.Statistiques,
+            VoiceCommandType.Materiel,
+            VoiceCommandType.Fournisseurs,
+            VoiceCommandType.DemandesAchat,
+            VoiceCommandType.ScrapingMarche,
+            VoiceCommandType.Messagerie,
+            VoiceCommandType.Dashboard,
+            VoiceCommandType.ITEquipements,
+            VoiceCommandType.Employes,
+            VoiceCommandType.Affectation,
+            VoiceCommandType.Incidents,
+            VoiceCommandType.Inventaire,
+            VoiceCommandType.Achats,
+            VoiceCommandType.Commentaires,
+            VoiceCommandType.Projets,
+            VoiceCommandType.Incident,
+        };
+
         private static VoiceCommand MapToCommand(VoiceCommandResponse r)
         {
-            var type = Enum.TryParse<VoiceCommandType>(r.Intent, true, out var t)
-                ? t
-                : VoiceCommandType.Unknown;
+            var parsed = Enum.TryParse<VoiceCommandType>(r.Intent, true, out var t);
+            
+            VoiceCommandType type;
+            if (!parsed)
+            {
+                // Intent inconnu mais navigateTo présent → traiter comme Navigation
+                type = !string.IsNullOrEmpty(r.NavigateTo)
+                    ? VoiceCommandType.Navigation
+                    : VoiceCommandType.Unknown;
+            }
+            else if (NavigationIntents.Contains(t))
+            {
+                // Intent connu de type navigation → normaliser en Navigation
+                type = VoiceCommandType.Navigation;
+            }
+            else
+            {
+                type = t;
+            }
 
             return new VoiceCommand
             {

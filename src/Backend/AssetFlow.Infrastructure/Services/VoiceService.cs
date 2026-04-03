@@ -80,12 +80,10 @@ namespace AssetFlow.Infrastructure.Services
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", _apiKey);
 
-            // Décoder le base64 en bytes
             var audioBytes = Convert.FromBase64String(audioBase64);
 
             using var form = new MultipartFormDataContent();
 
-            // Fichier audio
             var audioContent = new ByteArrayContent(audioBytes);
             audioContent.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
             var extension = mimeType switch
@@ -96,10 +94,15 @@ namespace AssetFlow.Infrastructure.Services
                 "audio/mpeg"  => "mp3",
                 _             => "webm"
             };
+
+            // ✅ Nom du fichier avec extension correcte
             form.Add(audioContent, "file", $"audio.{extension}");
-            form.Add(new StringContent("voxtral-mini"), "model");
+
+            // ✅ Nom de modèle corrigé
+            form.Add(new StringContent("voxtral-mini-latest"), "model");
+
+            // ✅ Langue optionnelle (aide la précision)
             form.Add(new StringContent("fr"), "language");
-            form.Add(new StringContent("json"), "response_format");
 
             var resp = await client.PostAsync("/v1/audio/transcriptions", form);
 

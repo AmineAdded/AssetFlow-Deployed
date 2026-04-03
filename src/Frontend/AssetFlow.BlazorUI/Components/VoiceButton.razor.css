@@ -76,3 +76,16 @@
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+
+.vb-btn-processing {
+    background: #7c3aed !important;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.4) !important;
+    cursor: not-allowed !important;
+}
+.vb-btn-processing svg {
+    animation: vb-spin 1s linear infinite;
+}
+@keyframes vb-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}

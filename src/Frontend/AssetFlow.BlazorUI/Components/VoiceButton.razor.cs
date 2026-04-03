@@ -6,14 +6,16 @@ namespace AssetFlow.BlazorUI.Components
 {
     public partial class VoiceButton : ComponentBase, IAsyncDisposable
     {
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
-        [Inject] private NavigationManager   Nav      { get; set; } = default!;
-        [Inject] private IJSRuntime          JS       { get; set; } = default!;
+        [Inject] private VoiceCommandService VoiceSvc    { get; set; } = default!;
+        [Inject] private VoiceNluService     NluSvc      { get; set; } = default!;
+        [Inject] private NavigationManager   Nav         { get; set; } = default!;
+        [Inject] private IJSRuntime          JS          { get; set; } = default!;
 
-        private bool   _listening  = false;
-        private string _transcript = string.Empty;
-        private string _feedback   = string.Empty;
-        private bool   _isError    = false;
+        private bool   _listening   = false;
+        private bool   _processing  = false; // pendant l'appel API
+        private string _transcript  = string.Empty;
+        private string _feedback    = string.Empty;
+        private bool   _isError     = false;
         private DotNetObjectReference<VoiceButton>? _dotNetRef;
 
         protected override void OnInitialized()
@@ -27,7 +29,6 @@ namespace AssetFlow.BlazorUI.Components
         {
             if (!firstRender) return;
 
-            // Charger le rôle depuis localStorage et l'injecter dans le service
             try
             {
                 var role = await JS.InvokeAsync<string?>("eval",
@@ -43,61 +44,92 @@ namespace AssetFlow.BlazorUI.Components
 
         private async Task ToggleListen()
         {
-            if (_listening)
+            if (_listening || _processing)
             {
+                // Arrêter l'enregistrement → déclenche OnAudioReady
                 await JS.InvokeVoidAsync("VoiceAssistant.stop");
-                _listening = false;
-                VoiceSvc.SetListening(false);
+                return;
             }
-            else
-            {
-                // Rafraîchir le rôle à chaque écoute (au cas où il change)
-                try
-                {
-                    var role = await JS.InvokeAsync<string?>("eval",
-                        "localStorage.getItem('user_role')");
-                    if (!string.IsNullOrWhiteSpace(role))
-                        VoiceSvc.SetRole(role);
-                }
-                catch { }
 
-                _transcript = string.Empty;
-                _feedback   = string.Empty;
-                _listening  = true;
-                VoiceSvc.SetListening(true);
-                await JS.InvokeVoidAsync("VoiceAssistant.start");
+            // Rafraîchir le rôle
+            try
+            {
+                var role = await JS.InvokeAsync<string?>("eval",
+                    "localStorage.getItem('user_role')");
+                if (!string.IsNullOrWhiteSpace(role))
+                    VoiceSvc.SetRole(role);
             }
+            catch { }
+
+            _transcript = string.Empty;
+            _feedback   = string.Empty;
+            _listening  = true;
+            VoiceSvc.SetListening(true);
+            await JS.InvokeVoidAsync("VoiceAssistant.start");
             StateHasChanged();
         }
 
-        [JSInvokable("OnResult")]
-        public async Task OnResult(string transcript)
+        /// <summary>
+        /// Appelé par JS quand l'audio est prêt (après stop())
+        /// </summary>
+        [JSInvokable("OnAudioReady")]
+        public async Task OnAudioReady(string audioBase64, string mimeType)
         {
-            _transcript = transcript;
             _listening  = false;
+            _processing = true;
             VoiceSvc.SetListening(false);
-            VoiceSvc.NotifyTranscript(transcript);
-            await VoiceSvc.ProcessCommand(transcript);
             StateHasChanged();
 
-            await Task.Delay(3000);
-            _transcript = string.Empty;
-            StateHasChanged();
+            try
+            {
+                var response = await NluSvc.ProcessAsync(
+                    audioBase64, mimeType, VoiceSvc.CurrentRole);
+
+                if (response == null || !string.IsNullOrEmpty(response.Error))
+                {
+                    await ShowFeedback(
+                        response?.Error ?? "Erreur de traitement.", true);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(response.Transcript))
+                {
+                    await ShowFeedback("Aucune parole détectée.", true);
+                    return;
+                }
+
+                // Afficher la transcription
+                _transcript = response.Transcript;
+                StateHasChanged();
+
+                // Dispatcher la commande
+                await VoiceSvc.DispatchResponse(response);
+
+                // Effacer le transcript après 3s
+                await Task.Delay(3000);
+                _transcript = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                await ShowFeedback($"Erreur : {ex.Message}", true);
+            }
+            finally
+            {
+                _processing = false;
+                StateHasChanged();
+            }
         }
 
         [JSInvokable("OnError")]
         public async Task OnError(string error)
         {
-            _listening = false;
+            _listening  = false;
+            _processing = false;
             VoiceSvc.SetListening(false);
-            await ShowFeedback("Erreur : " + error, true);
+            await ShowFeedback("Erreur micro : " + error, true);
             StateHasChanged();
         }
 
-        [JSInvokable("OnFeedback")]
-        public async Task OnFeedback(string msg) => await ShowFeedback(msg, false);
-
-        // Gestion navigation globale
         private Task HandleNavigation(VoiceCommand cmd)
         {
             if (cmd.Type != VoiceCommandType.Navigation || cmd.NavigateTo == null)

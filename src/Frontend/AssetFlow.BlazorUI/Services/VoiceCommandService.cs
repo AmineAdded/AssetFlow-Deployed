@@ -3,15 +3,21 @@ namespace AssetFlow.BlazorUI.Services
 {
     public enum VoiceCommandType
     {
-        // Navigation
+        // ── Navigation commune ──────────────────────────────────
         Navigation,
-        MesEquipements,
+        Messagerie,
+        SignalerIncident,
+        Incident,
+
+        // ── Navigation EquipeAchat ──────────────────────────────
         Statistiques,
+        MesEquipements,
         Materiel,
         Fournisseurs,
         DemandesAchat,
         ScrapingMarche,
-        Messagerie,
+
+        // ── Navigation IT ───────────────────────────────────────
         Dashboard,
         ITEquipements,
         Employes,
@@ -20,26 +26,33 @@ namespace AssetFlow.BlazorUI.Services
         Inventaire,
         Achats,
         Commentaires,
-        Projets,
-        Incident,
-        SignalerIncident,
 
-        // Actions achat
+        // ── Navigation Admin ────────────────────────────────────
+        Projets,
+
+        // ── Actions Matériel (EquipeAchat) ──────────────────────
         AjouterMateriel,
         ModifierMateriel,
         SupprimerMateriel,
         VoirCommandes,
         VoirArticles,
+        VoirArticlesEquipement,
+        VoirCommentairesEquipement,
         ConfigurerSeuil,
         ExporterExcel,
         ExporterPdf,
-        VoirArticlesEquipement,
-        VoirCommentairesEquipement,
+
+        // ── Actions Fournisseur (EquipeAchat) ───────────────────
+        AjouterFournisseur,       // ← NOUVEAU
+        ModifierFournisseur,      // ← NOUVEAU
+        SupprimerFournisseur,     // ← NOUVEAU
+        VoirDetailsFournisseur,   // ← NOUVEAU
+
+        // ── Actions Incident ────────────────────────────────────
         SoumettreIncident,
 
         Unknown
     }
-
     public class VoiceCommand
     {
         public VoiceCommandType Type        { get; set; }

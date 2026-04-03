@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using AssetFlow.BlazorUI.DTOs;
+using AssetFlow.BlazorUI.Services;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
@@ -8,6 +9,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
     {
         [Inject]
         private AssetFlow.BlazorUI.Services.FournisseurService FournisseurSvc { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.VoiceCommandService VoiceSvc { get; set; } = default!;
 
         [Inject]
         private IJSRuntime JS { get; set; } = default!;
@@ -74,8 +76,98 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
+            VoiceSvc.OnCommand += HandleVoiceCommand;
             await ChargerInfosUtilisateur();
             await ChargerFournisseurs();
+        }
+        public ValueTask DisposeAsync()
+        {
+            VoiceSvc.OnCommand -= HandleVoiceCommand;  // ← AJOUTER
+            return ValueTask.CompletedTask;
+        }
+
+        // ✅ Retourne FournisseurVm (pas FournisseurDto)
+        private FournisseurVm? TrouverFournisseur(string? designation)
+        {
+            if (string.IsNullOrWhiteSpace(designation)) return null;
+
+            // Correspondance exacte d'abord
+            var exact = _tousLesFournisseurs.FirstOrDefault(f =>
+                f.Nom.Equals(designation, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+
+            // Sinon score par termes
+            var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return _tousLesFournisseurs
+                .Select(f => new
+                {
+                    Fournisseur = f,
+                    Score = terms.Count(t => f.Nom.ToLower().Contains(t))
+                })
+                .Where(x => x.Score > 0)
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Fournisseur)
+                .FirstOrDefault();
+        }
+
+        // ✅ "Voir détails" = expand la ligne du fournisseur
+        private void OuvrirDetails(FournisseurVm f)
+        {
+            _tousLesFournisseurs.ForEach(x => x.Expanded = false);
+            f.Expanded = true;
+            AppliquerFiltres();
+        }
+
+        // ✅ "Ajouter" = ouvrir formulaire vide
+        private void OuvrirFormulaireAjout() => OuvrirFormulaire(null);
+
+        // ✅ "Modifier" = ouvrir formulaire pré-rempli
+        private void OuvrirFormulaireModification(FournisseurVm f) => OuvrirFormulaire(f);
+
+        private Task HandleVoiceCommand(VoiceCommand cmd)
+        {
+            return InvokeAsync(async () =>
+            {
+                switch (cmd.Type)
+                {
+                    case VoiceCommandType.AjouterFournisseur:
+                        OuvrirFormulaireAjout();
+                        break;
+
+                    case VoiceCommandType.ModifierFournisseur:
+                    {
+                        var f = TrouverFournisseur(cmd.Designation);
+                        if (f != null) OuvrirFormulaireModification(f);
+                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
+                        break;
+                    }
+
+                    case VoiceCommandType.SupprimerFournisseur:
+                    {
+                        var f = TrouverFournisseur(cmd.Designation);
+                        if (f != null) DemanderSuppression(f);
+                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
+                        break;
+                    }
+
+                    case VoiceCommandType.VoirDetailsFournisseur:
+                    {
+                        var f = TrouverFournisseur(cmd.Designation);
+                        if (f != null) OuvrirDetails(f);
+                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
+                        break;
+                    }
+
+                    case VoiceCommandType.ExporterExcel:
+                        await ExporterExcel();
+                        break;
+
+                    case VoiceCommandType.ExporterPdf:
+                        await ExporterPdf();
+                        break;
+                }
+                StateHasChanged();
+            });
         }
 
         private async Task ChargerInfosUtilisateur()

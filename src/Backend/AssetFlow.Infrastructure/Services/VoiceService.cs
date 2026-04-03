@@ -38,6 +38,10 @@ namespace AssetFlow.Infrastructure.Services
               VoirCommandes, VoirArticles, ConfigurerSeuil,
               ExporterExcel, ExporterPdf,
               VoirArticlesEquipement, VoirCommentairesEquipement,SoumettreIncident
+                AjouterFournisseur,
+                ModifierFournisseur,
+                SupprimerFournisseur,
+                VoirDetailsFournisseur,
 
             IT → Navigation :
               Dashboard           → /dashboard/it

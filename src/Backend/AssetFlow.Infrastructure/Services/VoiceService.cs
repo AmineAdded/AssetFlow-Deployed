@@ -43,6 +43,12 @@ namespace AssetFlow.Infrastructure.Services
                 SupprimerFournisseur,
                 VoirDetailsFournisseur,
 
+                SélectionnerDemande,   → désignation = nom de la demande ("Demande 1", "Demande 3"...)
+                ScraperProduit,        → désignation = nom du produit à scraper ("MacBook", "souris"...)
+                AjouterOffre,          → navigateTo null, ouvre l'explorateur de fichiers
+                ChangerStatutDemande,  → désignation = nouveau statut ("en attente", "en cours", "commandée", "traitée", "archivée"),
+                SupprimerOffre,    → désignation = nom du fichier ("facture2", "facture 2.pdf"...)
+                VisualiserOffre,   → désignation = nom du fichier
             IT → Navigation :
               Dashboard           → /dashboard/it
               ITEquipements       → /it/equipements
@@ -69,6 +75,20 @@ namespace AssetFlow.Infrastructure.Services
             - Si la phrase contient un nom de matériel ("souris sans fil", "PC Azus"), mets-le dans "designation"
             - Pour les actions de navigation, mets la route dans "navigateTo"
             - Si l'intention est inconnue : {"intent":"Unknown","navigateTo":null,"reference":null,"designation":null}
+            - "sélectionner/ouvrir/voir demande [X]" → SélectionnerDemande, désignation = "Demande X"
+            - "scraper/chercher/rechercher [produit]" → ScraperProduit, désignation = nom du produit
+            - "ajouter offre/joindre fichier/attacher PDF" → AjouterOffre
+            - "changer statut/état en [valeur]" → ChangerStatutDemande, désignation = valeur normalisée
+            Valeurs acceptées : "EnAttente", "EnCours", "Commandee", "Traitee", "Archivee"
+            Mapping vocal → valeur :
+                "en attente"            → "EnAttente"
+                "en cours/traitement"   → "EnCours"
+                "commandée/commandé"    → "Commandee"
+                "traité/traitée"        → "Traitee"
+                "archivé/archivée"      → "Archivee"
+            - "supprimer/effacer offre [nom]" → SupprimerOffre, désignation = nom du fichier
+            - "voir/visualiser/ouvrir offre [nom]" → VisualiserOffre, désignation = nom du fichier
+            - Si pas de nom précisé : désignation = null (prendra la première offre)
             """;
 
         public VoiceService(IHttpClientFactory factory, IConfiguration config)

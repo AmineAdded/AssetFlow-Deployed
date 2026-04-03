@@ -43,10 +43,18 @@ namespace AssetFlow.BlazorUI.Services
         ExporterPdf,
 
         // ── Actions Fournisseur (EquipeAchat) ───────────────────
-        AjouterFournisseur,       // ← NOUVEAU
-        ModifierFournisseur,      // ← NOUVEAU
-        SupprimerFournisseur,     // ← NOUVEAU
-        VoirDetailsFournisseur,   // ← NOUVEAU
+        AjouterFournisseur,      
+        ModifierFournisseur,      
+        SupprimerFournisseur,     
+        VoirDetailsFournisseur,   
+
+        // ── Actions DemandesAchat (EquipeAchat) ─────────────────
+        SélectionnerDemande,      
+        ScraperProduit,           
+        AjouterOffre,           
+        ChangerStatutDemande,   
+        SupprimerOffre,    
+        VisualiserOffre,  
 
         // ── Actions Incident ────────────────────────────────────
         SoumettreIncident,

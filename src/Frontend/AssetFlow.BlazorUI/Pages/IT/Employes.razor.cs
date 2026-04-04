@@ -9,6 +9,9 @@ namespace AssetFlow.BlazorUI.Pages.IT
     {
         [Inject] private EmployeManagementService Svc         { get; set; } = default!;
         [Inject] private ILocalStorageService     LocalStorage { get; set; } = default!;
+        
+        [Inject] private NavigationManager    Navigation     { get; set; } = default!;
+        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         // ── Mode toggle ──
         private bool ModeProjet { get; set; } = false;
@@ -78,9 +81,102 @@ namespace AssetFlow.BlazorUI.Pages.IT
         // ── Init ──
         protected override async Task OnInitializedAsync()
         {
+            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
             await LoadEmployesAsync();
+        }
+        public ValueTask DisposeAsync()
+        {
+            VoiceSvc.OnCommand -= HandleVoiceCommand;
+            return ValueTask.CompletedTask;
+        }
+        private Task HandleVoiceCommand(VoiceCommand cmd)
+        {
+            return InvokeAsync(async () =>
+            {
+                switch (cmd.Type)
+                {
+                    // ── Sélectionner un employé par nom ────────────
+                    case VoiceCommandType.SélectionnerEmploye:
+                    {
+                        var e = TrouverEmploye(cmd.Designation);
+                        if (e != null) await SelectEmploye(e);  // ✅ méthode réelle ligne 130
+                        else { ErrorMsg = $"Employé '{cmd.Designation}' introuvable."; }
+                        break;
+                    }
+
+                    // ── Révoquer une affectation ───────────────────
+                    case VoiceCommandType.RévoquerAffectation:
+                    {
+                        if (EmployeSelectionne == null)  // ✅ variable réelle
+                        {
+                            ErrorMsg = "Sélectionnez d'abord un employé.";
+                            break;
+                        }
+                        var a = TrouverAffectation(cmd.Designation ?? cmd.Reference);
+                        if (a != null)
+                        {
+                            // ✅ Utilise le flow de confirmation existant
+                            DemanderConfirmation(a);
+                            await ConfirmerRetrait();
+                        }
+                        else
+                            ErrorMsg = $"Affectation '{cmd.Designation ?? cmd.Reference}' introuvable.";
+                        break;
+                    }
+                }
+
+                // ✅ Auto-clear du message après 3s
+                if (!string.IsNullOrEmpty(ErrorMsg))
+                {
+                    StateHasChanged();
+                    await Task.Delay(3000);
+                    ErrorMsg = string.Empty;
+                }
+
+                StateHasChanged();
+            });
+        }
+
+        // ✅ Type réel : EmployeListeDto, liste réelle : _allEmployees
+        private EmployeListeDto? TrouverEmploye(string? designation)
+        {
+            if (string.IsNullOrWhiteSpace(designation)) return null;
+
+            // Correspondance exacte d'abord
+            var exact = _allEmployees.FirstOrDefault(e =>
+                e.FullName.Equals(designation, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+
+            // Score par termes — insensible à la casse
+            var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return _allEmployees
+                .Select(e => new
+                {
+                    Employe = e,
+                    Score   = terms.Count(t => e.FullName.ToLower().Contains(t))
+                })
+                .Where(x => x.Score > 0)
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Employe)
+                .FirstOrDefault();
+        }
+
+        // ✅ Type réel : AffectationEmployeDto, liste réelle : Affectations
+        // Cherche par NomMateriel OU Reference (insensible à la casse)
+        private AffectationEmployeDto? TrouverAffectation(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return null;
+
+            var d = input.ToLower()
+                .Replace("sn-", "sn-")   // normaliser référence
+                .Trim();
+
+            // Cherche dans les affectations courantes de l'employé sélectionné
+            return Affectations.FirstOrDefault(a =>
+                a.Designation.ToLower().Contains(d) ||
+                a.Reference.ToLower().Contains(d));
         }
 
         // ── Mode toggle ──

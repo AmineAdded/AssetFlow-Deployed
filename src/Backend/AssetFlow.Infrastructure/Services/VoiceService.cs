@@ -24,7 +24,7 @@ namespace AssetFlow.Infrastructure.Services
         Intentions disponibles selon le rôle :
 
         EquipeAchat → Navigation :
-        Statistiques        → /statistiques
+        Statistiques,Dashboard        → /statistiques
         MesEquipements      → /achat/equipements
         Materiel            → /achat/materiel
         Fournisseurs        → /achat/fournisseurs
@@ -58,7 +58,7 @@ namespace AssetFlow.Infrastructure.Services
             SélectionnerConversation, → désignation = nom complet ou partiel de la personne
 
         IT → Navigation :
-        Dashboard           → /dashboard/it
+        Dashboard,Statistiques           → /dashboard/it
         ITEquipements       → /it/equipements
         Employes            → /it/employes
         Affectation         → /it/affectation
@@ -68,6 +68,11 @@ namespace AssetFlow.Infrastructure.Services
         Messagerie          → /it/messagerie
         Commentaires        → /it/commentaires
 
+        IT → Actions :
+        SélectionnerEmploye,    → désignation = nom de l'employé ("adem added", "Aziz"...)
+        SélectionnerProjet,    → désignation = nom du projet ("Projet 1", "Projet 2"...)
+        RévoquerAffectation,    → désignation = nom du matériel ou référence ("Souris sans fil", "SN-900")
+
         Admin → Toutes les intentions EquipeAchat + IT + :
         Projets             → /admin/projets
 
@@ -75,8 +80,8 @@ namespace AssetFlow.Infrastructure.Services
         MesEquipements      → /employe/equipements
         Incident            → /employe/incident
         Messagerie          → /employe/messagerie
-        Employe → Actions :
-        VoirArticlesEquipement, VoirCommentairesEquipement
+            Employe → Actions :
+            VoirArticlesEquipement, VoirCommentairesEquipement
 
         Règles d'extraction :
         - Si la phrase contient une référence type "SN-200", "SN 900", extrais-la en format "SN-XXX"
@@ -108,6 +113,12 @@ namespace AssetFlow.Infrastructure.Services
         
         - "ouvrir/sélectionner/écrire à/contacter/voir conversation [nom]" → SélectionnerConversation, désignation = nom complet de la personne
         - "envoyer message à [nom]" → SélectionnerConversation, désignation = nom complet de la personne
+
+        - "assigner/affecter/gestion affectation" → Affectation, navigateTo = /it/affectation
+        - "voir affectations/employes/projets/voir employés/voir projets/gestion affectations des employés/gestion affectations des projets/affectations employés/affectations projets/matériels affectés" → Employes, navigateTo = /it/employes
+
+        - "sélectionner/voir/ouvrir employé [nom]" → SélectionnerEmploye, désignation = nom
+        - "révoquer/retirer affectation [matériel]" → RévoquerAffectation, désignation = nom matériel ou référence
         """;
 
         public VoiceService(IHttpClientFactory factory, IConfiguration config)

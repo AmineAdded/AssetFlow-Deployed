@@ -71,6 +71,7 @@ namespace AssetFlow.Infrastructure.Services
         Incident            → /it/incident
 
         IT → Actions :
+        SoumettreIncident,
         SélectionnerEmploye,    → désignation = nom de l'employé ("adem added", "Aziz"...)
         SélectionnerProjet,    → désignation = nom du projet ("Projet 1", "Projet 2"...)
         RévoquerAffectation,    → désignation = nom du matériel ou référence ("Souris sans fil", "SN-900")
@@ -84,7 +85,7 @@ namespace AssetFlow.Infrastructure.Services
         SignalerIncident    → /employe/incident
         Messagerie          → /employe/messagerie
             Employe → Actions :
-            VoirArticlesEquipement, VoirCommentairesEquipement
+            VoirArticlesEquipement, VoirCommentairesEquipement,SoumettreIncident
 
         Règles d'extraction :
         - Si la phrase contient une référence type "SN-200", "SN 900", extrais-la en format "SN-XXX"

@@ -97,30 +97,50 @@ namespace AssetFlow.BlazorUI.Pages.IT
             {
                 switch (cmd.Type)
                 {
-                    // ── Sélectionner un employé par nom ────────────
-                    case VoiceCommandType.SélectionnerEmploye:
-                    {
-                        var e = TrouverEmploye(cmd.Designation);
-                        if (e != null) await SelectEmploye(e);  // ✅ méthode réelle ligne 130
-                        else { ErrorMsg = $"Employé '{cmd.Designation}' introuvable."; }
-                        break;
-                    }
+                // ── Basculer vers l'onglet Employés ────────────────────
+                case VoiceCommandType.SélectionnerEmploye
+                    when string.IsNullOrWhiteSpace(cmd.Designation):
+                    await SetMode(false);  // ✅ bascule sur Employés
+                    break;
+
+                // ── Basculer vers l'onglet Projets ─────────────────────
+                case VoiceCommandType.SélectionnerProjet
+                    when string.IsNullOrWhiteSpace(cmd.Designation):
+                    await SetMode(true);   // ✅ bascule sur Projets
+                    break;
+
+                // ── Sélectionner un employé par nom ────────────────────
+                case VoiceCommandType.SélectionnerEmploye:
+                {
+                    await SetMode(false);  // ✅ s'assurer qu'on est sur l'onglet Employés
+                    var e = TrouverEmploye(cmd.Designation);
+                    if (e != null) await SelectEmploye(e);
+                    else { ErrorMsg = $"Employé '{cmd.Designation}' introuvable."; }
+                    break;
+                }
+
+                // ── Sélectionner un projet par nom ─────────────────────
+                case VoiceCommandType.SélectionnerProjet:
+                {
+                    await SetMode(true);   // ✅ s'assurer qu'on est sur l'onglet Projets
+                    var p = TrouverProjet(cmd.Designation);
+                    if (p != null) await SelectProjet(p);
+                    else { ErrorMsg = $"Projet '{cmd.Designation}' introuvable."; }
+                    break;
+                }
 
                     // ── Révoquer une affectation ───────────────────
                     case VoiceCommandType.RévoquerAffectation:
                     {
-                        if (EmployeSelectionne == null)  // ✅ variable réelle
+                        // ✅ Vérifier les deux modes
+                        if (EmployeSelectionne == null && ProjetSelectionne == null)
                         {
-                            ErrorMsg = "Sélectionnez d'abord un employé.";
+                            ErrorMsg = "Sélectionnez d'abord un employé ou un projet.";
                             break;
                         }
                         var a = TrouverAffectation(cmd.Designation ?? cmd.Reference);
                         if (a != null)
-                        {
-                            // ✅ Utilise le flow de confirmation existant
                             DemanderConfirmation(a);
-                            await ConfirmerRetrait();
-                        }
                         else
                             ErrorMsg = $"Affectation '{cmd.Designation ?? cmd.Reference}' introuvable.";
                         break;
@@ -137,6 +157,26 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
                 StateHasChanged();
             });
+        }
+        private ProjetAffectationListeDto? TrouverProjet(string? designation)
+        {
+            if (string.IsNullOrWhiteSpace(designation)) return null;
+
+            var exact = Projets.FirstOrDefault(p =>
+                p.Nom.Equals(designation, StringComparison.OrdinalIgnoreCase));
+            if (exact != null) return exact;
+
+            var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return Projets
+                .Select(p => new
+                {
+                    Projet = p,
+                    Score  = terms.Count(t => p.Nom.ToLower().Contains(t))
+                })
+                .Where(x => x.Score > 0)
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Projet)
+                .FirstOrDefault();
         }
 
         // ✅ Type réel : EmployeListeDto, liste réelle : _allEmployees
@@ -169,12 +209,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             if (string.IsNullOrWhiteSpace(input)) return null;
 
-            var d = input.ToLower()
-                .Replace("sn-", "sn-")   // normaliser référence
-                .Trim();
+            var d = input.ToLower().Trim();
 
-            // Cherche dans les affectations courantes de l'employé sélectionné
-            return Affectations.FirstOrDefault(a =>
+            // ✅ Cherche dans la liste active selon le mode courant
+            var liste = ModeProjet ? AffectationsProjets : Affectations;
+
+            return liste.FirstOrDefault(a =>
                 a.Designation.ToLower().Contains(d) ||
                 a.Reference.ToLower().Contains(d));
         }

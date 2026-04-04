@@ -72,8 +72,8 @@ namespace AssetFlow.Infrastructure.Services
 
         IT → Actions :
         SoumettreIncident,
-        SélectionnerEmploye,    → désignation = nom de l'employé ("adem added", "Aziz"...)
-        SélectionnerProjet,    → désignation = nom du projet ("Projet 1", "Projet 2"...)
+        SélectionnerEmploye,    → désignation = nom de l'employé ("adem added", "Aziz"...), les afectations de [nom employé], afficher les affectations de [nom employé]
+        SélectionnerProjet,    → désignation = nom du projet ("Projet 1", "Projet 2"...),les afectations de [nom projet], afficher les affectations de [nom projet]
         RévoquerAffectation,    → désignation = nom du matériel ou référence ("Souris sans fil", "SN-900")
 
         SélectionnerConversation, → désignation = nom complet ou partiel de la personne
@@ -126,6 +126,8 @@ namespace AssetFlow.Infrastructure.Services
 
         - "sélectionner/voir/ouvrir employé [nom]" → SélectionnerEmploye, désignation = nom
         - "révoquer/retirer affectation [matériel]" → RévoquerAffectation, désignation = nom matériel ou référence
+        - "voir/afficher les employés/affectations des employés/liste employés" → SélectionnerEmploye, désignation = null
+        - "voir/afficher les projets/affectations des projets/liste projets" → SélectionnerProjet, désignation = null
         """;
 
         public VoiceService(IHttpClientFactory factory, IConfiguration config)

@@ -112,6 +112,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     await RenderEvolutionIncidents(dark);
                     await JS.InvokeVoidAsync("ApexITInterop.renderTendanceResolution",
                         "chart-tendance-resolution", _stats.TendanceResolution, dark);
+                    await RenderHeatmap();
                 }
 
                 if (articleChanged)

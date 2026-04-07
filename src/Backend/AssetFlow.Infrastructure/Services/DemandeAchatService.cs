@@ -8,10 +8,12 @@ namespace AssetFlow.Infrastructure.Services
     public class DemandeAchatService : IDemandeAchatService
     {
         private readonly AppDbContext _context;
+        private readonly IDashboardNotifier _notifier;
 
-        public DemandeAchatService(AppDbContext context)
+        public DemandeAchatService(AppDbContext context, IDashboardNotifier notifier)
         {
             _context = context;
+            _notifier = notifier;
         }
 
         public async Task<List<DemandeAchat>> GetAllAsync()
@@ -63,6 +65,7 @@ namespace AssetFlow.Infrastructure.Services
                 demande.MotifRefus = motifRefus!.Trim();
 
             await _context.SaveChangesAsync();
+            await _notifier.NotifyAsync();
         }
 
         public async Task<OffreAchat> AjouterOffreAsync(int idDemande, OffreAchat offre)

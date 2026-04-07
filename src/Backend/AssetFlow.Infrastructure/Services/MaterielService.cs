@@ -9,7 +9,9 @@ namespace AssetFlow.Infrastructure.Services
     public class MaterielService : IMaterielService
     {
         private readonly AppDbContext _db;
-        public MaterielService(AppDbContext db) => _db = db;
+        private readonly IDashboardNotifier _notifier;
+        public MaterielService(AppDbContext db, IDashboardNotifier notifier)
+        { _db = db; _notifier = notifier; }
 
         private static MaterielDto ToDto(Materiel m) => new()
         {
@@ -88,6 +90,7 @@ namespace AssetFlow.Infrastructure.Services
 
             _db.Materiels.Add(materiel);
             await _db.SaveChangesAsync();
+            await _notifier.NotifyAsync();
             return new MaterielResultDto { Succes = true, Message = "Matériel créé avec succès.", IdMateriel = materiel.Id };
         }
 

@@ -3,6 +3,7 @@ using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.SignalR.Client;
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
     public partial class Statistiques : ComponentBase, IAsyncDisposable
@@ -57,6 +58,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string      _roleUtilisateur = "Service Achat";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
+        private HubConnection? _hubConnection;
+
         protected override async Task OnInitializedAsync()
         {
             VoiceSvc.OnCommand += HandleVoiceCommand;
@@ -70,7 +73,104 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             await ChargerInfosUtilisateur();
             await ChargerDonnees();
+            await ConnecterSignalR();
         }
+        private async Task ConnecterSignalR()
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5235/dashboardhub", options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        try
+                        {
+                            return await JS.InvokeAsync<string?>("eval",
+                                "localStorage.getItem('access_token') || localStorage.getItem('token')");
+                        }
+                        catch { return null; }
+                    };
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            // Quand n'importe quelle donnée change → recharger tout
+            _hubConnection.On("DashboardUpdated", async () =>
+            {
+                await MettreAJourSilencieusement();
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+                await _hubConnection.InvokeAsync("JoinDashboard");
+            }
+            catch { /* SignalR non dispo, dashboard reste statique */ }
+        }
+        private async Task MettreAJourSilencieusement()
+        {
+            // 1. Récupérer les nouvelles données en arrière-plan
+            var nouvellesStats = await StatSvc.GetDashboardAsync(DateTime.Now.Year, 1, 12);
+            if (nouvellesStats == null) return;
+
+            // 2. Comparer et mettre à jour uniquement ce qui a changé
+            bool kpiChanged     = KpisOntChange(nouvellesStats);
+            bool demandeChanged = DemandesOntChange(nouvellesStats);
+            bool materielChanged= MaterielsOntChange(nouvellesStats);
+            bool articleChanged = ArticlesOntChange(nouvellesStats);
+
+            // 3. Mettre à jour les données en mémoire
+            _stats = nouvellesStats;
+
+            // 4. Re-render uniquement les graphes impactés (sans flash global)
+            await InvokeAsync(async () =>
+            {
+                bool dark = _theme == "dark";
+
+                if (kpiChanged)
+                    StateHasChanged(); // juste les KPIs HTML, pas de graphe
+
+                if (demandeChanged)
+                {
+                    await RenderEtatDemandes(dark);
+                    await RenderDemandesSemaine(dark);
+                    await RenderDemandesMois(dark);
+                }
+
+                if (materielChanged)
+                    await JS.InvokeVoidAsync("ApexInterop.renderAffectationMateriel",
+                        "chart-affectation", _stats.AffectationMateriel, dark);
+
+                if (articleChanged)
+                {
+                    await RenderArticlesCategorie(dark);
+                    await RenderArticlesMateriel(dark);
+                }
+            });
+        }
+        private bool KpisOntChange(DashboardStatsDto nouvelles) =>
+            _stats == null ||
+            _stats.TotalMateriels       != nouvelles.TotalMateriels       ||
+            _stats.TotalCommandes       != nouvelles.TotalCommandes       ||
+            _stats.TotalArticles        != nouvelles.TotalArticles        ||
+            _stats.TotalDemandesActives != nouvelles.TotalDemandesActives;
+
+        private bool DemandesOntChange(DashboardStatsDto nouvelles) =>
+            _stats == null ||
+            _stats.DemandesRaw.Count != nouvelles.DemandesRaw.Count ||
+            _stats.DemandesRaw.Any(d =>
+                !nouvelles.DemandesRaw.Any(n =>
+                    n.DateCreation == d.DateCreation && n.Statut == d.Statut));
+
+        private bool MaterielsOntChange(DashboardStatsDto nouvelles) =>
+            _stats == null ||
+            _stats.AffectationMateriel.Affecte    != nouvelles.AffectationMateriel.Affecte ||
+            _stats.AffectationMateriel.NonAffecte != nouvelles.AffectationMateriel.NonAffecte;
+
+        private bool ArticlesOntChange(DashboardStatsDto nouvelles) =>
+            _stats == null ||
+            _stats.TotalArticles != nouvelles.TotalArticles ||
+            _stats.ArticlesParCategorie.Count != nouvelles.ArticlesParCategorie.Count ||
+            _stats.ArticlesParMateriel.Count  != nouvelles.ArticlesParMateriel.Count;
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
             if (cmd.Type == VoiceCommandType.Navigation)
@@ -303,6 +403,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         public async ValueTask DisposeAsync()
         {
             VoiceSvc.OnCommand -= HandleVoiceCommand;
+            if (_hubConnection is not null)
+            {
+                try { await _hubConnection.InvokeAsync("LeaveDashboard"); } catch { }
+                await _hubConnection.DisposeAsync();
+            }
             try { await JS.InvokeVoidAsync("ApexInterop.destroyAll"); }
             catch { }
         }

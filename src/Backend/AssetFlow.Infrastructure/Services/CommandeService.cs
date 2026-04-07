@@ -9,7 +9,9 @@ namespace AssetFlow.Infrastructure.Services
     public class CommandeService : ICommandeService
     {
         private readonly AppDbContext _db;
-        public CommandeService(AppDbContext db) => _db = db;
+        private readonly IDashboardNotifier _notifier;
+        public CommandeService(AppDbContext db, IDashboardNotifier notifier)
+        { _db = db; _notifier = notifier; }
         private static ArticleDto ToArticleDto(ArticleIndividuel a) => new()
         {
             Id             = a.Id,
@@ -271,6 +273,7 @@ namespace AssetFlow.Infrastructure.Services
 
                 materiel.QuantiteStock += dto.QuantiteAchetee;
                 await _db.SaveChangesAsync();
+                await _notifier.NotifyAsync();
                 await transaction.CommitAsync();
 
                 return new CommandeReponseDto

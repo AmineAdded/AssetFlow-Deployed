@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,6 +143,13 @@ builder.Services.AddSingleton<IConnectionTracker, ConnectionTracker>(); // Singl
 builder.Services.AddScoped<IChatOffreService, ChatOffreService>();
 builder.Services.AddScoped<IOffreSelectionService, OffreSelectionService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
+builder.Services.AddScoped<IDashboardNotifier>(sp =>
+{
+    var hub = sp.GetRequiredService<IHubContext<DashboardHub>>();
+    return new DashboardNotifier(
+        () => hub.Clients.Group("dashboard").SendAsync("DashboardUpdated")
+    );
+});
 
 // === SIGNALR ===
 builder.Services.AddSignalR();
@@ -186,6 +194,7 @@ app.UseAuthorization();          // ← UseAuthorization AVANT MapHub
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chathub"); // ← après UseAuthorization
+app.MapHub<DashboardHub>("/dashboardhub");
 
 // === MIGRATION AUTOMATIQUE ===
 using (var scope = app.Services.CreateScope())

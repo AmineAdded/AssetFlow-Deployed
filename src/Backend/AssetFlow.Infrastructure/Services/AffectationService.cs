@@ -9,7 +9,10 @@ namespace AssetFlow.Infrastructure.Services
     public class AffectationService : IAffectationService
     {
         private readonly AppDbContext _db;
-        public AffectationService(AppDbContext db) => _db = db;
+        private readonly IDashboardNotifier _notifier;
+
+        public AffectationService(AppDbContext db, IDashboardNotifier notifier)
+        { _db = db; _notifier = notifier; }
 
         // ── Utilisateurs ─────────────────────────────────────
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursDisponiblesAsync(string? search = null)
@@ -176,6 +179,7 @@ namespace AssetFlow.Infrastructure.Services
             }
 
             materiel.QuantiteStock = Math.Max(0, materiel.QuantiteStock - articles.Count);
+            await _notifier.NotifyAsync();
             await _db.SaveChangesAsync();
 
             var beneficiaire = dto.ProjetId.HasValue

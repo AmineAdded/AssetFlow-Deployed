@@ -91,6 +91,7 @@ namespace AssetFlow.Infrastructure.Services
             _db.Materiels.Add(materiel);
             await _db.SaveChangesAsync();
             await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
             return new MaterielResultDto { Succes = true, Message = "Matériel créé avec succès.", IdMateriel = materiel.Id };
         }
 
@@ -114,6 +115,8 @@ namespace AssetFlow.Infrastructure.Services
             materiel.ImageUrl      = dto.ImageUrl?.Trim();
 
             await _db.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
             return new MaterielResultDto { Succes = true, Message = "Matériel mis à jour." };
         }
 
@@ -182,6 +185,8 @@ namespace AssetFlow.Infrastructure.Services
                 _db.Materiels.Remove(materiel);
 
                 await _db.SaveChangesAsync();
+                await _notifier.NotifyAsync();
+                await _notifier.NotifyITAsync();
                 await tx.CommitAsync();
 
                 return new MaterielResultDto

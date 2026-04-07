@@ -9,10 +9,12 @@ namespace AssetFlow.Infrastructure.Services
     public class DemandeAchatITService : IDemandeAchatITService
     {
         private readonly AppDbContext _context;
+        private readonly IDashboardNotifier _notifier;
 
-        public DemandeAchatITService(AppDbContext context)
+        public DemandeAchatITService(AppDbContext context, IDashboardNotifier notifier)
         {
             _context = context;
+            _notifier = notifier;
         }
 
         public async Task<IEnumerable<DemandeAchatITDto>> GetAllAsync(int? userId)
@@ -68,6 +70,8 @@ namespace AssetFlow.Infrastructure.Services
 
             _context.DemandeAchat.Add(demande);
             await _context.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
             return ToDto(demande);
         }
         public async Task<DemandeAchatITDto?> UpdateAsync(int id, UpdateDemandeAchatDto dto)

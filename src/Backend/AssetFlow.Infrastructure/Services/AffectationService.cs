@@ -179,8 +179,9 @@ namespace AssetFlow.Infrastructure.Services
             }
 
             materiel.QuantiteStock = Math.Max(0, materiel.QuantiteStock - articles.Count);
-            await _notifier.NotifyAsync();
             await _db.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
 
             var beneficiaire = dto.ProjetId.HasValue
                 ? (await _db.Projects.FindAsync(dto.ProjetId.Value))?.Nom ?? "projet"

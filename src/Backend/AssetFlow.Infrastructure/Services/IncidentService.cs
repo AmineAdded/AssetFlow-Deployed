@@ -9,10 +9,12 @@ namespace AssetFlow.Infrastructure.Services
     public class IncidentService : IIncidentService
     {
         private readonly AppDbContext _context;
+        private readonly IDashboardNotifier _notifier;
 
-        public IncidentService(AppDbContext context)
+        public IncidentService(AppDbContext context, IDashboardNotifier notifier)
         {
             _context = context;
+            _notifier = notifier;
         }
         public async Task<SignalerIncidentResponseDto> SignalerIncidentAsync(SignalerIncidentRequestDto request)
         {
@@ -51,6 +53,8 @@ namespace AssetFlow.Infrastructure.Services
                 var numeroIncident = $"INC-{DateTime.UtcNow.Year}-{incident.Id:D3}";
 
                 await _context.SaveChangesAsync();
+                await _notifier.NotifyAsync();
+                await _notifier.NotifyITAsync();
 
                 return new SignalerIncidentResponseDto
                 {
@@ -229,6 +233,9 @@ namespace AssetFlow.Infrastructure.Services
             }
 
             await _context.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
+
             return new SignalerIncidentResponseDto { Success = true, Message = "Statut mis à jour." };
         }
 
@@ -254,6 +261,8 @@ namespace AssetFlow.Infrastructure.Services
             if (article != null) article.Etat = EtatArticle.Bon;
 
             await _context.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
             return new SignalerIncidentResponseDto
             {
                 Success = true,

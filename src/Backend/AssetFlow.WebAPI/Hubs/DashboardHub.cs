@@ -10,5 +10,11 @@ namespace AssetFlow.WebAPI.Hubs
 
         public async Task LeaveDashboard()
             => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "dashboard");
+
+        public async Task JoinDashboardIT()
+        => await Groups.AddToGroupAsync(Context.ConnectionId, "dashboard-it");
+
+        public async Task LeaveDashboardIT()
+            => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "dashboard-it");
     }
 }

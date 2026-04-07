@@ -2,6 +2,7 @@ using AssetFlow.BlazorUI.DTOs;
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {
@@ -30,6 +31,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         // ─── Filtre : Évolution des incidents (semaines) ─────────
         private DateTime _semDebut = DateTime.Today.AddDays(-55);
         private DateTime _semFin   = DateTime.Today;
+        private HubConnection? _hubConnection;
 
         protected override async Task OnInitializedAsync()
         {
@@ -44,7 +46,111 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             await ChargerInfosUtilisateur();
             await ChargerDonnees();
+            await ConnecterSignalR();
         }
+        private async Task ConnecterSignalR()
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl("http://localhost:5235/dashboardhub", options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        try
+                        {
+                            return await JS.InvokeAsync<string?>("eval",
+                                "localStorage.getItem('access_token') || localStorage.getItem('token')");
+                        }
+                        catch { return null; }
+                    };
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On("DashboardITUpdated", async () =>
+            {
+                await MettreAJourSilencieusement();
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+                await _hubConnection.InvokeAsync("JoinDashboardIT");
+            }
+            catch { /* dashboard reste statique si SignalR non dispo */ }
+        }
+        private async Task MettreAJourSilencieusement()
+        {
+            var nouvelles = await StatSvc.GetDashboardAsync();
+            if (nouvelles == null) return;
+
+            bool kpiChanged      = KpisOntChange(nouvelles);
+            bool incidentChanged = IncidentsOntChange(nouvelles);
+            bool articleChanged  = ArticlesOntChange(nouvelles);
+            bool affectChanged   = AffectationsOntChange(nouvelles);
+
+            _stats = nouvelles;
+            _lastUpdate = DateTime.Now.ToString("HH:mm");
+
+            await InvokeAsync(async () =>
+            {
+                bool dark = _theme == "dark";
+
+                if (kpiChanged)
+                    StateHasChanged();
+
+                if (incidentChanged)
+                {
+                    await JS.InvokeVoidAsync("ApexITInterop.renderIncidentsParType",
+                        "chart-incidents-type", _stats.IncidentsParType, dark);
+                    await JS.InvokeVoidAsync("ApexITInterop.renderIncidentStatutGauge",
+                        "chart-incidents-statut", _stats.IncidentParStatut, dark);
+                    await RenderEvolutionIncidents(dark);
+                    await JS.InvokeVoidAsync("ApexITInterop.renderTendanceResolution",
+                        "chart-tendance-resolution", _stats.TendanceResolution, dark);
+                }
+
+                if (articleChanged)
+                    await JS.InvokeVoidAsync("ApexITInterop.renderArticlesParStatut",
+                        "chart-articles-statut", _stats.ArticlesParStatut, dark);
+
+                if (affectChanged)
+                {
+                    await JS.InvokeVoidAsync("ApexITInterop.renderAffectationsParDept",
+                        "chart-affectations-dept", _stats.AffectationsParDept, dark);
+                    await JS.InvokeVoidAsync("ApexITInterop.renderEquipementsParCategorie",
+                        "chart-equipements-categorie", _stats.EquipementsParCategorie, dark);
+                }
+            });
+        }
+        private bool KpisOntChange(DashboardITStatsDto n) =>
+        _stats == null ||
+        _stats.TotalMateriels         != n.TotalMateriels         ||
+        _stats.TotalArticles          != n.TotalArticles          ||
+        _stats.IncidentsActifs        != n.IncidentsActifs        ||
+        _stats.AffectationsEnCours    != n.AffectationsEnCours    ||
+        _stats.ArticlesHorsService    != n.ArticlesHorsService    ||
+        _stats.DemandesAchatEnAttente != n.DemandesAchatEnAttente;
+
+    private bool IncidentsOntChange(DashboardITStatsDto n) =>
+        _stats == null ||
+        _stats.IncidentsRaw.Count           != n.IncidentsRaw.Count           ||
+        _stats.IncidentParStatut.EnAttente  != n.IncidentParStatut.EnAttente  ||
+        _stats.IncidentParStatut.EnCours    != n.IncidentParStatut.EnCours    ||
+        _stats.IncidentParStatut.Resolu     != n.IncidentParStatut.Resolu     ||
+        _stats.IncidentParStatut.Cloture    != n.IncidentParStatut.Cloture;
+
+    private bool ArticlesOntChange(DashboardITStatsDto n) =>
+        _stats == null ||
+        _stats.ArticlesParStatut.Disponible   != n.ArticlesParStatut.Disponible   ||
+        _stats.ArticlesParStatut.Affecte      != n.ArticlesParStatut.Affecte      ||
+        _stats.ArticlesParStatut.HorsService  != n.ArticlesParStatut.HorsService  ||
+        _stats.ArticlesParStatut.EnReparation != n.ArticlesParStatut.EnReparation;
+
+    private bool AffectationsOntChange(DashboardITStatsDto n) =>
+        _stats == null ||
+        _stats.AffectationsEnCours              != n.AffectationsEnCours ||
+        _stats.AffectationsParDept.Count        != n.AffectationsParDept.Count ||
+        _stats.EquipementsParCategorie.Count    != n.EquipementsParCategorie.Count;
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
             if (cmd.Type == VoiceCommandType.Navigation)
@@ -220,8 +326,14 @@ namespace AssetFlow.BlazorUI.Pages.IT
         public async ValueTask DisposeAsync()
         {
             VoiceSvc.OnCommand -= HandleVoiceCommand;
-            try { await JS.InvokeVoidAsync("ApexITInterop.destroyAll"); }
-            catch { }
+
+            if (_hubConnection is not null)
+            {
+                try { await _hubConnection.InvokeAsync("LeaveDashboardIT"); } catch { }
+                await _hubConnection.DisposeAsync();
+            }
+
+            try { await JS.InvokeVoidAsync("ApexITInterop.destroyAll"); } catch { }
         }
-    }
+            }
 }

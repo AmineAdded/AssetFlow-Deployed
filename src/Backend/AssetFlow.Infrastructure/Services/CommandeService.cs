@@ -274,6 +274,7 @@ namespace AssetFlow.Infrastructure.Services
                 materiel.QuantiteStock += dto.QuantiteAchetee;
                 await _db.SaveChangesAsync();
                 await _notifier.NotifyAsync();
+                await _notifier.NotifyITAsync();
                 await transaction.CommitAsync();
 
                 return new CommandeReponseDto
@@ -332,6 +333,8 @@ namespace AssetFlow.Infrastructure.Services
             commande.DateFinGarantie = dto.DateFinGarantie;
 
             await _db.SaveChangesAsync();
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();    
 
             return new CommandeReponseDto
             {

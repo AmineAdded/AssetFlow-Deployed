@@ -66,6 +66,7 @@ namespace AssetFlow.Infrastructure.Services
 
             await _context.SaveChangesAsync();
             await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
         }
 
         public async Task<OffreAchat> AjouterOffreAsync(int idDemande, OffreAchat offre)

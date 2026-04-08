@@ -28,7 +28,7 @@ namespace AssetFlow.Infrastructure.Services
         {
             _context = context;
             _http    = httpFactory.CreateClient("MistralClient");
-            _apiKey  = config["Mistral:ApiKey"];
+            _apiKey  = config["MistralApiKey"];
             _logger  = logger;
         }
 

@@ -32,8 +32,7 @@ namespace AssetFlow.Infrastructure.Services
             _logger  = logger;
         }
 
-        // ── Analyse un seul matériel ──────────────────────────────
-        public async Task<SentimentMaterielDto> AnalyserSentimentMaterielAsync(int materielId)
+       public async Task<SentimentMaterielDto> AnalyserSentimentMaterielAsync(int materielId)
         {
             var materiel = await _context.Materiels
                 .FirstOrDefaultAsync(m => m.Id == materielId)
@@ -68,9 +67,8 @@ namespace AssetFlow.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex,
-                    "Mistral AI indisponible pour matériel {Id} — fallback algorithmique.", materielId);
-                return AnalyseAlgorithmique(
-                    materielId, materiel.Reference, materiel.Designation, commentaires);
+                    "Mistral AI indisponible pour matériel {Id}.", materielId);
+                throw; // ← relance l'exception → le contrôleur retourne 500 → CB côté Blazor déclenche RecordFailure()
             }
         }
 

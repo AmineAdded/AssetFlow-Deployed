@@ -1,4 +1,5 @@
 using AssetFlow.BlazorUI.Services;
+using AssetFlow.BlazorUI.CircuitBreaker;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -6,11 +7,12 @@ using AssetFlow.BlazorUI.DTOs;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {
-    public partial class CommentairesIT : ComponentBase
+    public partial class CommentairesIT : ComponentBase,IAsyncDisposable
     {
         [Inject] private EmployeService       EmployeService { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage   { get; set; } = default!;
         [Inject] private IJSRuntime           JS             { get; set; } = default!;
+        [Inject] private CommentaireCircuitBreakerService _cbService { get; set; } = default!;
 
         private List<CommentaireITDto> Commentaires        { get; set; } = new();
         private List<CommentaireITDto> CommentairesFiltres { get; set; } = new();
@@ -33,10 +35,52 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string _roleUtilisateur  = "IT";
         private bool   _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
+        private OffreCircuit _cbSentiment => _cbService.Sentiment;
+        private int          _countSentiment = 0;
+        private System.Threading.Timer? _cbTimer;
+
+        // ── Toast ─────────────────────────────────────────────────
+        private string? _toastMessage;
+        private bool    _toastVisible = false;
+        private System.Threading.CancellationTokenSource? _toastCts;
+
         protected override async Task OnInitializedAsync()
         {
             await ChargerInfosUtilisateur();
             await ChargerCommentaires();
+            DemarrerCbTimer(); 
+        }
+        private async Task AfficherToast(string message)
+        {
+            // Annuler un toast précédent encore en cours
+            _toastCts?.Cancel();
+            _toastCts = new System.Threading.CancellationTokenSource();
+
+            _toastMessage = message;
+            _toastVisible = true;
+            StateHasChanged();
+
+            try
+            {
+                await Task.Delay(4000, _toastCts.Token);
+                _toastVisible = false;
+                StateHasChanged();
+            }
+            catch (TaskCanceledException) { }
+        }
+        private void DemarrerCbTimer()
+        {
+            _cbTimer = new System.Threading.Timer(async _ =>
+            {
+                _countSentiment = _cbSentiment.SecondsRemaining;
+                _cbSentiment.TryTransitionHalfOpen();
+                await InvokeAsync(StateHasChanged);
+            }, null, 0, 1000);
+        }
+        public async ValueTask DisposeAsync()
+        {
+            if (_cbTimer != null)
+                await _cbTimer.DisposeAsync();
         }
 
         private async Task ChargerInfosUtilisateur()
@@ -94,6 +138,16 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private async Task AnalyserSentiment(int materielId)
         {
+            // ── Circuit Breaker ──────────────────────────────────────
+            if (_cbSentiment.TryTransitionHalfOpen()) StateHasChanged();
+
+            if (!_cbSentiment.CanSend())
+            {
+                StateHasChanged();
+                return;
+            }
+            // ────────────────────────────────────────────────────────
+
             if (SentimentEnCours.Contains(materielId)) return;
             SentimentEnCours.Add(materielId);
             StateHasChanged();
@@ -102,17 +156,27 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 var result = await EmployeService.GetSentimentMaterielAsync(materielId);
                 if (result != null)
                 {
+                    _cbSentiment.RecordSuccess();   // ← AJOUT
                     result.MaterielId = materielId;
                     Sentiments[materielId] = result;
                     SentimentDisponible.Add(materielId);
-                    // Laisser Blazor créer le div dans le DOM
                     StateHasChanged();
                     await Task.Yield();
-                    // Le polling DOM est géré côté JS dans _waitForElement
                     await RenderApexDonut(materielId, result);
                 }
+                else
+                {
+                    _cbSentiment.RecordFailure();   // ← AJOUT (null = échec silencieux)
+                    if (_cbSentiment.State != CbState.Open)
+                    {
+                        await AfficherToast("Problème serveur, réessayez dans quelques instants.");
+                    }
+                }
             }
-            catch { }
+            catch
+            {
+                _cbSentiment.RecordFailure();       // ← AJOUT
+            }
             finally { SentimentEnCours.Remove(materielId); StateHasChanged(); }
         }
 

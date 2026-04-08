@@ -1,4 +1,4 @@
-namespace AssetFlow.BlazorUI.Services
+namespace AssetFlow.BlazorUI.CircuitBreaker
 {
     public enum CbState { Closed, Open, HalfOpen }
 

@@ -1,5 +1,6 @@
 using AssetFlow.BlazorUI;
 using AssetFlow.BlazorUI.Services;
+using AssetFlow.BlazorUI.CircuitBreaker;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -60,5 +61,6 @@ builder.Services.AddScoped<OffreDemandeService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<ScraperCircuitBreakerService>();
 builder.Services.AddScoped<OffreCircuitBreakerService>();
+builder.Services.AddScoped<CommentaireCircuitBreakerService>();
 
 await builder.Build().RunAsync();

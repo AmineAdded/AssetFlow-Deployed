@@ -1,5 +1,6 @@
 using AssetFlow.BlazorUI.DTOs;
 using AssetFlow.BlazorUI.Services;
+using AssetFlow.BlazorUI.CircuitBreaker;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;

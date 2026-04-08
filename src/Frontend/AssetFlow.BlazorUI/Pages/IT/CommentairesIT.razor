@@ -2,8 +2,45 @@
 @using AssetFlow.BlazorUI.Services
 @using AssetFlow.BlazorUI.Components
 @using Microsoft.JSInterop
+@using AssetFlow.BlazorUI.CircuitBreaker
 
 <RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})">
+@if (_cbSentiment.State == CbState.Open)
+{
+    <div class="offre-cb-strip offre-cb-open">
+        <div class="offre-cb-strip-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="offre-cb-strip-body">
+            <span class="offre-cb-strip-title">Analyse IA indisponible</span>
+            <span class="offre-cb-strip-desc">Service suspendu suite à plusieurs erreurs. Reprise dans&nbsp;<strong>@_countSentiment s</strong>.</span>
+        </div>
+        <div class="offre-cb-strip-countdown">
+            <span class="offre-cb-num">@_countSentiment</span>
+            <span class="offre-cb-unit">sec</span>
+        </div>
+        <button class="offre-cb-strip-close" @onclick="() => _cbService.Sentiment.Reset()">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+    </div>
+}
+
+@* ── Circuit Breaker Sentiment — HALF-OPEN ── *@
+@if (_cbSentiment.State == CbState.HalfOpen)
+{
+    <div class="offre-cb-strip offre-cb-halfopen">
+        <div class="offre-cb-strip-icon">
+            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        </div>
+        <div class="offre-cb-strip-body">
+            <span class="offre-cb-strip-title">Reconnexion analyse IA en cours…</span>
+            <span class="offre-cb-strip-desc">La prochaine analyse servira de vérification de disponibilité.</span>
+        </div>
+        <div class="offre-cb-pulse-wrap">
+            <span class="offre-cb-pulse-dot"></span>
+        </div>
+    </div>
+}
 <div class="itc-layout">
 
     @* ══════ SIDEBAR ══════ *@
@@ -383,6 +420,26 @@
                 </button>
             </div>
         </div>
+    </div>
+}
+@* ══ TOAST ══ *@
+@if (_toastVisible)
+{
+    <div class="itc-toast itc-toast-error">
+        <div class="itc-toast-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        </div>
+        <span class="itc-toast-msg">@_toastMessage</span>
+        <button class="itc-toast-close" @onclick="() => _toastVisible = false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        </button>
     </div>
 }
 </RoleAuthGuard>

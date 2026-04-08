@@ -1,6 +1,7 @@
 @page "/it/offres/{DemandeId:int}"
 @using AssetFlow.Application.DTOs
 @using AssetFlow.BlazorUI.Components
+@using AssetFlow.BlazorUI.CircuitBreaker
 
 <RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})" Context="userRole">
     @{ _roleUtilisateur = userRole; }  @* ← assigné avant le premier rendu du contenu *@

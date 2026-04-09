@@ -15,7 +15,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
+        [Inject] private VoiceCommandService  VoiceSvc     { get; set; } = default!;
 
         private string UserName       { get; set; } = "Agent Achat";
         private int    CurrentUserId                = 0;
@@ -34,10 +34,18 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private HubConnection?       _hub;
         private System.Timers.Timer? _typingTimer;
         private bool                 _isTyping = false;
-        private bool _sidebarOpen = false;
+        private bool                 _sidebarOpen = false;
         private void ToggleSidebar() => _sidebarOpen = !_sidebarOpen;
-        private string      _roleUtilisateur = "Service Achat";
+        private string _roleUtilisateur = "Service Achat";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+        // ── Voice recording ──────────────────────────────────────────────────
+        private bool   _isRecording      = false;
+        private bool   _hasVoiceBlob     = false;
+        private double _recordingSeconds = 0;
+        private System.Timers.Timer? _recordTimer;
+        private const int MaxVoiceSeconds = 60;
+        // ─────────────────────────────────────────────────────────────────────
 
         private List<ITUserForAchatDto> ITUsersFiltres =>
             (string.IsNullOrWhiteSpace(SearchIT)
@@ -53,23 +61,23 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         protected override async Task OnInitializedAsync()
         {
             VoiceSvc.OnCommand += HandleVoiceCommand;
-            UserName      = await LocalStorage.GetItemAsync<string>("user_name") ?? "Agent Achat";
-            CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
-            _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role");
+            UserName         = await LocalStorage.GetItemAsync<string>("user_name") ?? "Agent Achat";
+            CurrentUserId    = await LocalStorage.GetItemAsync<int>("user_id");
+            _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "EquipeAchat";
 
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
+
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
             await InvokeAsync(async () =>
             {
                 switch (cmd.Type)
                 {
-                    case VoiceCommandType.SélectionnerConversation 
+                    case VoiceCommandType.SélectionnerConversation
                         when !string.IsNullOrWhiteSpace(cmd.Designation):
                     {
-                        // Recherche insensible à la casse et partielle
                         var recherche = cmd.Designation.Trim();
                         var user = ITUsers.FirstOrDefault(u =>
                             u.FullName.Contains(recherche, StringComparison.OrdinalIgnoreCase));
@@ -78,11 +86,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                             await SelectUser(user);
                         else
                         {
-                            // Tentative de correspondance mot par mot
                             var mots = recherche.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             user = ITUsers.FirstOrDefault(u =>
                                 mots.All(m => u.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)));
-
                             if (user != null)
                                 await SelectUser(user);
                         }
@@ -93,7 +99,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             });
         }
 
-        // ── Connexion SignalR ─────────────────────────────────────
+        // ── Connexion SignalR ─────────────────────────────────────────────────
         private async Task ConnectHubAsync()
         {
             try
@@ -106,6 +112,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     .WithAutomaticReconnect()
                     .Build();
 
+                // ── Réception d'un message (texte ou vocal) ──────────────────
                 _hub.On<ChatMessageDto>("ReceiveMessage", async msg =>
                 {
                     await InvokeAsync(async () =>
@@ -113,14 +120,19 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         var otherId = msg.SenderId == CurrentUserId ? msg.ReceiverId : msg.SenderId;
                         if (SelectedUser?.Id == otherId)
                         {
-                            if (!HasOptimistic(msg))
+                            if (msg.SenderId != CurrentUserId)
                             {
-                                if (msg.SenderId != CurrentUserId)
-                                    Messages.Add(msg);
-                                else
+                                Messages.Add(msg);
+                            }
+                            else
+                            {
+                                // Mise à jour du message optimiste (texte ou vocal)
+                                var opt = Messages.LastOrDefault(m => m.SenderId == CurrentUserId && m.Id < 0);
+                                if (opt != null)
                                 {
-                                    var opt = Messages.LastOrDefault(m => m.SenderId == CurrentUserId && m.Id < 0);
-                                    if (opt != null) opt.Id = msg.Id;
+                                    opt.Id                   = msg.Id;
+                                    opt.AudioData            = msg.AudioData;
+                                    opt.AudioDurationSeconds = msg.AudioDurationSeconds;
                                 }
                             }
                             if (msg.SenderId != CurrentUserId)
@@ -187,7 +199,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             catch { _hubConnected = false; StateHasChanged(); }
         }
 
-        // ── Chargement des agents IT ──────────────────────────────
+        // ── Chargement des agents IT ──────────────────────────────────────────
         private async Task LoadITUsersAsync()
         {
             LoadingUsers = true;
@@ -195,7 +207,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             try
             {
-                // Réutilise le même endpoint que MessagerieEmploye
                 var users = await Http.GetFromJsonAsync<List<ITSimpleDto>>("api/users/it") ?? new();
                 ITUsers = users.Select(u => new ITUserForAchatDto
                 {
@@ -222,7 +233,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             StateHasChanged();
         }
 
-        // ── Sélection d'un agent IT ───────────────────────────────
+        // ── Sélection d'un agent IT ───────────────────────────────────────────
         private async Task SelectUser(ITUserForAchatDto user)
         {
             SelectedUser      = user;
@@ -239,7 +250,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             await ScrollToBottomAsync();
         }
 
-        // ── Envoi message ─────────────────────────────────────────
+        // ── Envoi message texte ───────────────────────────────────────────────
         private async Task SendMessage()
         {
             if (string.IsNullOrWhiteSpace(NewMessage) || SelectedUser == null) return;
@@ -268,6 +279,118 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             await SendTypingAsync(false);
         }
+
+        // ── Voice recording ───────────────────────────────────────────────────
+
+        private async Task StartRecording()
+        {
+            _isRecording      = true;
+            _hasVoiceBlob     = false;
+            _recordingSeconds = 0;
+            StateHasChanged();
+
+            _recordTimer = new System.Timers.Timer(1000);
+            _recordTimer.Elapsed += async (_, _) =>
+            {
+                _recordingSeconds++;
+                if (_recordingSeconds >= MaxVoiceSeconds)
+                    await InvokeAsync(StopRecording);
+                else
+                    await InvokeAsync(StateHasChanged);
+            };
+            _recordTimer.AutoReset = true;
+            _recordTimer.Start();
+
+            try { await JS.InvokeVoidAsync("voiceRecorder.start"); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur microphone: {ex.Message}");
+                _isRecording = false;
+                _recordTimer?.Dispose();
+                _recordTimer = null;
+                StateHasChanged();
+            }
+        }
+
+        private async Task StopRecording()
+        {
+            _recordTimer?.Stop();
+            _recordTimer?.Dispose();
+            _recordTimer = null;
+            _isRecording  = false;
+
+            try
+            {
+                var base64 = await JS.InvokeAsync<string>("voiceRecorder.stop");
+                if (!string.IsNullOrEmpty(base64))
+                    _hasVoiceBlob = true;
+            }
+            catch (Exception ex) { Console.WriteLine($"Erreur stop recording: {ex.Message}"); }
+
+            StateHasChanged();
+        }
+
+        private async Task CancelVoice()
+        {
+            _recordTimer?.Stop();
+            _recordTimer?.Dispose();
+            _recordTimer      = null;
+            _isRecording      = false;
+            _hasVoiceBlob     = false;
+            _recordingSeconds = 0;
+            try { await JS.InvokeVoidAsync("voiceRecorder.cancel"); } catch { }
+            StateHasChanged();
+        }
+
+        private async Task SendVoiceMessage()
+        {
+            if (SelectedUser == null || _hub?.State != HubConnectionState.Connected) return;
+
+            string base64;
+            try { base64 = await JS.InvokeAsync<string>("voiceRecorder.getBlob"); }
+            catch { return; }
+
+            if (string.IsNullOrEmpty(base64)) return;
+
+            var receiverId = SelectedUser.Id;
+            var duration   = (int)Math.Min(_recordingSeconds, MaxVoiceSeconds);
+
+            // Message optimiste affiché immédiatement
+            var optimistic = new ChatMessageDto
+            {
+                Id                   = -(Messages.Count + 1),
+                SenderId             = CurrentUserId,
+                ReceiverId           = receiverId,
+                Content              = string.Empty,
+                AudioData            = base64,
+                AudioDurationSeconds = duration,
+                SentAt               = DateTime.Now,
+                IsRead               = false
+            };
+            Messages.Add(optimistic);
+            UpdateUserWithMessage(optimistic);
+
+            _hasVoiceBlob     = false;
+            _recordingSeconds = 0;
+            StateHasChanged();
+            await ScrollToBottomAsync();
+
+            // Envoi via Hub
+            try
+            {
+                await _hub.SendAsync("SendVoiceMessage", CurrentUserId, receiverId, base64, duration);
+            }
+            catch (Exception ex) { Console.WriteLine($"Erreur envoi vocal: {ex.Message}"); }
+        }
+
+        private string FormatRecordTime(double secs)
+        {
+            var m = (int)secs / 60;
+            var s = (int)secs % 60;
+            return $"{m}:{s:D2}";
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
 
         private async Task OnKeyDown(KeyboardEventArgs e)
         {
@@ -304,15 +427,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             var otherId = msg.SenderId == CurrentUserId ? msg.ReceiverId : msg.SenderId;
             var u = ITUsers.FirstOrDefault(x => x.Id == otherId);
             if (u == null) return;
-            u.LastMessage     = msg.Content;
+            // Prévisualisation : vocal → emoji, texte → contenu
+            u.LastMessage     = msg.IsVoice ? "🎤 Message vocal" : msg.Content;
             u.LastMessageTime = msg.SentAt;
             if (msg.SenderId != CurrentUserId && SelectedUser?.Id != otherId)
                 u.UnreadCount++;
         }
-
-        private bool HasOptimistic(ChatMessageDto msg) =>
-            Messages.Any(m => m.Content == msg.Content && m.SenderId == msg.SenderId
-                && Math.Abs((m.SentAt - msg.SentAt).TotalSeconds) < 5 && m.Id != msg.Id);
 
         private void BackToList() { _conversationOpen = false; SelectedUser = null; }
 
@@ -335,8 +455,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             if (!dt.HasValue) return string.Empty;
             var today = DateTime.Today;
-            if (dt.Value.Date == today)              return dt.Value.ToString("HH:mm");
-            if (dt.Value.Date == today.AddDays(-1))  return "Hier";
+            if (dt.Value.Date == today)             return dt.Value.ToString("HH:mm");
+            if (dt.Value.Date == today.AddDays(-1)) return "Hier";
             return dt.Value.ToString("dd/MM");
         }
 
@@ -350,9 +470,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand; // ← AJOUTER
-            
+            VoiceSvc.OnCommand -= HandleVoiceCommand;
             _typingTimer?.Dispose();
+            _recordTimer?.Dispose();
             if (_hub != null)
             {
                 if (_hub.State == HubConnectionState.Connected)

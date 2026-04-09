@@ -135,21 +135,343 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
 .mai-typing-bubble { padding:0.625rem 0.875rem; min-width:56px; }
 .mai-typing-bubble .mai-typing-dots span { background:var(--text-muted); }
 
-/* Input */
-.mai-input-zone { background:var(--surface); border-top:1px solid var(--border); padding:0.875rem 1.25rem 0.75rem; flex-shrink:0;margin-bottom: 50px; }
+/* ═══════════════════════════════════════════════════════════════
+   ── AUDIO PLAYER dans les bulles (style Messenger) ──
+   ═══════════════════════════════════════════════════════════════ */
+.mai-audio-player {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.1rem 0;
+    min-width: 200px;
+}
+
+/* Bouton play/pause */
+.mai-play-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s, opacity 0.15s;
+}
+.bubble-me   .mai-play-btn { background: rgba(255,255,255,0.25); color: white; }
+.bubble-them .mai-play-btn { background: var(--primary); color: white; }
+.mai-play-btn:hover { transform: scale(1.08); opacity: 0.9; }
+.mai-play-btn svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+
+/* Waveform Messenger : barres de hauteur variable */
+.mai-audio-waveform {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    height: 28px;
+}
+.mai-audio-waveform span {
+    flex: 1;
+    border-radius: 9999px;
+    transition: height 0.2s;
+}
+.bubble-me   .mai-audio-waveform span { background: rgba(255,255,255,0.55); }
+.bubble-them .mai-audio-waveform span { background: var(--primary); opacity: 0.6; }
+
+/* Hauteurs alternées pour simuler une vraie waveform */
+.mai-audio-waveform span:nth-child(1)  { height: 8px; }
+.mai-audio-waveform span:nth-child(2)  { height: 16px; }
+.mai-audio-waveform span:nth-child(3)  { height: 22px; }
+.mai-audio-waveform span:nth-child(4)  { height: 12px; }
+.mai-audio-waveform span:nth-child(5)  { height: 26px; }
+.mai-audio-waveform span:nth-child(6)  { height: 18px; }
+.mai-audio-waveform span:nth-child(7)  { height: 10px; }
+.mai-audio-waveform span:nth-child(8)  { height: 20px; }
+.mai-audio-waveform span:nth-child(9)  { height: 14px; }
+.mai-audio-waveform span:nth-child(10) { height: 24px; }
+.mai-audio-waveform span:nth-child(11) { height: 8px; }
+.mai-audio-waveform span:nth-child(12) { height: 16px; }
+
+/* Animation pendant la lecture */
+.mai-audio-waveform.playing span {
+    animation: maiWavePlay 0.6s ease-in-out infinite alternate;
+}
+.mai-audio-waveform.playing span:nth-child(odd)  { animation-delay: 0s; }
+.mai-audio-waveform.playing span:nth-child(even) { animation-delay: 0.3s; }
+@keyframes maiWavePlay {
+    from { opacity: 0.4; transform: scaleY(0.6); }
+    to   { opacity: 1;   transform: scaleY(1.2); }
+}
+
+/* Durée */
+.mai-audio-dur {
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.bubble-me   .mai-audio-dur { color: rgba(255,255,255,0.85); }
+.bubble-them .mai-audio-dur { color: var(--text-muted); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ── INPUT ZONE ──
+   ═══════════════════════════════════════════════════════════════ */
+.mai-input-zone {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 1.25rem 0.625rem;
+    flex-shrink: 0;
+    margin-bottom: 50px;
+}
 html.dark .mai-input-zone { background:#101826; border-top-color:#1e2d42; }
+
+/* Zone de saisie normale */
 .mai-input-wrap { display:flex; align-items:center; gap:0.75rem; background:var(--surface-2); border:1px solid var(--border); border-radius:1rem; padding:0.2rem 0.5rem 0.2rem 1rem; transition:border-color 0.2s, box-shadow 0.2s; }
 html.dark .mai-input-wrap { background:#0d1520; border-color:#1e2d42; }
 .mai-input-wrap:focus-within { border-color:var(--primary); box-shadow:0 0 0 2.5px rgba(19,109,236,0.12); }
 .mai-textarea { flex:1; background:transparent; border:none; outline:none; resize:none; font-size:0.875rem; color:var(--text); line-height:1.5; max-height:120px; overflow-y:auto; font-family:inherit; padding:0.5rem 0; }
 .mai-textarea::placeholder { color:var(--text-faint); }
+
+/* Bouton micro */
+.mai-mic-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.18s;
+}
+.mai-mic-btn:hover { background: rgba(19,109,236,0.1); color: var(--primary); }
+.mai-mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.mai-mic-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+/* Bouton envoyer */
 .mai-send-btn { width:36px; height:36px; border-radius:0.625rem; border:none; background:var(--border); color:var(--text-faint); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.18s; }
 .mai-send-btn.active { background:var(--primary); color:white; box-shadow:0 2px 10px rgba(19,109,236,0.3); }
 .mai-send-btn.active:hover { transform:scale(1.06); }
 .mai-send-btn:disabled:not(.active) { cursor:not-allowed; opacity:0.5; }
 .mai-send-btn svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; }
+
 .mai-input-hint { font-size:0.65rem; color:var(--text-faint); margin:0.4rem 0 0; }
 .mai-input-hint kbd { background:var(--border); border-radius:3px; padding:0 3px; font-size:0.6rem; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ── BARRE D'ENREGISTREMENT STYLE MESSENGER ──
+   ═══════════════════════════════════════════════════════════════ */
+.mai-voice-recording-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface-2);
+    border: 1.5px solid #ef4444;
+    border-radius: 1rem;
+    padding: 0.5rem 0.875rem;
+    animation: maiRecPulse 2s ease-in-out infinite;
+}
+html.dark .mai-voice-recording-bar { background: #0d1520; }
+
+@keyframes maiRecPulse {
+    0%,100% { border-color: #ef4444; box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    50%      { border-color: #f87171; box-shadow: 0 0 0 4px rgba(239,68,68,0.12); }
+}
+
+/* Partie gauche : point rouge + label + timer */
+.mai-rec-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.mai-rec-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: maiPulseRed 1s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes maiPulseRed {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: 0.4; transform: scale(0.75); }
+}
+
+.mai-rec-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #ef4444;
+}
+
+.mai-rec-timer {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5rem;
+}
+
+/* Waveform animée au centre */
+.mai-rec-wave-anim {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 28px;
+}
+.mai-rec-wave-anim span {
+    width: 3px;
+    border-radius: 9999px;
+    background: var(--primary);
+    animation: maiRecWave 0.8s ease-in-out infinite alternate;
+}
+.mai-rec-wave-anim span:nth-child(1) { height: 6px;  animation-delay: 0s; }
+.mai-rec-wave-anim span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+.mai-rec-wave-anim span:nth-child(3) { height: 22px; animation-delay: 0.2s; }
+.mai-rec-wave-anim span:nth-child(4) { height: 10px; animation-delay: 0.3s; }
+.mai-rec-wave-anim span:nth-child(5) { height: 18px; animation-delay: 0.15s; }
+.mai-rec-wave-anim span:nth-child(6) { height: 26px; animation-delay: 0.05s; }
+.mai-rec-wave-anim span:nth-child(7) { height: 12px; animation-delay: 0.25s; }
+.mai-rec-wave-anim span:nth-child(8) { height: 8px;  animation-delay: 0.35s; }
+@keyframes maiRecWave {
+    from { transform: scaleY(0.4); opacity: 0.5; }
+    to   { transform: scaleY(1);   opacity: 1; }
+}
+
+/* Boutons annuler / stop */
+.mai-rec-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+.mai-rec-cancel-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(239,68,68,0.1);
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s;
+}
+.mai-rec-cancel-btn:hover { background: rgba(239,68,68,0.2); transform: scale(1.05); }
+.mai-rec-cancel-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+.mai-rec-stop-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 2px 8px rgba(19,109,236,0.35);
+}
+.mai-rec-stop-btn:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(19,109,236,0.45); }
+.mai-rec-stop-btn svg { width: 14px; height: 14px; stroke: none; fill: white; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ── BARRE DE PRÉVISUALISATION STYLE MESSENGER ──
+   ═══════════════════════════════════════════════════════════════ */
+.mai-voice-preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(19,109,236,0.07);
+    border: 1.5px solid rgba(19,109,236,0.2);
+    border-radius: 1rem;
+    padding: 0.5rem 0.875rem;
+}
+html.dark .mai-voice-preview-bar { background: rgba(19,109,236,0.1); border-color: rgba(19,109,236,0.25); }
+
+.mai-preview-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.mai-preview-icon svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+.mai-preview-info {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.mai-preview-label { font-size: 0.72rem; font-weight: 600; color: var(--primary); }
+.mai-preview-dur   { font-size: 0.8rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Mini barres statiques dans la preview */
+.mai-preview-bars {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+}
+.mai-preview-bars span {
+    flex: 1;
+    border-radius: 9999px;
+    background: var(--primary);
+    opacity: 0.4;
+}
+.mai-preview-bars span:nth-child(1) { height: 6px; }
+.mai-preview-bars span:nth-child(2) { height: 14px; }
+.mai-preview-bars span:nth-child(3) { height: 20px; }
+.mai-preview-bars span:nth-child(4) { height: 10px; }
+.mai-preview-bars span:nth-child(5) { height: 18px; }
+.mai-preview-bars span:nth-child(6) { height: 8px; }
+.mai-preview-bars span:nth-child(7) { height: 16px; }
+.mai-preview-bars span:nth-child(8) { height: 12px; }
+
+.mai-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex-shrink: 0;
+}
+
+/* Bouton envoyer le vocal */
+.mai-send-voice-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 2px 8px rgba(19,109,236,0.35);
+}
+.mai-send-voice-btn:hover { transform: scale(1.08); box-shadow: 0 4px 12px rgba(19,109,236,0.45); }
+.mai-send-voice-btn svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; }
+
 
 /* ── Responsive ── */
 @media (max-width:768px) {
@@ -164,8 +486,11 @@ html.dark .mai-input-wrap { background:#0d1520; border-color:#1e2d42; }
     .mai-back-btn { display:flex; }
     .mai-bubble { max-width:80%; }
     .mai-messages-zone { padding:1rem; }
-    .mai-conn-status{display: none;}
-    .mai-header{justify-content: flex-start;}
-    .mai-page-title { flex: 1; }
-    .topbar-menu-btn{display: flex;}
+    .mai-conn-status { display:none; }
+    .mai-header { justify-content:flex-start; }
+    .mai-page-title { flex:1; }
+    .topbar-menu-btn { display:flex; }
+    .mai-voice-recording-bar { gap:0.5rem; padding:0.5rem 0.75rem; }
+    .mai-rec-label { display:none; }
+    .mai-audio-player { min-width: 160px; }
 }

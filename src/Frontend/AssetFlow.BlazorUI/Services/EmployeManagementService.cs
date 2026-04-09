@@ -11,7 +11,11 @@ namespace AssetFlow.BlazorUI.Services
         private readonly HttpClient _http;
         private const string Base = "api/employes";
 
-        public EmployeManagementService(HttpClient http) => _http = http;
+        public EmployeManagementService(HttpClient http, ILocalStorageService localStorage)
+        {
+            _http = http;
+            LocalStorage = localStorage;
+        }
 
         // ── Employés ──
         public async Task<List<EmployeListeDto>> GetEmployesAsync(string? search = null)

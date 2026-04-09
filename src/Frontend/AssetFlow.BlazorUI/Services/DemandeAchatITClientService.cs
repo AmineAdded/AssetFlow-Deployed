@@ -10,8 +10,11 @@ namespace AssetFlow.BlazorUI.Services
         private readonly HttpClient _http;
         [Inject] private ILocalStorageService        LocalStorage     { get; set; } = default!;
         private const string Base = "api/it/demandesachat";
-
-        public DemandeAchatITClientService(HttpClient http) => _http = http;
+        public DemandeAchatITClientService(HttpClient http, ILocalStorageService localStorage)
+        {
+            _http = http;
+            LocalStorage = localStorage;
+        }
 
         // ── userId passé en query param pour filtrer côté API ────
         public async Task<List<DemandeAchatITDto>> GetDemandesAsync(int? userId = null)

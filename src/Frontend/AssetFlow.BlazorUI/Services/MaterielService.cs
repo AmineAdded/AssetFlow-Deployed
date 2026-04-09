@@ -11,7 +11,11 @@ namespace AssetFlow.BlazorUI.Services
         private const string Base = "api/materiel";
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
 
-        public MaterielService(HttpClient http) => _http = http;
+        public MaterielService(HttpClient http, ILocalStorageService localStorage)
+        {
+            _http = http;
+            LocalStorage = localStorage;
+        }
 
         // ── Lecture ───────────────────────────────────────────────
         public async Task<List<MaterielDto>> GetAllAsync()

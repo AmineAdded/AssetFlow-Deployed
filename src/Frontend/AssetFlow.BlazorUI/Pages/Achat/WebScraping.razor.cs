@@ -15,6 +15,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private IHttpClientFactory HttpFactory { get; set; } = default!;
         // ── AJOUTER l'injection
         [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
+        [Inject] private ScraperCircuitBreakerService _circuitBreaker { get; set; } = default!;
+
+        // ── Countdown circuit breaker ────────────────────────────
+        private int _countdownSecondes = 0;
+        private System.Threading.Timer? _countdownTimer;
 
         // ── État ────────────────────────────────────────────────
         private string _theme = "dark";
@@ -59,11 +64,23 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             await ChargerInfosUtilisateur();
             LireQueryString();
+            DemarrerCountdown();
         }
-        public ValueTask DisposeAsync()
+
+        private void DemarrerCountdown()
+        {
+            _countdownTimer = new System.Threading.Timer(async _ =>
+            {
+                _countdownSecondes = _circuitBreaker.SecondesRestantes;
+                await InvokeAsync(StateHasChanged);
+            }, null, 0, 1000);
+        }
+
+        public async ValueTask DisposeAsync()
         {
             VoiceSvc.OnCommand -= HandleVoiceCommand;
-            return ValueTask.CompletedTask;
+            if (_countdownTimer != null)
+                await _countdownTimer.DisposeAsync();
         }
         private Task HandleVoiceCommand(VoiceCommand cmd)
         {
@@ -345,6 +362,22 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             if (string.IsNullOrWhiteSpace(_recherche)) return;
 
+            // ── Circuit breaker check ──────────────────────────
+            // Étape 1 : tenter la transition Open → HalfOpen si le timeout est expiré
+            // et re-render immédiatement pour afficher la banière ambre
+            if (_circuitBreaker.VerifierTransitionHalfOpen())
+            {
+                StateHasChanged();            // peint la banière ambre
+                await Task.Delay(4200);        // laisse le temps à l'utilisateur de la voir
+            }
+
+            // Étape 2 : vérifier si on peut envoyer (bloqué si encore Open)
+            if (!_circuitBreaker.PeutEnvoyerRequete())
+            {
+                AfficherToast(_circuitBreaker.MessageUtilisateur, "ws-toast-error");
+                return;
+            }
+
             _nomRecherche = _recherche.Trim();
             _derniereRecherche = _nomRecherche;
             _chargement = true;
@@ -362,6 +395,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
                 if (reponse?.succes == true && reponse.resultats != null && reponse.resultats.Any())
                 {
+                    _circuitBreaker.EnregistrerSucces();
                     _resultats = reponse.resultats.Select(r => new ResultatScraping
                     {
                         Site = r.site,
@@ -390,10 +424,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
             catch (HttpRequestException)
             {
-                AfficherToast("Impossible de contacter le service Python. Vérifiez que le serveur est lancé sur http://localhost:5000", "ws-toast-error");
+                _circuitBreaker.EnregistrerEchec();
+                AfficherToast("Impossible de contacter le service de scraping.", "ws-toast-error");
             }
             catch (Exception ex)
             {
+                _circuitBreaker.EnregistrerEchec();
                 AfficherToast($"Erreur : {ex.Message}", "ws-toast-error");
             }
             finally

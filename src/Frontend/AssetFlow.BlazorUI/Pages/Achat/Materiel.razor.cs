@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using AssetFlow.BlazorUI.Services;
+using Blazored.LocalStorage;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
@@ -14,6 +15,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private AssetFlow.BlazorUI.Services.ArticleService     ArticleSvc     { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private AssetFlow.BlazorUI.Services.VoiceCommandService VoiceSvc { get; set; } = default!;
+        [Inject] private ILocalStorageService        LocalStorage     { get; set; } = default!;
 
         // ── formulaire matériel ─────────────────────────────────
         private class FormulaireVm
@@ -467,6 +469,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     var currentQty = _toutesLignes.FirstOrDefault(l => l.MaterielId == _form.Id)?.QuantiteStock ?? 0;
                     var result = await MaterielSvc.ModifierAsync(new ModifierMaterielDto
                     {
+                        Utilisateur   = _currentUserName,
                         Id            = _form.Id,
                         Reference     = _form.Reference.Trim(),
                         Designation   = _form.Designation.Trim(),
@@ -485,6 +488,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         AjusterArticles();
                         var cmd = await CommandeSvc.CreerAsync(new CreerCommandeDto
                         {
+                            Utilisateur = _currentUserName,
                             NumeroCommande  = _formCommande.NumeroCommande.Trim(),
                             MaterielId      = materielId,
                             FournisseurId   = _formCommande.FournisseurId,
@@ -504,6 +508,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     {
                         var result = await MaterielSvc.AjouterAsync(new CreerMaterielDto
                         {
+                            Utilisateur = _currentUserName,
                             Reference     = _form.Reference.Trim(),
                             Designation   = _form.Designation.Trim(),
                             Description   = Vide(_form.Description),
@@ -521,6 +526,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     AjusterArticles();
                     var cmd = await CommandeSvc.CreerAsync(new CreerCommandeDto
                     {
+                        Utilisateur = _currentUserName,
                         NumeroCommande  = _formCommande.NumeroCommande.Trim(),
                         MaterielId      = materielId,
                         FournisseurId   = _formCommande.FournisseurId,
@@ -583,6 +589,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             {
                 var dto = new ModifierCommandeDto
                 {
+                    Utilisateur = _currentUserName,
                     Id                  = _formModifCommande.CommandeId,
                     NumeroCommande      = _formModifCommande.NumeroCommande.Trim(),
                     FournisseurId       = _formModifCommande.FournisseurId,
@@ -863,6 +870,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 var lg = _toutesLignes.FirstOrDefault(l => l.MaterielId == _materielSeuil.MaterielId);
                 var result = await MaterielSvc.ModifierAsync(new ModifierMaterielDto
                 {
+                    Utilisateur   = _currentUserName,
                     Id            = _materielSeuil.MaterielId,
                     Reference     = _materielSeuil.Reference,
                     Designation   = _materielSeuil.Designation,

@@ -6,7 +6,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize (Policy = "ITOrAdmin")]
     public class SentimentController : ControllerBase
     {
         private readonly ISentimentService _service;

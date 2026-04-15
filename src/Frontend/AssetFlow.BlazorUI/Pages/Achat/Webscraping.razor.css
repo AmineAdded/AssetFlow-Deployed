@@ -768,3 +768,124 @@ html:not(.dark) .ws-search-btn {
     border: 1px solid #0f5cc7;
     box-shadow: 0 2px 8px rgba(19, 109, 236, 0.3);
 }
+
+/* ============================================================
+   CIRCUIT BREAKER BANNERS
+   ============================================================ */
+.ws-cb-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid;
+    animation: ws-cb-slide-in 0.3s ease;
+}
+
+@keyframes ws-cb-slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* OPEN — rouge */
+.ws-cb-open {
+    background: rgba(244, 63, 94, 0.08);
+    border-color: rgba(244, 63, 94, 0.35);
+}
+html.dark .ws-cb-open {
+    background: rgba(244, 63, 94, 0.12);
+    border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* HALF-OPEN — ambre */
+.ws-cb-halfopen {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.35);
+}
+html.dark .ws-cb-halfopen {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* Icône */
+.ws-cb-icon {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+}
+.ws-cb-open .ws-cb-icon {
+    background: rgba(244, 63, 94, 0.15);
+    color: #f43f5e;
+}
+.ws-cb-halfopen .ws-cb-icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+.ws-cb-icon svg {
+    width: 20px; height: 20px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Texte */
+.ws-cb-body {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 2px;
+}
+.ws-cb-title {
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--text-primary);
+}
+.ws-cb-open .ws-cb-title    { color: #f43f5e; }
+.ws-cb-halfopen .ws-cb-title { color: #d97706; }
+html.dark .ws-cb-halfopen .ws-cb-title { color: #fbbf24; }
+
+.ws-cb-desc {
+    font-size: 0.8rem; color: var(--text-secondary);
+}
+
+/* Countdown */
+.ws-cb-countdown {
+    flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(244, 63, 94, 0.12);
+    border: 2px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 0.875rem;
+    min-width: 64px;
+}
+.ws-cb-count-num {
+    font-size: 1.6rem; font-weight: 900;
+    color: #f43f5e; line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.ws-cb-count-label {
+    font-size: 0.7rem; font-weight: 700;
+    color: #f43f5e; opacity: 0.8; text-transform: uppercase;
+}
+
+/* Pulse dot (HalfOpen) */
+.ws-cb-pulse {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+}
+.ws-cb-pulse-dot {
+    width: 14px; height: 14px;
+    background: #f59e0b;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
+    animation: ws-cb-pulse 1.5s ease-in-out infinite;
+}
+@keyframes ws-cb-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+    70%  { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+/* Responsive banners */
+@media (max-width: 600px) {
+    .ws-cb-banner { flex-wrap: wrap; gap: 0.75rem; }
+    .ws-cb-countdown { align-self: flex-start; }
+}

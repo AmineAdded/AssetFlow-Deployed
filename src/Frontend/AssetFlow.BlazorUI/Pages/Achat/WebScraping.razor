@@ -116,6 +116,39 @@
                     </div>
                 </section>
 
+                @* ── CIRCUIT BREAKER BANNER ── *@
+                @if (_circuitBreaker.Etat == CircuitState.Open)
+                {
+                    <div class="ws-cb-banner ws-cb-open">
+                        <div class="ws-cb-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <div class="ws-cb-body">
+                            <span class="ws-cb-title">Service temporairement indisponible</span>
+                            <span class="ws-cb-desc">Le service de recherche est en pause suite à plusieurs erreurs. Nouvelle tentative dans</span>
+                        </div>
+                        <div class="ws-cb-countdown">
+                            <span class="ws-cb-count-num">@_countdownSecondes</span>
+                            <span class="ws-cb-count-label">sec</span>
+                        </div>
+                    </div>
+                }
+                @if (_circuitBreaker.Etat == CircuitState.HalfOpen)
+                {
+                    <div class="ws-cb-banner ws-cb-halfopen">
+                        <div class="ws-cb-icon">
+                            <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        </div>
+                        <div class="ws-cb-body">
+                            <span class="ws-cb-title">Tentative de reconnexion…</span>
+                            <span class="ws-cb-desc">Le service teste sa disponibilité. La prochaine requête servira de vérification.</span>
+                        </div>
+                        <div class="ws-cb-pulse">
+                            <span class="ws-cb-pulse-dot"></span>
+                        </div>
+                    </div>
+                }
+
                 @* ── ÉTAT INITIAL ── *@
                 @if (_derniereRecherche == null && !_chargement)
                 {

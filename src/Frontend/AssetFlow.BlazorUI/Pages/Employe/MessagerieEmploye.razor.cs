@@ -15,7 +15,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
+<<<<<<< HEAD
         [Inject] private VoiceCommandService  VoiceSvc     { get; set; } = default!;
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
 
         private int  CurrentUserId     = 0;
         private bool _hubConnected     = false;
@@ -55,11 +58,11 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
+<<<<<<< HEAD
 
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
@@ -92,6 +95,8 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         }
 
         // ── Connexion SignalR ─────────────────────────────────────────────────
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
         private async Task ConnectHubAsync()
         {
             try
@@ -452,7 +457,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         public async ValueTask DisposeAsync()
         {
+<<<<<<< HEAD
             VoiceSvc.OnCommand -= HandleVoiceCommand;
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
             _typingTimer?.Dispose();
             _recordTimer?.Dispose();
             if (_hub != null)

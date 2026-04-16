@@ -11,8 +11,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private IJSRuntime          JS      { get; set; } = default!;
         [Inject] private StatistiquesService StatSvc { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
-
         // ─── UI ──────────────────────────────────────────────────
         private string _theme           = "dark";
         private bool   _sidebarOpen     = false;
@@ -62,7 +60,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             try
             {
                 var savedTheme = await JS.InvokeAsync<string?>("eval",
@@ -171,14 +168,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _stats.TotalArticles != nouvelles.TotalArticles ||
             _stats.ArticlesParCategorie.Count != nouvelles.ArticlesParCategorie.Count ||
             _stats.ArticlesParMateriel.Count  != nouvelles.ArticlesParMateriel.Count;
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            if (cmd.Type == VoiceCommandType.Navigation)
-            {
-            }
-            // D'autres commandes spécifiques à cette page peuvent être ajoutées ici
-            await InvokeAsync(StateHasChanged);
-        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -402,7 +391,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             if (_hubConnection is not null)
             {
                 try { await _hubConnection.InvokeAsync("LeaveDashboard"); } catch { }

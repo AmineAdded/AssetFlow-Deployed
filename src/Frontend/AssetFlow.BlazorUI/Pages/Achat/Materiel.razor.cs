@@ -14,7 +14,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private AssetFlow.BlazorUI.Services.FournisseurService FournisseurSvc { get; set; } = default!;
         [Inject] private AssetFlow.BlazorUI.Services.ArticleService     ArticleSvc     { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
-        [Inject] private AssetFlow.BlazorUI.Services.VoiceCommandService VoiceSvc { get; set; } = default!;
         [Inject] private ILocalStorageService        LocalStorage     { get; set; } = default!;
 
         // ── formulaire matériel ─────────────────────────────────
@@ -151,85 +150,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             await ChargerInfosUtilisateur();
             await Task.WhenAll(ChargerDonnees(), ChargerFournisseurs());
-        }
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            await InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.AjouterMateriel:
-                        OuvrirFormulaire(null);
-                        break;
-
-                    case VoiceCommandType.ExporterExcel:
-                        await ExporterExcel();
-                        break;
-
-                    case VoiceCommandType.ExporterPdf:
-                        await ExporterPdf();
-                        break;
-
-                    case VoiceCommandType.ModifierMateriel:
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) OuvrirFormulaire(lg);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.SupprimerMateriel:
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) DemanderSuppressionMateriel(lg);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.VoirCommandes:
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) ToggleCommandesMateriel(lg.MaterielId);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.VoirArticles:
-                    case VoiceCommandType.VoirArticlesEquipement:  // ← AJOUTER
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) await OuvrirArticlesMateriel(lg);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.ConfigurerSeuil:
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) OuvrirSeuil(lg);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-                }
-                StateHasChanged();
-            });
-        }
-
-        // ── Helper : cherche par référence d'abord, puis par désignation ──
-        private LigneMaterielDto? TrouverMateriel(string? reference, string? designation)
-        {
-            if (!string.IsNullOrWhiteSpace(reference))
-                return _toutesLignes.FirstOrDefault(l =>
-                    l.Reference.Equals(reference, StringComparison.OrdinalIgnoreCase));
-
-            if (!string.IsNullOrWhiteSpace(designation))
-                return _toutesLignes.FirstOrDefault(l =>
-                    l.Designation.Contains(designation, StringComparison.OrdinalIgnoreCase));
-
-            return null;
         }
         private async Task OuvrirSelecteurImage()
         {
@@ -901,7 +823,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         }
         public ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             return ValueTask.CompletedTask;
         }
 

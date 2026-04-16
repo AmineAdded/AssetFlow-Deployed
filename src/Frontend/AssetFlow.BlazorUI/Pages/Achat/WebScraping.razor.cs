@@ -14,7 +14,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private NavigationManager Navigation    { get; set; } = default!;
         [Inject] private IHttpClientFactory HttpFactory { get; set; } = default!;
         // ── AJOUTER l'injection
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
         [Inject] private ScraperCircuitBreakerService _circuitBreaker { get; set; } = default!;
 
         // ── Countdown circuit breaker ────────────────────────────
@@ -53,7 +52,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             try
             {
                 var isDark = await JS.InvokeAsync<bool>("eval",
@@ -78,104 +76,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             if (_countdownTimer != null)
                 await _countdownTimer.DisposeAsync();
-        }
-        private Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            return InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    // ── Remplir la barre sans lancer ───────────────
-                    // "MacBook", "mettre souris dans la recherche"
-                    case VoiceCommandType.ScraperProduit:
-                        if (!string.IsNullOrWhiteSpace(cmd.Designation))
-                        {
-                            _recherche = cmd.Designation;
-                            AfficherToast($"Recherche : {_recherche}", "ws-toast-success");
-                        }
-                        break;
-
-                    // ── Remplir ET lancer la recherche ─────────────
-                    // "chercher MacBook sur le marché"
-                    case VoiceCommandType.LancerRecherche:
-                        if (!string.IsNullOrWhiteSpace(cmd.Designation))
-                            _recherche = cmd.Designation;
-                        if (!string.IsNullOrWhiteSpace(_recherche))
-                            await LancerRecherche();
-                        else
-                            AfficherToast("Dites le nom du produit à rechercher.", "ws-toast-warning");
-                        break;
-
-                    // ── Filtrer par site ───────────────────────────
-                    // "filtrer par MyTek"
-                    case VoiceCommandType.FiltrerParSite:
-                    {
-                        if (string.IsNullOrWhiteSpace(cmd.Designation)) break;
-
-                        // Recherche insensible à la casse dans les sites disponibles
-                        var sites = _resultats.Select(r => r.Site).Distinct().ToList();
-                        var site  = sites.FirstOrDefault(s =>
-                            s.ToLower().Contains(cmd.Designation.ToLower()) ||
-                            cmd.Designation.ToLower().Contains(s.ToLower()));
-
-                        if (site != null)
-                        {
-                            ToggleSite(site);
-                            AfficherToast(
-                                _filtresSites.Contains(site)
-                                    ? $"Filtre activé : {site}"
-                                    : $"Filtre désactivé : {site}",
-                                "ws-toast-success");
-                        }
-                        else
-                            AfficherToast($"Site '{cmd.Designation}' introuvable dans les résultats.", "ws-toast-warning");
-                        break;
-                    }
-
-                    // ── Filtrer par disponibilité ──────────────────
-                    // "filtrer disponible" / "filtrer en stock" / "filtrer rupture"
-                    case VoiceCommandType.FiltrerParDisponibilite:
-                    {
-                        var v = NormaliserDisponibilite(cmd.Designation);
-                        if (v == null) break;
-
-                        // Stocke le filtre disponibilité dans une variable
-                        _filtreDisponibilite = v;  // ← voir variable à ajouter
-                        AfficherToast(
-                            v == "stock" ? "Filtre : En stock uniquement" : "Filtre : Rupture de stock",
-                            "ws-toast-success");
-                        break;
-                    }
-
-                    // ── Filtrer par prix ───────────────────────────
-                    // "filtrer prix 500" ou "filtrer prix 500 à 1000"
-                    case VoiceCommandType.FiltrerParPrix:
-                    {
-                        if (string.IsNullOrWhiteSpace(cmd.Designation)) break;
-
-                        var (min, max) = ParsePrix(cmd.Designation);
-                        if (min.HasValue) _prixMin = min.Value;
-                        if (max.HasValue) _prixMax = max.Value;
-
-                        AfficherToast(
-                            $"Prix : {_prixMin:N0} – {_prixMax:N0} DT",
-                            "ws-toast-success");
-                        break;
-                    }
-
-                    // ── Exporter les résultats ─────────────────────
-                    case VoiceCommandType.ExporterExcel:
-                        if (_resultats.Any())
-                            await ExporterCsv();
-                        else
-                            AfficherToast("Aucun résultat à exporter.", "ws-toast-warning");
-                        break;
-                }
-                StateHasChanged();
-            });
         }
 
         // Normalise la disponibilité vocale — insensible à la casse et aux accents

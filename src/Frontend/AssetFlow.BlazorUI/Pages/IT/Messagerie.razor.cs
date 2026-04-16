@@ -15,7 +15,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private ILocalStorageService     LocalStorage { get; set; } = default!;
         [Inject] private HttpClient               Http         { get; set; } = default!;
         [Inject] private IJSRuntime               JS           { get; set; } = default!;
-        [Inject] private VoiceCommandService      VoiceSvc     { get; set; } = default!;
 
         private string UserName       { get; set; } = "IT";
         private int    CurrentUserId                = 0;
@@ -63,7 +62,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT User";
             CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
@@ -71,6 +69,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             await LoadConversationsAsync();
             await ConnectHubAsync();
         }
+<<<<<<< HEAD
 
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
@@ -102,6 +101,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
             });
         }
 
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
         private async Task ConnectHubAsync()
         {
             try
@@ -486,7 +487,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             _typingTimer?.Dispose();
             _recordTimer?.Dispose();
             if (_hub != null)

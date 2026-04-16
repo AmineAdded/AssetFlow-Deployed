@@ -14,7 +14,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private EmployeService       EmployeService  { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage    { get; set; } = default!;
         [Inject] private NavigationManager    Navigation      { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         private List<ArticleAffecteDto>        Articles { get; set; } = new();
         private List<MaterielAffecteGroupeDto> Groupes  { get; set; } = new();
@@ -33,7 +32,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
 
@@ -45,39 +43,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             IsLoading = false;
         }
-        private Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            return InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    // ✅ Même logique que DetailsEquipement pour "incident"
-                    case VoiceCommandType.VoirArticles:
-                    case VoiceCommandType.VoirArticlesEquipement:
-                    case VoiceCommandType.Navigation
-                        when cmd.NavigateTo?.Contains("equipement") == true
-                        || cmd.NavigateTo?.Contains("materiel") == true:
-                        await Task.Delay(50);
-                        if (AffectationId > 0)
-                            Navigation.NavigateTo(
-                                $"/it/equipement/{AffectationId}/article/{ArticleId}");
-                        break;
-                    case VoiceCommandType.SignalerIncident:
-                    case VoiceCommandType.SoumettreIncident:
-                        await SoumettreIncident();
-                        break;
-
-                    case VoiceCommandType.Navigation when cmd.NavigateTo != null:
-                        await Task.Delay(50);
-                        Navigation.NavigateTo(cmd.NavigateTo);
-                        break;
-                }
-                StateHasChanged();
-            });
-        }
         public ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             return ValueTask.CompletedTask;
         }
 

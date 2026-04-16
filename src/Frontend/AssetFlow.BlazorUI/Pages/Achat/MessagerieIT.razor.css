@@ -135,6 +135,7 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
 .mai-typing-bubble { padding:0.625rem 0.875rem; min-width:56px; }
 .mai-typing-bubble .mai-typing-dots span { background:var(--text-muted); }
 
+<<<<<<< HEAD
 /* ═══════════════════════════════════════════════════════════════
    ── AUDIO PLAYER dans les bulles (style Messenger) ──
    ═══════════════════════════════════════════════════════════════ */
@@ -226,6 +227,10 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
     flex-shrink: 0;
     margin-bottom: 50px;
 }
+=======
+/* Input */
+.mai-input-zone { background:var(--surface); border-top:1px solid var(--border); padding:0.875rem 1.25rem 0.75rem; flex-shrink:0; }
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
 html.dark .mai-input-zone { background:#101826; border-top-color:#1e2d42; }
 
 /* Zone de saisie normale */

@@ -11,7 +11,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private IJSRuntime          JS              { get; set; } = default!;
         [Inject] private DemandeAchatService DemandeAchatSvc { get; set; } = default!;
         [Inject] private HttpClient          _http           { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
         [Inject] private NavigationManager Navigation    { get; set; } = default!;
 
         // ── ViewModels ───────────────────────────────────────────
@@ -104,7 +103,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             try
             {
                 var isDark = await JS.InvokeAsync<bool>("eval",
@@ -118,190 +116,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         }
         public ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;  // ← AJOUTER
             return ValueTask.CompletedTask;
-        }
-        private Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            return InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    // ── Sélectionner une demande par nom ───────────
-                    case VoiceCommandType.SélectionnerDemande:
-                    {
-                        var d = TrouverDemande(cmd.Designation);
-                        if (d != null) SelectionnerDemande(d);   // ← sans accent, correspond à la méthode ligne 315
-                        else AfficherToast($"Demande '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    // ── Scraper un produit ─────────────────────────
-                    // Navigue vers /achat/web-scraping?q=<produit>
-                    // Si une demande est sélectionnée, prend le premier produit de la demande
-                    case VoiceCommandType.ScraperProduit:
-                    {
-                        var produit = cmd.Designation;
-
-                        // Si pas de désignation vocale, prendre le produit de la demande sélectionnée
-                        if (string.IsNullOrWhiteSpace(produit) && _demandeSelectionnee != null)
-                            produit = _demandeSelectionnee.Lignes?.FirstOrDefault()?.NomProduit;
-
-                        if (!string.IsNullOrWhiteSpace(produit))
-                            Navigation.NavigateTo(
-                                $"/achat/web-scraping?q={Uri.EscapeDataString(produit)}");
-                        else
-                            AfficherToast("Aucun produit à scraper.", "toast-error");
-                        break;
-                    }
-
-                    // ── Ajouter une offre PDF ──────────────────────
-                    // Déclenche le click sur l'input file caché
-                    case VoiceCommandType.AjouterOffre:
-                        if (_demandeSelectionnee != null)
-                            await JS.InvokeVoidAsync("eval",
-                                $"document.getElementById('file-{_demandeSelectionnee.Id}')?.click()");
-                        else
-                            AfficherToast("Sélectionnez d'abord une demande.", "toast-error");
-                        break;
-
-                    // ── Changer le statut ──────────────────────────
-                    case VoiceCommandType.ChangerStatutDemande:
-                    {
-                        if (_demandeSelectionnee == null)
-                        {
-                            AfficherToast("Sélectionnez d'abord une demande.", "toast-error");
-                            break;
-                        }
-                        var statut = NormaliserStatut(cmd.Designation);
-                        if (statut == null)
-                        {
-                            AfficherToast($"Statut '{cmd.Designation}' non reconnu.", "toast-error");
-                            break;
-                        }
-                        await ChangerStatut(_demandeSelectionnee.Id, statut);  // ← .Id, pas l'objet
-                        break;
-                    }
-                    // ── Supprimer une offre par nom ────────────────────────
-                    case VoiceCommandType.SupprimerOffre:
-                    {
-                        if (_demandeSelectionnee == null)
-                        {
-                            AfficherToast("Sélectionnez d'abord une demande.", "toast-error");
-                            break;
-                        }
-                        var offre = TrouverOffre(_demandeSelectionnee, cmd.Designation);
-                        if (offre != null)
-                            await SupprimerOffre(_demandeSelectionnee.Id, offre.Id);
-                        else
-                            AfficherToast($"Offre '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    // ── Visualiser une offre par nom ───────────────────────
-                    case VoiceCommandType.VisualiserOffre:
-                    {
-                        if (_demandeSelectionnee == null)
-                        {
-                            AfficherToast("Sélectionnez d'abord une demande.", "toast-error");
-                            break;
-                        }
-                        var offre = TrouverOffre(_demandeSelectionnee, cmd.Designation);
-                        if (offre != null)
-                            await PrevisualiserOffre(offre);
-                        else
-                            AfficherToast($"Offre '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    // ── Export ─────────────────────────────────────
-                    case VoiceCommandType.ExporterExcel:
-                        await ExporterExcel();
-                        break;
-
-                    case VoiceCommandType.ExporterPdf:
-                        await ExporterPdf();
-                        break;
-                }
-                StateHasChanged();
-            });
-        }
-        // Recherche une offre par nom approché dans la demande sélectionnée
-        // Si designation est null → retourne la première offre disponible
-        private static OffreVm? TrouverOffre(DemandeVm demande, string? designation)
-        {
-            if (!demande.Offres.Any()) return null;
-
-            // Pas de désignation → première offre
-            if (string.IsNullOrWhiteSpace(designation))
-                return demande.Offres.FirstOrDefault();
-
-            var d = designation.ToLower()
-                .Replace(".pdf", "")   // tolérer avec ou sans extension
-                .Replace(" ", "")      // tolérer espaces ("facture 2" → "facture2")
-                .Trim();
-
-            // Correspondance exacte sur le nom (sans extension, sans espaces)
-            var exact = demande.Offres.FirstOrDefault(o =>
-                o.NomFichier.ToLower().Replace(".pdf", "").Replace(" ", "")
-                    .Equals(d, StringComparison.OrdinalIgnoreCase));
-            if (exact != null) return exact;
-
-            // Correspondance partielle
-            return demande.Offres.FirstOrDefault(o =>
-                o.NomFichier.ToLower().Replace(".pdf", "").Contains(d));
-        }
-
-        // Recherche par nom du demandeur OU référence OU NomProduit
-        private DemandeVm? TrouverDemande(string? designation)
-        {
-            if (string.IsNullOrWhiteSpace(designation)) return null;
-
-            var d = designation.ToLower().Trim();
-
-            // 1. Correspondance exacte sur NomProduit ou Référence
-            var exact = _demandes.FirstOrDefault(x =>
-                x.NomProduit.Equals(designation, StringComparison.OrdinalIgnoreCase) ||
-                x.Reference.Equals(designation,  StringComparison.OrdinalIgnoreCase));
-            if (exact != null) return exact;
-
-            // 2. Score par termes — cherche dans NomProduit + Référence + DemandeurNom
-            var terms = d.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return _demandes
-                .Select(x => new
-                {
-                    Demande = x,
-                    Score   = terms.Count(t =>
-                        x.NomProduit.ToLower().Contains(t)    ||
-                        x.Reference.ToLower().Contains(t)     ||
-                        x.DemandeurNom.ToLower().Contains(t)  ||
-                        x.Lignes.Any(l => l.NomProduit.ToLower().Contains(t)))
-                })
-                .Where(x => x.Score > 0)
-                .OrderByDescending(x => x.Score)
-                .Select(x => x.Demande)
-                .FirstOrDefault();
-        }
-
-        // Normalise le statut vocal → valeur enum/string backend
-        // Insensible à la casse et aux accents courants
-        private static string? NormaliserStatut(string? input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return null;
-
-            var v = input.ToLower().Trim()
-                .Replace("é", "e").Replace("è", "e").Replace("ê", "e")
-                .Replace("à", "a").Replace("â", "a").Replace("î", "i");
-
-            return v switch
-            {
-                var s when s.Contains("attente")                           => "en_attente",
-                var s when s.Contains("cours") || s.Contains("traitement")=> "en_cours_traitement",
-                var s when s.Contains("command")                           => "commande",
-                var s when s.Contains("trait") || s.Contains("archive")   => "traite",
-                var s when s.Contains("refus")                             => "refuse",
-                _                                                          => null
-            };
         }
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {

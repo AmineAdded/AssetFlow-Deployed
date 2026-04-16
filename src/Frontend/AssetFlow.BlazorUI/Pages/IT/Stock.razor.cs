@@ -11,7 +11,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private StockClientService   Svc          { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage  { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         private List<MaterielDto> Tous             { get; set; } = new();
         private List<MaterielDto> MaterielsFiltres { get; set; } = new();
@@ -46,53 +45,13 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
             await ChargerMateriels();
         }
         public ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             return ValueTask.CompletedTask;
-        }
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            await InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.ExporterExcel:
-                        await ExporterExcel();
-                        break;
-
-                    case VoiceCommandType.ExporterPdf:
-                        await ExporterPdf();
-                        break;
-
-                    case VoiceCommandType.ConfigurerSeuil:
-                    {
-                        var lg = TrouverMateriel(cmd.Reference, cmd.Designation);
-                        if (lg != null) OuvrirSeuil(lg);
-                        else AfficherToast($"Matériel {cmd.Reference ?? cmd.Designation} introuvable.", "toast-error");
-                        break;
-                    }
-                }
-                StateHasChanged();
-            });
-        }
-        // ── Helper : cherche par référence d'abord, puis par désignation ──
-        private MaterielDto? TrouverMateriel(string? reference, string? designation)
-        {
-            if (!string.IsNullOrWhiteSpace(reference))
-                return Tous.FirstOrDefault(l =>
-                    l.Reference.Equals(reference, StringComparison.OrdinalIgnoreCase));
-
-            if (!string.IsNullOrWhiteSpace(designation))
-                return Tous.FirstOrDefault(l =>
-                    l.Designation.Contains(designation, StringComparison.OrdinalIgnoreCase));
-
-            return null;
         }
         private async void AfficherToast(string msg, string type)
         {

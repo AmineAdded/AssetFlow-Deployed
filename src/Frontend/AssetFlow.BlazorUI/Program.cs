@@ -55,8 +55,6 @@ builder.Services.AddScoped<MessagerieService>();
 builder.Services.AddScoped<ProjectClientService>();
 builder.Services.AddScoped<StatistiquesITService>();
 builder.Services.AddScoped<FaceAuthClientService>();
-builder.Services.AddSingleton<VoiceCommandService>();
-builder.Services.AddScoped<VoiceNluService>();
 builder.Services.AddScoped<OffreDemandeService>();
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<ScraperCircuitBreakerService>();

@@ -15,8 +15,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
+<<<<<<< HEAD
         [Inject] private VoiceCommandService  VoiceSvc     { get; set; } = default!;
 
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
         private string UserName       { get; set; } = "Agent Achat";
         private int    CurrentUserId                = 0;
         private bool   _conversationOpen            = false;
@@ -60,14 +63,21 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
+<<<<<<< HEAD
             VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName         = await LocalStorage.GetItemAsync<string>("user_name") ?? "Agent Achat";
             CurrentUserId    = await LocalStorage.GetItemAsync<int>("user_id");
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "EquipeAchat";
+=======
+            UserName      = await LocalStorage.GetItemAsync<string>("user_name") ?? "Agent Achat";
+            CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
+            _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role");
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
 
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
+<<<<<<< HEAD
 
         private async Task HandleVoiceCommand(VoiceCommand cmd)
         {
@@ -98,6 +108,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 StateHasChanged();
             });
         }
+=======
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
 
         // ── Connexion SignalR ─────────────────────────────────────────────────
         private async Task ConnectHubAsync()
@@ -470,7 +482,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         public async ValueTask DisposeAsync()
         {
+<<<<<<< HEAD
             VoiceSvc.OnCommand -= HandleVoiceCommand;
+=======
+            
+>>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
             _typingTimer?.Dispose();
             _recordTimer?.Dispose();
             if (_hub != null)

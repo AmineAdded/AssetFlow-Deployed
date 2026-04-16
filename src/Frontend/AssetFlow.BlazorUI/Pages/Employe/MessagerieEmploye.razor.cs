@@ -15,10 +15,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
-<<<<<<< HEAD
-        [Inject] private VoiceCommandService  VoiceSvc     { get; set; } = default!;
-=======
->>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
 
         private int  CurrentUserId     = 0;
         private bool _hubConnected     = false;
@@ -62,41 +58,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
-<<<<<<< HEAD
-
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            await InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.SélectionnerConversation
-                        when !string.IsNullOrWhiteSpace(cmd.Designation):
-                    {
-                        var recherche = cmd.Designation.Trim();
-                        var user = ITUsers.FirstOrDefault(u =>
-                            u.FullName.Contains(recherche, StringComparison.OrdinalIgnoreCase));
-
-                        if (user != null)
-                            await SelectIT(user);
-                        else
-                        {
-                            var mots = recherche.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            user = ITUsers.FirstOrDefault(u =>
-                                mots.All(m => u.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)));
-                            if (user != null)
-                                await SelectIT(user);
-                        }
-                        break;
-                    }
-                }
-                StateHasChanged();
-            });
-        }
-
-        // ── Connexion SignalR ─────────────────────────────────────────────────
-=======
->>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
         private async Task ConnectHubAsync()
         {
             try
@@ -457,10 +418,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         public async ValueTask DisposeAsync()
         {
-<<<<<<< HEAD
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
-=======
->>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
             _typingTimer?.Dispose();
             _recordTimer?.Dispose();
             if (_hub != null)

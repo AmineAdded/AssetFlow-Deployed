@@ -12,7 +12,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private NotificationService   NotifSvc         { get; set; } = default!;
         [Inject] private ILocalStorageService        LocalStorage     { get; set; } = default!;
         [Inject] private NavigationManager           Navigation       { get; set; } = default!;
-        [Inject] private VoiceCommandService         VoiceSvc         { get; set; } = default!;
         [Inject] private IJSRuntime                  JS               { get; set; } = default!;
 
         // ── Mode toggle ──
@@ -90,7 +89,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         // ── Init ──
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             UserName         = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
 
@@ -117,7 +115,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
             _notifTimer?.Stop();
             _notifTimer?.Dispose();
         }
@@ -182,82 +179,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             "Avertissement" => "avertissement",
             _               => "info"
         };
-
-        // ── Voice ──
-        private Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            return InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.SélectionnerEmploye when string.IsNullOrWhiteSpace(cmd.Designation):
-                        await SetMode(false); break;
-                    case VoiceCommandType.SélectionnerProjet when string.IsNullOrWhiteSpace(cmd.Designation):
-                        await SetMode(true);  break;
-                    case VoiceCommandType.SélectionnerEmploye:
-                    {
-                        await SetMode(false);
-                        var e = TrouverEmploye(cmd.Designation);
-                        if (e != null) await SelectEmploye(e);
-                        else ErrorMsg = $"Employé '{cmd.Designation}' introuvable.";
-                        break;
-                    }
-                    case VoiceCommandType.SélectionnerProjet:
-                    {
-                        await SetMode(true);
-                        var p = TrouverProjet(cmd.Designation);
-                        if (p != null) await SelectProjet(p);
-                        else ErrorMsg = $"Projet '{cmd.Designation}' introuvable.";
-                        break;
-                    }
-                    case VoiceCommandType.RévoquerAffectation:
-                    {
-                        if (EmployeSelectionne == null && ProjetSelectionne == null)
-                        { ErrorMsg = "Sélectionnez d'abord un employé ou un projet."; break; }
-                        var a = TrouverAffectation(cmd.Designation ?? cmd.Reference);
-                        if (a != null) DemanderConfirmation(a);
-                        else ErrorMsg = $"Affectation '{cmd.Designation ?? cmd.Reference}' introuvable.";
-                        break;
-                    }
-                }
-                if (!string.IsNullOrEmpty(ErrorMsg))
-                {
-                    StateHasChanged();
-                    await Task.Delay(3000);
-                    ErrorMsg = string.Empty;
-                }
-                StateHasChanged();
-            });
-        }
-
-        // ── Helpers recherche vocale ──
-        private ProjetAffectationListeDto? TrouverProjet(string? designation)
-        {
-            if (string.IsNullOrWhiteSpace(designation)) return null;
-            var exact = Projets.FirstOrDefault(p => p.Nom.Equals(designation, StringComparison.OrdinalIgnoreCase));
-            if (exact != null) return exact;
-            var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return Projets.Select(p => new { Projet = p, Score = terms.Count(t => p.Nom.ToLower().Contains(t)) })
-                          .Where(x => x.Score > 0).OrderByDescending(x => x.Score)
-                          .Select(x => x.Projet).FirstOrDefault();
-        }
-        private EmployeListeDto? TrouverEmploye(string? designation)
-        {
-            if (string.IsNullOrWhiteSpace(designation)) return null;
-            var exact = _allEmployees.FirstOrDefault(e => e.FullName.Equals(designation, StringComparison.OrdinalIgnoreCase));
-            if (exact != null) return exact;
-            var terms = designation.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            return _allEmployees.Select(e => new { Employe = e, Score = terms.Count(t => e.FullName.ToLower().Contains(t)) })
-                                .Where(x => x.Score > 0).OrderByDescending(x => x.Score)
-                                .Select(x => x.Employe).FirstOrDefault();
-        }
-        private AffectationEmployeDto? TrouverAffectation(string? input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return null;
-            var d = input.ToLower().Trim();
-            var liste = ModeProjet ? AffectationsProjets : Affectations;
-            return liste.FirstOrDefault(a => a.Designation.ToLower().Contains(d) || a.Reference.ToLower().Contains(d));
-        }
 
         // ── Mode toggle ──
         private async Task SetMode(bool projet)

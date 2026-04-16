@@ -15,7 +15,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         private int  CurrentUserId     = 0;
         private bool _hubConnected     = false;
@@ -47,44 +46,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
             CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            await InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.SélectionnerConversation 
-                        when !string.IsNullOrWhiteSpace(cmd.Designation):
-                    {
-                        // Recherche insensible à la casse et partielle
-                        var recherche = cmd.Designation.Trim();
-                        var user = ITUsers.FirstOrDefault(u =>
-                            u.FullName.Contains(recherche, StringComparison.OrdinalIgnoreCase));
-
-                        if (user != null)
-                            await SelectIT(user);
-                        else
-                        {
-                            // Tentative de correspondance mot par mot
-                            var mots = recherche.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            user = ITUsers.FirstOrDefault(u =>
-                                mots.All(m => u.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)));
-
-                            if (user != null)
-                                await SelectIT(user);
-                        }
-                        break;
-                    }
-                }
-                StateHasChanged();
-            });
-        }
-
         private async Task ConnectHubAsync()
         {
             try
@@ -317,7 +282,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand; 
             _typingTimer?.Dispose();
             if (_hub != null)
             {

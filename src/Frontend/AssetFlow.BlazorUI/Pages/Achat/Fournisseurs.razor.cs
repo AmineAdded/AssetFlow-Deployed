@@ -9,7 +9,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
     {
         [Inject]
         private AssetFlow.BlazorUI.Services.FournisseurService FournisseurSvc { get; set; } = default!;
-        [Inject] private AssetFlow.BlazorUI.Services.VoiceCommandService VoiceSvc { get; set; } = default!;
 
         [Inject]
         private IJSRuntime JS { get; set; } = default!;
@@ -76,13 +75,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand += HandleVoiceCommand;
+
             await ChargerInfosUtilisateur();
             await ChargerFournisseurs();
         }
         public ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;  // ← AJOUTER
             return ValueTask.CompletedTask;
         }
 
@@ -123,53 +121,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         // ✅ "Modifier" = ouvrir formulaire pré-rempli
         private void OuvrirFormulaireModification(FournisseurVm f) => OuvrirFormulaire(f);
-
-        private Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            return InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.AjouterFournisseur:
-                        OuvrirFormulaireAjout();
-                        break;
-
-                    case VoiceCommandType.ModifierFournisseur:
-                    {
-                        var f = TrouverFournisseur(cmd.Designation);
-                        if (f != null) OuvrirFormulaireModification(f);
-                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.SupprimerFournisseur:
-                    {
-                        var f = TrouverFournisseur(cmd.Designation);
-                        if (f != null) DemanderSuppression(f);
-                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.VoirDetailsFournisseur:
-                    {
-                        var f = TrouverFournisseur(cmd.Designation);
-                        if (f != null) OuvrirDetails(f);
-                        else AfficherToast($"Fournisseur '{cmd.Designation}' introuvable.", "toast-error");
-                        break;
-                    }
-
-                    case VoiceCommandType.ExporterExcel:
-                        await ExporterExcel();
-                        break;
-
-                    case VoiceCommandType.ExporterPdf:
-                        await ExporterPdf();
-                        break;
-                }
-                StateHasChanged();
-            });
-        }
-
         private async Task ChargerInfosUtilisateur()
         {
             try

@@ -10,7 +10,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
     {
         [Inject] private IJSRuntime         JS      { get; set; } = default!;
         [Inject] private StatistiquesITService StatSvc { get; set; } = default!;
-        [Inject] private VoiceCommandService VoiceSvc { get; set; } = default!;
 
         // ─── UI ──────────────────────────────────────────────────
         private string _theme           = "dark";
@@ -40,7 +39,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         protected override async Task OnInitializedAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand; 
             try
             {
                 var savedTheme = await JS.InvokeAsync<string?>("eval",
@@ -157,14 +155,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         _stats.AffectationsEnCours              != n.AffectationsEnCours ||
         _stats.AffectationsParDept.Count        != n.AffectationsParDept.Count ||
         _stats.EquipementsParCategorie.Count    != n.EquipementsParCategorie.Count;
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            if (cmd.Type == VoiceCommandType.Navigation)
-            {
-            }
-            // D'autres commandes spécifiques à cette page peuvent être ajoutées ici
-            await InvokeAsync(StateHasChanged);
-        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -371,7 +361,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         public async ValueTask DisposeAsync()
         {
-            VoiceSvc.OnCommand -= HandleVoiceCommand;
 
             if (_hubConnection is not null)
             {

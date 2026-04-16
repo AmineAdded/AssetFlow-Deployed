@@ -21,6 +21,7 @@ namespace AssetFlow.Infrastructure.Data
             public DbSet<CommentaireMateriel> CommentairesMateriel => Set<CommentaireMateriel>();
             public DbSet<Notification> Notifications { get; set; }
             public DbSet<AuditLog> AuditLogs { get; set; }
+            public DbSet<ArticleHistorique> ArticleHistoriques { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
@@ -348,6 +349,37 @@ namespace AssetFlow.Infrastructure.Data
                               .HasForeignKey(a => a.UserId)
                               .OnDelete(DeleteBehavior.SetNull)
                               .IsRequired(false);
+                        });
+                        // === ARTICLE HISTORIQUE ===
+                        modelBuilder.Entity<ArticleHistorique>(entity =>
+                        {
+                        entity.HasKey(h => h.Id);
+                        
+                        entity.Property(h => h.TypeEvenement)
+                              .HasConversion<string>()
+                              .HasMaxLength(50);
+                        
+                        entity.Property(h => h.Description)
+                              .HasMaxLength(500);
+                        
+                        entity.Property(h => h.DateEvenement)
+                              .HasDefaultValueSql("GETUTCDATE()");
+                        
+                        // FK → ArticlesIndividuels (cascade : si on supprime l'article, son historique disparaît)
+                        entity.HasOne(h => h.Article)
+                              .WithMany(a => a.Historiques)
+                              .HasForeignKey(h => h.ArticleId)
+                              .OnDelete(DeleteBehavior.Cascade);
+                        
+                        // FK → Utilisateurs (set null : si l'utilisateur est supprimé, l'événement reste)
+                        entity.HasOne(h => h.Utilisateur)
+                              .WithMany()
+                              .HasForeignKey(h => h.UtilisateurId)
+                              .OnDelete(DeleteBehavior.SetNull)
+                              .IsRequired(false);
+                        
+                        entity.HasIndex(h => h.ArticleId);
+                        entity.HasIndex(h => h.DateEvenement);
                         });
 
                                     }

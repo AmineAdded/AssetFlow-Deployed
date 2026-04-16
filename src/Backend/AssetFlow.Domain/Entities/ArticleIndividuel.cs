@@ -15,10 +15,14 @@ namespace AssetFlow.Domain.Entities
         /// <summary>FK → Commande</summary>
         public int CommandeId { get; set; }
         public Commande Commande { get; set; } = null!;
-        public EtatArticle Etat { get; set; } = EtatArticle.Bon;  // ← AJOUTER
+
+        public EtatArticle Etat { get; set; } = EtatArticle.Bon;
+
         public int? AffectationId { get; set; }
         public Affectation? Affectation { get; set; }
 
+        /// <summary>Historique complet de l'article (biographie)</summary>
+        public ICollection<ArticleHistorique> Historiques { get; set; } = new List<ArticleHistorique>();
     }
 
     public enum StatutArticle
@@ -28,9 +32,10 @@ namespace AssetFlow.Domain.Entities
         HorsService,
         EnReparation
     }
+
     public enum EtatArticle
     {
-        Bon = 0,
+        Bon   = 0,
         Panne = 1
     }
 }

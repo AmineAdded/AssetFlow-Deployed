@@ -1,0 +1,262 @@
+@page "/admin/memoire-intelligente"
+@using AssetFlow.BlazorUI.Components
+@using AssetFlow.BlazorUI.DTOs
+
+<div class="admin-shell">
+
+    <AdminSidebar ForceOpen="_sidebarOpen" />
+
+    <main class="admin-main">
+        <RoleAuthGuard AllowedRoles="@(new[]{"Admin"})">
+        <div class="mi-page @(_darkMode ? "mi-dark" : "mi-light") @(_intelligence ? "mi-intel" : "")">
+
+            @* ══ HEADER ══════════════════════════════════════════════════════ *@
+            <header class="mi-header">
+                <div class="mi-header-left">
+                    <button class="mi-hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="3" y1="6"  x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    <div class="mi-title-block">
+                        <div class="mi-title-row">
+                            <div class="mi-pulse-dot"></div>
+                            <h1 class="mi-title">Mémoire intelligente</h1>
+                        </div>
+                        <p class="mi-subtitle">Graphe de connaissance du parc IT</p>
+                    </div>
+                </div>
+
+                <div class="mi-header-center">
+                    <div class="mi-search-wrap">
+                        <svg class="mi-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input class="mi-search"
+                               type="text"
+                               placeholder="Rechercher un équipement, utilisateur, incident…"
+                               @bind="_search"
+                               @oninput="OnSearch" />
+                        @if (!string.IsNullOrWhiteSpace(_search))
+                        {
+                            <button class="mi-search-clear" @onclick="ClearSearch">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M18 6 6 18M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="mi-header-right">
+                    <button class="mi-btn-intel @(_intelligence ? "active" : "")" @onclick="ToggleIntelligence">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2a7 7 0 0 1 7 7 7 7 0 0 1-4 6.32V17a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2v-1.68A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"/>
+                            <path d="M9 17v2a3 3 0 0 0 6 0v-2"/>
+                        </svg>
+                        Mode Intelligence
+                    </button>
+                    <button class="mi-btn-theme" @onclick="ToggleDark" title="Changer le thème">
+                        @if (_darkMode)
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1"  x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        }
+                    </button>
+                    <button class="mi-btn-refresh" @onclick="LoadData" disabled="@_loading">
+                        <svg class="@(_loading ? "mi-spin" : "")" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            @* ══ STATS BAR ════════════════════════════════════════════════════ *@
+            @if (_data != null)
+            {
+                <div class="mi-stats-bar">
+                    <div class="mi-stat">
+                        <span class="mi-stat-value">@_data.Stats.TotalMateriel</span>
+                        <span class="mi-stat-label">Équipements</span>
+                    </div>
+                    <div class="mi-stat-sep"></div>
+                    <div class="mi-stat">
+                        <span class="mi-stat-value warning">@_data.Stats.TotalIncidents</span>
+                        <span class="mi-stat-label">Incidents actifs</span>
+                    </div>
+                    <div class="mi-stat-sep"></div>
+                    <div class="mi-stat">
+                        <span class="mi-stat-value purple">@_data.Stats.TotalUsers</span>
+                        <span class="mi-stat-label">Utilisateurs</span>
+                    </div>
+                    <div class="mi-stat-sep"></div>
+                    <div class="mi-stat">
+                        <span class="mi-stat-value danger">@_data.Stats.ActiveAnomalies</span>
+                        <span class="mi-stat-label">Anomalies</span>
+                    </div>
+                    <div class="mi-stat-sep"></div>
+                    <div class="mi-stat">
+                        <span class="mi-stat-value green">@(_data.Nodes.Count)</span>
+                        <span class="mi-stat-label">Nœuds graphe</span>
+                    </div>
+                </div>
+            }
+
+            @* ══ ZONE PRINCIPALE ═════════════════════════════════════════════ *@
+            <div class="mi-main-zone">
+
+                @* ── Graphe ─────────────────────────────────────────────────── *@
+                <div class="mi-graph-area">
+                    <div class="mi-graph-legend">
+                        <span class="mi-legend-item">
+                            <span class="mi-legend-dot blue"></span>Matériel
+                        </span>
+                        <span class="mi-legend-item">
+                            <span class="mi-legend-dot red"></span>Incident
+                        </span>
+                        <span class="mi-legend-item">
+                            <span class="mi-legend-dot purple"></span>Utilisateur
+                        </span>
+                        <span class="mi-legend-item">
+                            <span class="mi-legend-dot green"></span>IA
+                        </span>
+                    </div>
+
+                    @if (_loading)
+                    {
+                        <div class="mi-graph-loading">
+                            <div class="mi-loader-ring"></div>
+                            <p>Chargement du graphe…</p>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_error))
+                    {
+                        <div class="mi-graph-error">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <p>@_error</p>
+                            <button @onclick="LoadData">Réessayer</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <canvas id="mi-canvas" class="mi-canvas"></canvas>
+                    }
+                </div>
+
+                @* ── Panneau Insights ─────────────────────────────────────────── *@
+                <aside class="mi-insights-panel">
+                    <div class="mi-panel-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        <span>Insights</span>
+                        @if (_data != null)
+                        {
+                            <span class="mi-badge">@_filteredInsights.Count</span>
+                        }
+                    </div>
+
+                    @* Nœud sélectionné *@
+                    @if (_selectedInsight != null)
+                    {
+                        <div class="mi-node-detail mi-insight-card @_selectedInsight.Type fade-in">
+                            <div class="mi-insight-type-row">
+                                <span class="mi-type-pill @_selectedInsight.Type">
+                                    @InsightTypeLabel(_selectedInsight.Type)
+                                </span>
+                                <button class="mi-close-detail" @onclick="() => _selectedInsight = null">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                        <path d="M18 6 6 18M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <h3 class="mi-insight-title">@_selectedInsight.Title</h3>
+                            <p class="mi-insight-msg">@_selectedInsight.Message</p>
+                        </div>
+                    }
+
+                    @* Liste insights *@
+                    <div class="mi-insights-list">
+                        @if (_loading)
+                        {
+                            @for (int i = 0; i < 4; i++)
+                            {
+                                <div class="mi-insight-skeleton"></div>
+                            }
+                        }
+                        else if (_filteredInsights.Count == 0)
+                        {
+                            <div class="mi-insights-empty">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                                </svg>
+                                <p>Aucun insight disponible</p>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var insight in _filteredInsights)
+                            {
+                                <div class="mi-insight-card @insight.Type slide-in"
+                                     @onclick="() => SelectInsight(insight)">
+                                    <div class="mi-insight-type-row">
+                                        <span class="mi-type-pill @insight.Type">
+                                            @InsightTypeLabel(insight.Type)
+                                        </span>
+                                        <span class="mi-insight-time">@FormatTime(insight.GeneratedAt)</span>
+                                    </div>
+                                    <h4 class="mi-insight-title">@insight.Title</h4>
+                                    <p class="mi-insight-msg">
+                                        @(insight.Message.Length > 90 ? insight.Message[..90] + "…" : insight.Message)
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(insight.EntityId))
+                                    {
+                                        <button class="mi-insight-focus" @onclick:stopPropagation="true"
+                                                @onclick="() => FocusNode(insight.EntityId!)">
+                                            Voir dans le graphe
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </aside>
+
+            </div>
+
+            @* ══ FOOTER ════════════════════════════════════════════════════════ *@
+            <footer class="mi-footer">
+                <span class="mi-footer-tag">ASSETFLOW_MEMORY_ENGINE_V1.0</span>
+                @if (_lastSync.HasValue)
+                {
+                    <span class="mi-footer-sync">LAST_SYNC : @_lastSync.Value.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+                }
+                <span class="mi-footer-status @(_intelligence ? "intel-active" : "")">
+                    @(_intelligence ? "INTELLIGENCE MODE ACTIF" : "MODE STANDARD")
+                </span>
+            </footer>
+
+        </div>
+        </RoleAuthGuard>
+    </main>
+</div>

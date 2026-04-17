@@ -159,6 +159,7 @@ builder.Services.AddScoped<IDashboardNotifier>(sp =>
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IArticleBiographieService, ArticleBiographieService>();
+builder.Services.AddScoped<IGraphService, GraphService>();
 
 // === SIGNALR — limite augmentée pour les messages vocaux (base64 audio) ===
 builder.Services.AddSignalR(options =>

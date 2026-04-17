@@ -62,5 +62,6 @@ builder.Services.AddScoped<OffreCircuitBreakerService>();
 builder.Services.AddScoped<CommentaireCircuitBreakerService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<ArticleBiographieClientService>();
+builder.Services.AddScoped<GraphService>();
 
 await builder.Build().RunAsync();

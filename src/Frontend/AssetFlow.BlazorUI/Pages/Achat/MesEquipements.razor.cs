@@ -80,18 +80,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             {
                 await InvokeAsync(async () =>
                 {
-                    // Ne pas mettre IsLoading=true pour éviter le flash
-                    try
-                    {
-                        MaterielsGroupes = await EmployeService.GetMaterielsGroupesAsync();
-                        FiltrerMateriels(); // ← réappliquer le filtre actif au lieu de juste =MaterielsGroupes
-                    }
-                    catch { /* silencieux */ }
-                    finally
-                    {
-                        IsLoading = false;
-                        StateHasChanged();
-                    }
+                    await LoadMaterielsGroupesAsync();
+                    StateHasChanged();
                 });
             });
 

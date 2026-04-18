@@ -367,6 +367,9 @@ namespace AssetFlow.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<DateTime?>("VuParAchatLe")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("IdDemande");
 
                     b.HasIndex("UserId");

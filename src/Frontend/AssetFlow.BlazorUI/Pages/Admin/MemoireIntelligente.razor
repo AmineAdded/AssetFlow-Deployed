@@ -1,0 +1,172 @@
+@page "/admin/memoire-intelligente"
+@using AssetFlow.BlazorUI.Components
+@using AssetFlow.BlazorUI.DTOs
+
+<div class="admin-shell">
+    <AdminSidebar ForceOpen="_sidebarOpen" />
+
+    <main class="admin-main">
+        <RoleAuthGuard AllowedRoles="@(new[]{"Admin"})">
+        <div class="mi-page">
+
+            @* ══ STATS BAR ════════════════════════════════════════════════════ *@
+            <div class="mi-stats">
+                @* Hamburger mobile (remplace l'ancien header) *@
+                <button class="mi-hamburger" @onclick="() => _sidebarOpen = !_sidebarOpen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <line x1="3" y1="6"  x2="21" y2="6"/>
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                </button>
+
+                <div class="mi-stat">
+                    <span class="mi-sv blue">@(_stats?.TotalMateriel.ToString() ?? "—")</span>
+                    <span class="mi-sl">Équipements</span>
+                </div>
+                <div class="mi-stat">
+                    <span class="mi-sv amber">@(_stats?.TotalIncidents.ToString() ?? "—")</span>
+                    <span class="mi-sl">Incidents actifs</span>
+                </div>
+                <div class="mi-stat">
+                    <span class="mi-sv purple">@(_stats?.TotalUsers.ToString() ?? "—")</span>
+                    <span class="mi-sl">Utilisateurs</span>
+                </div>
+                <div class="mi-stat">
+                    <span class="mi-sv red">@(_stats?.ActiveAnomalies.ToString() ?? "—")</span>
+                    <span class="mi-sl">Anomalies</span>
+                </div>
+                <div class="mi-stat">
+                    <span class="mi-sv green">@(_graphNodeCount)</span>
+                    <span class="mi-sl">Nœuds graphe</span>
+                </div>
+
+            </div>
+
+            @* ══ BODY ══════════════════════════════════════════════════════════ *@
+            <div class="mi-body">
+
+                @* ── Panneau gauche ──────────────────────────────────────────── *@
+                <div class="mi-lp">
+                    <div class="mi-lp-search">
+                        <div class="mi-srch">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            <input placeholder="Rechercher…"
+                                   @bind="_search"
+                                   @oninput="OnSearch" />
+                        </div>
+                    </div>
+
+                    <div class="mi-tabs">
+                        <button class="mi-tab @(_tab == "materiel" ? "active" : "")" @onclick='() => SwitchTab("materiel")'>Matériels</button>
+                        <button class="mi-tab @(_tab == "utilisateur" ? "active" : "")" @onclick='() => SwitchTab("utilisateur")'>Utilisateurs</button>
+                        <button class="mi-tab @(_tab == "demande" ? "active" : "")" @onclick='() => SwitchTab("demande")'>Demandes</button>
+                        <button class="mi-tab @(_tab == "projet" ? "active" : "")" @onclick='() => SwitchTab("projet")'>Projets</button>
+                    </div>
+
+                    <div class="mi-lp-list">
+                        @if (_listLoading)
+                        {
+                            @for (int i = 0; i < 6; i++) {
+                                <div class="mi-ent-skeleton"></div>
+                            }
+                        }
+                        else
+                        {
+                            @foreach (var ent in FilteredEntities)
+                            {
+                                var entCopy = ent;
+                                <div class="mi-ent @(_selectedId == ent.Id ? "active" : "")"
+                                     @onclick="() => SelectEntity(entCopy)">
+                                    <div class="mi-ent-icon" style="background:@GetEntBg(ent);color:@GetEntColor(ent)">
+                                        @GetEntIcon(ent)
+                                    </div>
+                                    <div class="mi-ent-info">
+                                        <div class="mi-ent-name">@ent.Label</div>
+                                        <div class="mi-ent-meta">@ent.Detail</div>
+                                    </div>
+                                    @if (ent.Count > 0)
+                                    {
+                                        <span class="mi-ent-badge" style="background:@GetBadgeBg(ent);color:@GetBadgeColor(ent);border-color:@GetBadgeBorder(ent)">
+                                            @GetBadgeText(ent)
+                                        </span>
+                                    }
+                                </div>
+                            }
+                            @if (!FilteredEntities.Any())
+                            {
+                                <div class="mi-lp-empty">Aucun résultat</div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @* ── Zone graphe ─────────────────────────────────────────────── *@
+                <div class="mi-graph-area" id="mi-graph-area">
+
+                    @if (_selectedId == null)
+                    {
+                        <div class="mi-empty">
+                            <div class="mi-empty-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                                </svg>
+                            </div>
+                            <h3>Aucune entité sélectionnée</h3>
+                            <p>Sélectionnez un matériel, utilisateur, demande d'achat ou projet pour visualiser son graphe de relations.</p>
+                        </div>
+                    }
+                    else if (_graphLoading)
+                    {
+                        <div class="mi-graph-loading">
+                            <div class="mi-loader-ring"></div>
+                            <p>Chargement du graphe…</p>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_graphError))
+                    {
+                        <div class="mi-graph-error">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <p>@_graphError</p>
+                            <button @onclick="() => { if(_selectedEntity != null) SelectEntity(_selectedEntity); }">Réessayer</button>
+                        </div>
+                    }
+
+                    <canvas id="mi-canvas" style="@(_selectedId == null || _graphLoading ? "display:none" : "")"></canvas>
+
+                    @if (_selectedEntity != null && !_graphLoading)
+                    {
+                        <div class="mi-ctx-badge">
+                            <span class="mi-ctx-dot" style="background:@GetEntColor(_selectedEntity)"></span>
+                            <strong>@_selectedEntity.Label</strong>
+                            <span>@_selectedEntity.Detail</span>
+                        </div>
+                    }
+
+                    <div class="mi-legend">
+                        <div class="mi-lg"><div class="mi-ld" style="background:#3b82f6"></div> Matériel</div>
+                        <div class="mi-lg"><div class="mi-ld" style="background:#ef4444"></div> Incident</div>
+                        <div class="mi-lg"><div class="mi-ld" style="background:#8b5cf6"></div> Utilisateur</div>
+                        <div class="mi-lg"><div class="mi-ld" style="background:#f59e0b"></div> Commande</div>
+                        <div class="mi-lg"><div class="mi-ld" style="background:#10b981"></div> Projet</div>
+                        <div class="mi-lg"><div class="mi-ld" style="background:#14b8a6"></div> Demande</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+        </RoleAuthGuard>
+    </main>
+</div>
+
+@* Tooltip nœud *@
+<div id="node-tip" class="mi-node-tip">
+    <div class="tip-type" id="tip-type"></div>
+    <strong id="tip-title"></strong>
+    <span id="tip-body"></span>
+</div>

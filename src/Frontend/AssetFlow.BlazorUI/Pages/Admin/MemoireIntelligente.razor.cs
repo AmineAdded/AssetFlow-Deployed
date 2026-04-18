@@ -1,5 +1,3 @@
-// src/Frontend/AssetFlow.BlazorUI/Pages/Admin/MemoireIntelligente.razor.cs
-
 using AssetFlow.BlazorUI.DTOs;
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
@@ -56,7 +54,7 @@ namespace AssetFlow.BlazorUI.Pages.Admin
                 LoadStats(),
                 LoadList("materiel")
             );
-            await ConnecterSignalR(); // NOUVEAU
+            await ConnecterSignalR();
         }
 
         // ── NOUVEAU : SignalR ─────────────────────────────────────────────────

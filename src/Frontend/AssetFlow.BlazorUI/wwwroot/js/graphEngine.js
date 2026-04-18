@@ -1,7 +1,6 @@
-// ============================================================
-// AssetFlow – Mémoire Intelligente – Graph Engine v3
+
+// Mémoire Intelligente – Graph Engine 
 // Contextual force-directed graph (no global graph, per-entity)
-// ============================================================
 
 window.GraphEngine = (function () {
     let canvas, ctx, dotnetRef;

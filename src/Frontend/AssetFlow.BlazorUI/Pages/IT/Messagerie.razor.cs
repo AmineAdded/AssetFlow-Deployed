@@ -69,40 +69,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             await LoadConversationsAsync();
             await ConnectHubAsync();
         }
-<<<<<<< HEAD
-
-        private async Task HandleVoiceCommand(VoiceCommand cmd)
-        {
-            await InvokeAsync(async () =>
-            {
-                switch (cmd.Type)
-                {
-                    case VoiceCommandType.SélectionnerConversation
-                        when !string.IsNullOrWhiteSpace(cmd.Designation):
-                    {
-                        var recherche = cmd.Designation.Trim();
-                        var user = Conversations.FirstOrDefault(u =>
-                            u.FullName.Contains(recherche, StringComparison.OrdinalIgnoreCase));
-
-                        if (user != null)
-                            await SelectConversation(user);
-                        else
-                        {
-                            var mots = recherche.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            user = Conversations.FirstOrDefault(u =>
-                                mots.All(m => u.FullName.Contains(m, StringComparison.OrdinalIgnoreCase)));
-                            if (user != null)
-                                await SelectConversation(user);
-                        }
-                        break;
-                    }
-                }
-                StateHasChanged();
-            });
-        }
-
-=======
->>>>>>> c3b1b439b81f8751dd8a9f058d0c4444fc673743
         private async Task ConnectHubAsync()
         {
             try

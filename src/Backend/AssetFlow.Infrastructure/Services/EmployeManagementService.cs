@@ -10,19 +10,24 @@ namespace AssetFlow.Infrastructure.Services
     {
         private readonly AppDbContext _db;
         private readonly IAuditLogService _audit;
-        private readonly IDashboardNotifier _notifier; // AJOUTÉ
+        private readonly IDashboardNotifier _notifier;
+        private readonly IArticleBiographieService _biographie;
 
-        public EmployeManagementService(AppDbContext db, IAuditLogService audit, IDashboardNotifier notifier) // AJOUTÉ
+        public EmployeManagementService(
+            AppDbContext db,
+            IAuditLogService audit,
+            IDashboardNotifier notifier,
+            IArticleBiographieService biographie)
         {
-            _db       = db;
-            _audit    = audit;
-            _notifier = notifier; // AJOUTÉ
+            _db         = db;
+            _audit      = audit;
+            _notifier   = notifier;
+            _biographie = biographie;
         }
 
         public async Task<List<EmployeListeDto>> GetEmployesAsync(string? search = null)
         {
             var query = _db.Users.AsNoTracking();
-
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -33,7 +38,7 @@ namespace AssetFlow.Infrastructure.Services
                     u.Role.ToLower().Contains(s));
             }
 
-            var users = await query.OrderBy(u => u.FirstName).ToListAsync();
+            var users   = await query.OrderBy(u => u.FirstName).ToListAsync();
             var userIds = users.Select(u => u.Id).ToList();
 
             var counts = await _db.Affectations
@@ -101,7 +106,7 @@ namespace AssetFlow.Infrastructure.Services
             var utilisateurId = affectation.UtilisateurId;
             var projetId      = affectation.ProjetId;
 
-            // ── Résoudre les incidents non clôturés ─────────────────────────────
+            // ── Résoudre les incidents non clôturés ──────────────────────────
             var incidents = await _db.Incidents
                 .Include(i => i.Article)
                 .Where(i => i.AffectationId == affectationId &&
@@ -116,18 +121,20 @@ namespace AssetFlow.Infrastructure.Services
                 inc.CommentairesResolution = "Résolu automatiquement lors de la révocation de l'affectation.";
             }
 
-            // ── Supprimer les commentaires de l'utilisateur sur ce matériel ─────
+            // ── Supprimer les commentaires de l'utilisateur sur ce matériel ──
             if (utilisateurId.HasValue)
             {
                 var commentaires = await _db.CommentairesMateriel
                     .Where(c => c.MaterielId == materielId && c.UtilisateurId == utilisateurId.Value)
                     .ToListAsync();
-
                 _db.CommentairesMateriel.RemoveRange(commentaires);
             }
 
-            // ── Libérer les articles ─────────────────────────────────────────────
-            foreach (var article in affectation.Articles)
+            // Conserver la liste des articles avant de les modifier
+            var articlesRetires = affectation.Articles.ToList();
+
+            // ── Libérer les articles ──────────────────────────────────────────
+            foreach (var article in articlesRetires)
             {
                 article.Statut        = StatutArticle.Disponible;
                 article.AffectationId = null;
@@ -136,35 +143,39 @@ namespace AssetFlow.Infrastructure.Services
 
             affectation.Etat       = EtatAffectation.Terminee;
             affectation.DateRetour = DateTime.UtcNow;
-            affectation.Materiel.QuantiteStock += affectation.Articles.Count;
+            affectation.Materiel.QuantiteStock += articlesRetires.Count;
 
             await _db.SaveChangesAsync();
+
+            // ── BIOGRAPHIE : Retrait + MiseEnStock pour chaque article ────────
+            foreach (var article in articlesRetires)
+            {
+                // 1. Retrait — l'article quitte l'utilisateur
+                await _biographie.AjouterEvenementAsync(
+                    articleId:     article.Id,
+                    typeEvenement: TypeEvenementArticle.Retrait,
+                    utilisateurId: utilisateurId,
+                    description:   $"Retiré de l'affectation #{affectationId}"
+                );
+
+                // 2. MiseEnStock — l'article retourne en stock (commence à compter les jours)
+                await _biographie.AjouterEvenementAsync(
+                    articleId:     article.Id,
+                    typeEvenement: TypeEvenementArticle.MiseEnStock,
+                    utilisateurId: null,
+                    description:   "Remis en stock suite au retrait d'affectation"
+                );
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
 
-            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-            {
-                Type   = "materiel",
-                NodeId = $"m-{materielId}"
-            });
-
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel",    NodeId = $"m-{materielId}" });
             if (utilisateurId.HasValue)
-            {
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "utilisateur",
-                    NodeId = $"u-{utilisateurId.Value}"
-                });
-            }
-
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "utilisateur", NodeId = $"u-{utilisateurId.Value}" });
             if (projetId.HasValue)
-            {
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "projet",
-                    NodeId = $"p-{projetId.Value}"
-                });
-            }
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "projet",      NodeId = $"p-{projetId.Value}" });
 
             await _audit.LogAsync(new CreateAuditLogDto
             {
@@ -173,15 +184,15 @@ namespace AssetFlow.Infrastructure.Services
                 Action      = IAuditLogService.Actions.Revocation,
                 Categorie   = IAuditLogService.Categories.Affectation,
                 Entite      = $"Affectation #{affectation.Id}",
-                Details     = $"{affectation.Articles.Count} article(s) de \"{affectation.Materiel.Designation}\" remis en stock" +
-                            (incidents.Any() ? $", {incidents.Count} incident(s) auto-résolu(s)" : "")
+                Details     = $"{articlesRetires.Count} article(s) de \"{affectation.Materiel.Designation}\" remis en stock" +
+                              (incidents.Any() ? $", {incidents.Count} incident(s) auto-résolu(s)" : "")
             });
 
             return new RetirerAffectationResultDto
             {
                 Succes  = true,
-                Message = $"Affectation retirée. {affectation.Articles.Count} article(s) remis en stock." +
-                        (incidents.Any() ? $" {incidents.Count} incident(s) auto-résolu(s)." : "")
+                Message = $"Affectation retirée. {articlesRetires.Count} article(s) remis en stock." +
+                          (incidents.Any() ? $" {incidents.Count} incident(s) auto-résolu(s)." : "")
             };
         }
 

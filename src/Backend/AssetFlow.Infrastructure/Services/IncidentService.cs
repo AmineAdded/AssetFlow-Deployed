@@ -10,12 +10,18 @@ namespace AssetFlow.Infrastructure.Services
     {
         private readonly AppDbContext _context;
         private readonly IDashboardNotifier _notifier;
+        private readonly IArticleBiographieService _biographie;
 
-        public IncidentService(AppDbContext context, IDashboardNotifier notifier)
+        public IncidentService(
+            AppDbContext context,
+            IDashboardNotifier notifier,
+            IArticleBiographieService biographie)
         {
-            _context = context;
-            _notifier = notifier;
+            _context    = context;
+            _notifier   = notifier;
+            _biographie = biographie;
         }
+
         public async Task<SignalerIncidentResponseDto> SignalerIncidentAsync(SignalerIncidentRequestDto request)
         {
             try
@@ -31,102 +37,76 @@ namespace AssetFlow.Infrastructure.Services
                 {
                     AffectationId = request.AffectationId,
                     ArticleId     = request.ArticleId,
-                    TypeIncident = request.TypeIncident,
-                    Urgence = request.Urgence,
-                    Description = request.Description,
-                    DateIncident = DateTime.UtcNow,
-                    Statut = StatutIncident.EnAttente
+                    TypeIncident  = request.TypeIncident,
+                    Urgence       = request.Urgence,
+                    Description   = request.Description,
+                    DateIncident  = DateTime.UtcNow,
+                    Statut        = StatutIncident.EnAttente
                 };
-                // ← AJOUTER : mettre l'article en Panne si ArticleId fourni
+
                 if (request.ArticleId.HasValue)
                 {
-                    var article = await _context.ArticlesIndividuels
-                        .FindAsync(request.ArticleId.Value);
+                    var article = await _context.ArticlesIndividuels.FindAsync(request.ArticleId.Value);
                     if (article != null)
-                    {
                         article.Etat = EtatArticle.Panne;
-                    }
                 }
+
                 _context.Incidents.Add(incident);
                 await _context.SaveChangesAsync();
 
-                var numeroIncident = $"INC-{DateTime.UtcNow.Year}-{incident.Id:D3}";
+                // ── BIOGRAPHIE : PanneDeclaree ────────────────────────────────
+                if (request.ArticleId.HasValue)
+                {
+                    await _biographie.AjouterEvenementAsync(
+                        articleId:     request.ArticleId.Value,
+                        typeEvenement: TypeEvenementArticle.PanneDeclaree,
+                        utilisateurId: affectation.UtilisateurId,
+                        description:   $"[{request.TypeIncident}] {request.Description}"
+                    );
+                }
+                // ─────────────────────────────────────────────────────────────
 
-                await _context.SaveChangesAsync();
                 await _notifier.NotifyAsync();
                 await _notifier.NotifyITAsync();
-                // await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                // {
-                //     Type   = "incident",
-                //     NodeId = $"m-{affectation.MaterielId}"
-                // });
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "materiel",                        // ← était "incident"
-                    NodeId = $"m-{affectation.MaterielId}"
-                });
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{affectation.MaterielId}" });
                 if (affectation.UtilisateurId.HasValue)
-                {
-                    await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                    {
-                        Type   = "utilisateur",
-                        NodeId = $"u-{affectation.UtilisateurId.Value}"
-                    });
-                }
+                    await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "utilisateur", NodeId = $"u-{affectation.UtilisateurId.Value}" });
 
                 return new SignalerIncidentResponseDto
                 {
-                    Success = true,
-                    Message = "Incident signalé avec succès. L'équipe IT a été notifiée.",
-                    IncidentId = incident.Id,
-                    NumeroIncident = numeroIncident
+                    Success        = true,
+                    Message        = "Incident signalé avec succès. L'équipe IT a été notifiée.",
+                    IncidentId     = incident.Id,
+                    NumeroIncident = $"INC-{DateTime.UtcNow.Year}-{incident.Id:D3}"
                 };
             }
             catch (Exception ex)
             {
-                return new SignalerIncidentResponseDto
-                {
-                    Success = false,
-                    Message = $"Erreur lors du signalement : {ex.Message}"
-                };
+                return new SignalerIncidentResponseDto { Success = false, Message = $"Erreur lors du signalement : {ex.Message}" };
             }
         }
 
-        // Récupère tous les incidents liés à une affectation
         public async Task<List<IncidentDto>> GetIncidentsByAffectationAsync(int affectationId)
         {
             var incidents = await _context.Incidents
-                .Include(i => i.Affectation)
-                .ThenInclude(a => a.Materiel)
+                .Include(i => i.Affectation).ThenInclude(a => a.Materiel)
                 .Where(i => i.AffectationId == affectationId)
                 .OrderByDescending(i => i.DateIncident)
                 .ToListAsync();
-
             return incidents.Select(MapToDto).ToList();
         }
 
-        // Récupère le détail d'un incident
         public async Task<IncidentDto?> GetIncidentDetailAsync(int incidentId)
         {
             var incident = await _context.Incidents
-                .Include(i => i.Affectation)
-                .ThenInclude(a => a.Materiel)
+                .Include(i => i.Affectation).ThenInclude(a => a.Materiel)
                 .FirstOrDefaultAsync(i => i.Id == incidentId);
-
             return incident == null ? null : MapToDto(incident);
         }
+
         public async Task<List<IncidentEmployeDto>> GetEmployesAvecIncidentsAsync(string? search = null)
         {
-            // Récupérer les utilisateurIds ayant des incidents actifs
-            var userIdsAvecIncidents = await _context.Incidents
-                .Where(i => i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours)
-                .Select(i => i.Affectation.UtilisateurId)
-                .Distinct()
-                .ToListAsync();
-
-            var query = _context.Users.AsNoTracking()
-                .Where(u => u.IsApproved && u.Role != "Admin");
-
+            var query = _context.Users.AsNoTracking();
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -135,25 +115,22 @@ namespace AssetFlow.Infrastructure.Services
                     u.LastName.ToLower().Contains(s)  ||
                     u.Role.ToLower().Contains(s));
             }
-
-            var users = await query.OrderBy(u => u.FirstName).ToListAsync();
-
-            // Compter incidents actifs par user
+            var users  = await query.OrderBy(u => u.FirstName).ToListAsync();
             var counts = await _context.Incidents
                 .Include(i => i.Affectation)
                 .Where(i => (i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours)
-                        && i.Affectation.Etat == EtatAffectation.Courante
-                        && users.Select(u => u.Id).Contains(i.Affectation.UtilisateurId.Value))
+                         && i.Affectation.Etat == EtatAffectation.Courante
+                         && users.Select(u => u.Id).Contains(i.Affectation.UtilisateurId.Value))
                 .GroupBy(i => i.Affectation.UtilisateurId.Value)
                 .Select(g => new { UserId = g.Key, Count = g.Count() })
                 .ToListAsync();
 
             return users.Select(u => new IncidentEmployeDto
             {
-                UtilisateurId    = u.Id,
-                FullName         = $"{u.FirstName} {u.LastName}",
-                Role       = u.Role,
-                Initials         = $"{u.FirstName[0]}{u.LastName[0]}".ToUpper(),
+                UtilisateurId     = u.Id,
+                FullName          = $"{u.FirstName} {u.LastName}",
+                Role              = u.Role,
+                Initials          = $"{u.FirstName[0]}{u.LastName[0]}".ToUpper(),
                 NbIncidentsActifs = counts.FirstOrDefault(c => c.UserId == u.Id)?.Count ?? 0
             }).ToList();
         }
@@ -161,19 +138,16 @@ namespace AssetFlow.Infrastructure.Services
         public async Task<List<IncidentMaterielDto>> GetMaterielsAvecIncidentsAsync(int utilisateurId)
         {
             var affectations = await _context.Affectations
-                .Include(a => a.Materiel)
-                .Include(a => a.Articles)
+                .Include(a => a.Materiel).Include(a => a.Articles)
                 .Where(a => a.UtilisateurId == utilisateurId && a.Etat == EtatAffectation.Courante)
                 .ToListAsync();
 
             var affectationIds = affectations.Select(a => a.Id).ToList();
-
             var incidents = await _context.Incidents
                 .Where(i => affectationIds.Contains(i.AffectationId))
                 .OrderByDescending(i => i.DateIncident)
                 .ToListAsync();
 
-            // Ne retourner que les matériels ayant au moins 1 incident
             return affectations
                 .Select(aff =>
                 {
@@ -183,12 +157,8 @@ namespace AssetFlow.Infrastructure.Services
                     var articlesAvecIncidents = aff.Articles
                         .Select(art =>
                         {
-                            var incidentsArt = incidentsAff
-                                .Where(i => i.ArticleId == art.Id)
-                                .Select(MapToDto)
-                                .ToList();
+                            var incidentsArt = incidentsAff.Where(i => i.ArticleId == art.Id).Select(MapToDto).ToList();
                             if (!incidentsArt.Any()) return null;
-
                             return new IncidentArticleDto
                             {
                                 ArticleId   = art.Id,
@@ -197,32 +167,28 @@ namespace AssetFlow.Infrastructure.Services
                                 Incidents   = incidentsArt
                             };
                         })
-                        .Where(x => x != null)
-                        .Cast<IncidentArticleDto>()
-                        .ToList();
+                        .Where(x => x != null).Cast<IncidentArticleDto>().ToList();
 
                     return new IncidentMaterielDto
                     {
-                        MaterielId       = aff.MaterielId,
-                        AffectationId    = aff.Id,
-                        Designation      = aff.Materiel.Designation,
-                        Reference        = aff.Materiel.Reference,
-                        ImageUrl         = aff.Materiel.ImageUrl,
-                        Categorie        = aff.Materiel.Categorie,
-                        NbIncidentsActifs = incidentsAff.Count(i =>
-                            i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours),
-                        Articles         = articlesAvecIncidents
+                        MaterielId        = aff.MaterielId,
+                        AffectationId     = aff.Id,
+                        Designation       = aff.Materiel.Designation,
+                        Reference         = aff.Materiel.Reference,
+                        ImageUrl          = aff.Materiel.ImageUrl,
+                        Categorie         = aff.Materiel.Categorie,
+                        NbIncidentsActifs = incidentsAff.Count(i => i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours),
+                        Articles          = articlesAvecIncidents
                     };
                 })
-                .Where(x => x != null)
-                .Cast<IncidentMaterielDto>()
-                .ToList();
+                .Where(x => x != null).Cast<IncidentMaterielDto>().ToList();
         }
 
         public async Task<SignalerIncidentResponseDto> ChangerStatutAsync(int incidentId, ChangerStatutIncidentDto dto)
         {
             var incident = await _context.Incidents
                 .Include(i => i.Article)
+                .Include(i => i.Affectation)
                 .FirstOrDefaultAsync(i => i.Id == incidentId);
 
             if (incident == null)
@@ -235,43 +201,43 @@ namespace AssetFlow.Infrastructure.Services
 
             if (nouveauStatut == StatutIncident.Resolu)
             {
-                incident.DateResolution          = DateTime.UtcNow;
-                incident.CommentairesResolution  = dto.CommentairesResolution?.Trim();
+                incident.DateResolution         = DateTime.UtcNow;
+                incident.CommentairesResolution = dto.CommentairesResolution?.Trim();
 
-                // Remettre l'article en Bon si plus aucun incident actif sur cet article
                 if (incident.ArticleId.HasValue)
                 {
-                    var autresIncidentsActifs = await _context.Incidents
+                    var autresActifs = await _context.Incidents
                         .AnyAsync(i => i.ArticleId == incident.ArticleId
                                     && i.Id != incidentId
                                     && (i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours));
-
-                    if (!autresIncidentsActifs && incident.Article != null)
+                    if (!autresActifs && incident.Article != null)
                         incident.Article.Etat = EtatArticle.Bon;
                 }
             }
 
             await _context.SaveChangesAsync();
+
+            // ── BIOGRAPHIE : Reparation quand résolu ─────────────────────────
+            if (nouveauStatut == StatutIncident.Resolu && incident.ArticleId.HasValue)
+            {
+                await _biographie.AjouterEvenementAsync(
+                    articleId:     incident.ArticleId.Value,
+                    typeEvenement: TypeEvenementArticle.Reparation,
+                    utilisateurId: null,
+                    description:   dto.CommentairesResolution ?? "Incident résolu par l'équipe IT"
+                );
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
-            
+
             var aff = await _context.Affectations.FindAsync(incident.AffectationId);
             if (aff != null)
             {
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "materiel",
-                    NodeId = $"m-{aff.MaterielId}"
-                });
-
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{aff.MaterielId}" });
                 if (aff.UtilisateurId.HasValue)
-                {
-                    await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                    {
-                        Type   = "utilisateur",
-                        NodeId = $"u-{aff.UtilisateurId.Value}"
-                    });
-                }
+                    await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "utilisateur", NodeId = $"u-{aff.UtilisateurId.Value}" });
             }
 
             return new SignalerIncidentResponseDto { Success = true, Message = "Statut mis à jour." };
@@ -281,7 +247,7 @@ namespace AssetFlow.Infrastructure.Services
         {
             var incidents = await _context.Incidents
                 .Where(i => i.ArticleId == dto.ArticleId
-                        && (i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours))
+                         && (i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours))
                 .ToListAsync();
 
             if (!incidents.Any())
@@ -289,18 +255,28 @@ namespace AssetFlow.Infrastructure.Services
 
             foreach (var inc in incidents)
             {
-                inc.Statut                  = StatutIncident.Resolu;
-                inc.DateResolution          = DateTime.UtcNow;
-                inc.CommentairesResolution  = dto.CommentairesResolution?.Trim();
+                inc.Statut                 = StatutIncident.Resolu;
+                inc.DateResolution         = DateTime.UtcNow;
+                inc.CommentairesResolution = dto.CommentairesResolution?.Trim();
             }
 
-            // Remettre l'article en Bon
             var article = await _context.ArticlesIndividuels.FindAsync(dto.ArticleId);
             if (article != null) article.Etat = EtatArticle.Bon;
 
             await _context.SaveChangesAsync();
+
+            // ── BIOGRAPHIE : Reparation ───────────────────────────────────────
+            await _biographie.AjouterEvenementAsync(
+                articleId:     dto.ArticleId,
+                typeEvenement: TypeEvenementArticle.Reparation,
+                utilisateurId: null,
+                description:   dto.CommentairesResolution ?? $"{incidents.Count} incident(s) résolus — article remis en état Bon"
+            );
+            // ─────────────────────────────────────────────────────────────────
+
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
+
             return new SignalerIncidentResponseDto
             {
                 Success = true,
@@ -308,44 +284,33 @@ namespace AssetFlow.Infrastructure.Services
             };
         }
 
-        private IncidentDto MapToDto(Incident incident)
+        private IncidentDto MapToDto(Incident incident) => new()
         {
-            return new IncidentDto
-            {
-                Id = incident.Id,
-                AffectationId = incident.AffectationId,
-                NumeroIncident = $"INC-{incident.DateIncident.Year}-{incident.Id:D3}",
-                TypeIncident = incident.TypeIncident,
-                Urgence = incident.Urgence,
-                UrgenceLabel = GetUrgenceLabel(incident.Urgence),
-                Description = incident.Description,
-                DateIncident = incident.DateIncident,
-                Statut = incident.Statut.ToString(),
-                StatutLabel = GetStatutLabel(incident.Statut),
-                DateResolution = incident.DateResolution,
-                CommentairesResolution = incident.CommentairesResolution,
-                MaterielDesignation = incident.Affectation.Materiel.Designation,
-                MaterielReference = incident.Affectation.Materiel.Reference
-            };
-        }
+            Id                     = incident.Id,
+            AffectationId          = incident.AffectationId,
+            NumeroIncident         = $"INC-{incident.DateIncident.Year}-{incident.Id:D3}",
+            TypeIncident           = incident.TypeIncident,
+            Urgence                = incident.Urgence,
+            UrgenceLabel           = GetUrgenceLabel(incident.Urgence),
+            Description            = incident.Description,
+            DateIncident           = incident.DateIncident,
+            Statut                 = incident.Statut.ToString(),
+            StatutLabel            = GetStatutLabel(incident.Statut),
+            DateResolution         = incident.DateResolution,
+            CommentairesResolution = incident.CommentairesResolution,
+            MaterielDesignation    = incident.Affectation.Materiel.Designation,
+            MaterielReference      = incident.Affectation.Materiel.Reference
+        };
 
-        private string GetUrgenceLabel(int urgence)
-        {
-            if (urgence <= 33) return "Faible";
-            if (urgence <= 66) return "Moyen";
-            return "Critique";
-        }
+        private static string GetUrgenceLabel(int u) => u <= 33 ? "Faible" : u <= 66 ? "Moyen" : "Critique";
 
-        private string GetStatutLabel(StatutIncident statut)
+        private static string GetStatutLabel(StatutIncident s) => s switch
         {
-            return statut switch
-            {
-                StatutIncident.EnAttente => "En attente",
-                StatutIncident.EnCours => "En cours",
-                StatutIncident.Resolu => "Résolu",
-                StatutIncident.Cloture => "Clôturé",
-                _ => statut.ToString()
-            };
-        }
+            StatutIncident.EnAttente => "En attente",
+            StatutIncident.EnCours   => "En cours",
+            StatutIncident.Resolu    => "Résolu",
+            StatutIncident.Cloture   => "Clôturé",
+            _                        => s.ToString()
+        };
     }
 }

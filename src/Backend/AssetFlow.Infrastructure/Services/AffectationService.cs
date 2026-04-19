@@ -11,15 +11,23 @@ namespace AssetFlow.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IDashboardNotifier _notifier;
         private readonly IAuditLogService _audit;
+        private readonly IArticleBiographieService _biographie;
 
-        public AffectationService(AppDbContext db, IDashboardNotifier notifier,IAuditLogService a)
-        { _db = db; _notifier = notifier; _audit = a;}
+        public AffectationService(
+            AppDbContext db,
+            IDashboardNotifier notifier,
+            IAuditLogService a,
+            IArticleBiographieService biographie)
+        {
+            _db         = db;
+            _notifier   = notifier;
+            _audit      = a;
+            _biographie = biographie;
+        }
 
-        // ── Utilisateurs ─────────────────────────────────────
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursDisponiblesAsync(string? search = null)
         {
             var query = _db.Users.AsNoTracking();
-
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -29,24 +37,20 @@ namespace AssetFlow.Infrastructure.Services
                     u.Email.ToLower().Contains(s)     ||
                     u.Role.ToLower().Contains(s));
             }
-
             var users = await query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ToListAsync();
-
             return users.Select(u => new UtilisateurDisponibleDto
             {
-                Id         = u.Id,
-                FullName   = $"{u.FirstName} {u.LastName}",
-                Email      = u.Email,
-                Role = u.Role,
-                Initials   = GetInitials(u.FirstName, u.LastName)
+                Id       = u.Id,
+                FullName = $"{u.FirstName} {u.LastName}",
+                Email    = u.Email,
+                Role     = u.Role,
+                Initials = GetInitials(u.FirstName, u.LastName)
             }).ToList();
         }
 
-        // ── Matériels ────────────────────────────────────────
         public async Task<List<MaterielDisponibleDto>> GetMaterielsDisponiblesAsync(string? search = null)
         {
             var query = _db.Materiels.AsNoTracking().AsQueryable();
-
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -55,10 +59,8 @@ namespace AssetFlow.Infrastructure.Services
                     m.Reference.ToLower().Contains(s)   ||
                     m.Categorie.ToLower().Contains(s));
             }
-
-            var materiels = await query.OrderBy(m => m.Designation).ToListAsync();
+            var materiels   = await query.OrderBy(m => m.Designation).ToListAsync();
             var materielIds = materiels.Select(m => m.Id).ToList();
-
             var articles = await _db.ArticlesIndividuels
                 .AsNoTracking()
                 .Where(a => materielIds.Contains(a.MaterielId) && a.Statut == StatutArticle.Disponible)
@@ -69,7 +71,6 @@ namespace AssetFlow.Infrastructure.Services
             {
                 var arts = articles.Where(a => a.MaterielId == m.Id).ToList();
                 if (arts.Count == 0) continue;
-
                 result.Add(new MaterielDisponibleDto
                 {
                     Id                 = m.Id,
@@ -86,16 +87,12 @@ namespace AssetFlow.Infrastructure.Services
                     }).ToList()
                 });
             }
-
             return result;
         }
 
-        // ── Projets ────────────────────────────────
         public async Task<List<ProjetDisponibleDto>> GetProjetsDisponiblesAsync(string? search = null)
         {
-            var query = _db.Projects.AsNoTracking()
-                .Where(p => p.Statut != StatutProjet.Termine);
-
+            var query = _db.Projects.AsNoTracking().Where(p => p.Statut != StatutProjet.Termine);
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim().ToLower();
@@ -103,9 +100,7 @@ namespace AssetFlow.Infrastructure.Services
                     p.Nom.ToLower().Contains(s) ||
                     (p.Responsable != null && p.Responsable.ToLower().Contains(s)));
             }
-
             var projets = await query.OrderBy(p => p.Nom).ToListAsync();
-
             return projets.Select(p => new ProjetDisponibleDto
             {
                 Id          = p.Id,
@@ -116,7 +111,6 @@ namespace AssetFlow.Infrastructure.Services
             }).ToList();
         }
 
-        // ── Créer affectation ────────────────────────────────
         public async Task<AffectationResultDto> CreerAffectationAsync(CreerAffectationDto dto)
         {
             if (dto.ArticleIds == null || dto.ArticleIds.Count == 0)
@@ -136,7 +130,6 @@ namespace AssetFlow.Infrastructure.Services
             if (materiel == null)
                 return new AffectationResultDto { Succes = false, Message = "Matériel introuvable." };
 
-            // Vérifier projet si fourni
             if (dto.ProjetId.HasValue)
             {
                 var projet = await _db.Projects.FindAsync(dto.ProjetId.Value);
@@ -181,40 +174,32 @@ namespace AssetFlow.Infrastructure.Services
 
             materiel.QuantiteStock = Math.Max(0, materiel.QuantiteStock - articles.Count);
             await _db.SaveChangesAsync();
-            await _db.SaveChangesAsync();
+
+            // ── BIOGRAPHIE : Affectation pour chaque article ─────────────────
+            var beneficiaire = dto.ProjetId.HasValue
+                ? (await _db.Projects.FindAsync(dto.ProjetId.Value))?.Nom ?? "projet"
+                : $"{utilisateur!.FirstName} {utilisateur.LastName}";
+
+            foreach (var article in articles)
+            {
+                await _biographie.AjouterEvenementAsync(
+                    articleId:     article.Id,
+                    typeEvenement: TypeEvenementArticle.Affectation,
+                    utilisateurId: dto.UtilisateurId,
+                    description:   $"Affecté à {beneficiaire}"
+                );
+            }
+            // ─────────────────────────────────────────────────────────────────
+
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
 
-            // ── MEMORY : matériel toujours notifié ──────────────────────────────
-            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-            {
-                Type   = "materiel",
-                NodeId = $"m-{dto.MaterielId}"
-            });
-
-            // ── MEMORY : utilisateur si affectation à un user ───────────────────
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{dto.MaterielId}" });
             if (dto.UtilisateurId.HasValue)
-            {
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "utilisateur",
-                    NodeId = $"u-{dto.UtilisateurId.Value}"
-                });
-            }
-
-            // ── MEMORY : projet si affectation à un projet ──────────────────────
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "utilisateur", NodeId = $"u-{dto.UtilisateurId.Value}" });
             if (dto.ProjetId.HasValue)
-            {
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "projet",
-                    NodeId = $"p-{dto.ProjetId.Value}"
-                });
-            }
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "projet", NodeId = $"p-{dto.ProjetId.Value}" });
 
-            var beneficiaire = dto.ProjetId.HasValue
-                ? (await _db.Projects.FindAsync(dto.ProjetId.Value))?.Nom ?? "projet"
-                : $"{utilisateur.FirstName} {utilisateur.LastName}";
             await _audit.LogAsync(new CreateAuditLogDto
             {
                 Utilisateur = dto.user_name,

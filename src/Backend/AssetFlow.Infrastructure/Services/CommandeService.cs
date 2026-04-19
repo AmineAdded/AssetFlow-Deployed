@@ -11,8 +11,20 @@ namespace AssetFlow.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IDashboardNotifier _notifier;
         private readonly IAuditLogService _audit;
-        public CommandeService(AppDbContext db, IDashboardNotifier notifier, IAuditLogService audit)
-        { _db = db; _notifier = notifier; _audit = audit; }
+        private readonly IArticleBiographieService _biographie;
+
+        public CommandeService(
+            AppDbContext db,
+            IDashboardNotifier notifier,
+            IAuditLogService audit,
+            IArticleBiographieService biographie)
+        {
+            _db         = db;
+            _notifier   = notifier;
+            _audit      = audit;
+            _biographie = biographie;
+        }
+
         private static ArticleDto ToArticleDto(ArticleIndividuel a) => new()
         {
             Id             = a.Id,
@@ -44,6 +56,7 @@ namespace AssetFlow.Infrastructure.Services
                 NumeroCommande = c.NumeroCommande
             }).ToList()
         };
+
         public async Task<IEnumerable<CommandeDto>> GetAllAsync()
         {
             var list = await _db.Commandes
@@ -85,21 +98,12 @@ namespace AssetFlow.Infrastructure.Services
             return arts.Select(ToArticleDto);
         }
 
-        // ── UNE LIGNE PAR MATERIEL ────────────────────────────────
         public async Task<IEnumerable<LigneMaterielDto>> GetLignesMaterielsAsync()
         {
-            var materiels = await _db.Materiels
-                .AsNoTracking()
-                .OrderBy(m => m.Designation)
-                .ToListAsync();
+            var materiels = await _db.Materiels.AsNoTracking().OrderBy(m => m.Designation).ToListAsync();
+            var commandes = await _db.Commandes.Include(c => c.Fournisseur).Include(c => c.Articles).AsNoTracking().ToListAsync();
 
-            var commandes = await _db.Commandes
-                .Include(c => c.Fournisseur)
-                .Include(c => c.Articles)
-                .AsNoTracking()
-                .ToListAsync();
-
-            var result = materiels.Select(m => new LigneMaterielDto
+            return materiels.Select(m => new LigneMaterielDto
             {
                 MaterielId    = m.Id,
                 Reference     = m.Reference,
@@ -135,22 +139,16 @@ namespace AssetFlow.Infrastructure.Services
                         }).ToList()
                     }).ToList()
             }).ToList();
-
-            return result;
         }
+
         public async Task<IEnumerable<LigneCommandeMaterielDto>> GetLignesCommandesAsync()
         {
             var commandes = await _db.Commandes
-                .Include(c => c.Materiel)
-                .Include(c => c.Fournisseur)
-                .Include(c => c.Articles)
-                .AsNoTracking()
-                .ToListAsync();
+                .Include(c => c.Materiel).Include(c => c.Fournisseur).Include(c => c.Articles)
+                .AsNoTracking().ToListAsync();
 
             var materielIdsAvecCommande = commandes.Select(c => c.MaterielId).Distinct().ToHashSet();
-            var materielsSeuls = await _db.Materiels
-                .Where(m => !materielIdsAvecCommande.Contains(m.Id))
-                .AsNoTracking().ToListAsync();
+            var materielsSeuls = await _db.Materiels.Where(m => !materielIdsAvecCommande.Contains(m.Id)).AsNoTracking().ToListAsync();
 
             var result = new List<LigneCommandeMaterielDto>();
 
@@ -159,26 +157,13 @@ namespace AssetFlow.Infrastructure.Services
                 var m = c.Materiel;
                 result.Add(new LigneCommandeMaterielDto
                 {
-                    MaterielId      = m.Id,
-                    Reference       = m.Reference,
-                    Designation     = m.Designation,
-                    Description     = m.Description,
-                    Categorie       = m.Categorie,
-                    QuantiteStock   = m.QuantiteStock,
-                    QuantiteMin     = m.QuantiteMin,
-                    Unite           = m.Unite,
-                    ImageUrl        = m.ImageUrl,
-                    DateAjout       = m.DateAjout,
-                    CommandeId      = c.Id,
-                    NumeroCommande  = c.NumeroCommande,
-                    FournisseurId   = c.FournisseurId ?? 0,
-                    NomFournisseur  = c.Fournisseur?.Nom ?? string.Empty,
-                    QuantiteAchetee = c.QuantiteAchetee,
-                    DateAchat       = c.DateAchat,
-                    DateLivraison   = c.DateLivraison,
-                    DateFinGarantie = c.DateFinGarantie,
-                    NbArticles      = c.Articles.Count,
-                    NbDisponibles   = c.Articles.Count(a => a.Statut == StatutArticle.Disponible)
+                    MaterielId = m.Id, Reference = m.Reference, Designation = m.Designation,
+                    Description = m.Description, Categorie = m.Categorie, QuantiteStock = m.QuantiteStock,
+                    QuantiteMin = m.QuantiteMin, Unite = m.Unite, ImageUrl = m.ImageUrl, DateAjout = m.DateAjout,
+                    CommandeId = c.Id, NumeroCommande = c.NumeroCommande, FournisseurId = c.FournisseurId ?? 0,
+                    NomFournisseur = c.Fournisseur?.Nom ?? string.Empty, QuantiteAchetee = c.QuantiteAchetee,
+                    DateAchat = c.DateAchat, DateLivraison = c.DateLivraison, DateFinGarantie = c.DateFinGarantie,
+                    NbArticles = c.Articles.Count, NbDisponibles = c.Articles.Count(a => a.Statut == StatutArticle.Disponible)
                 });
             }
 
@@ -186,60 +171,41 @@ namespace AssetFlow.Infrastructure.Services
             {
                 result.Add(new LigneCommandeMaterielDto
                 {
-                    MaterielId      = m.Id,
-                    Reference       = m.Reference,
-                    Designation     = m.Designation,
-                    Description     = m.Description,
-                    Categorie       = m.Categorie,
-                    QuantiteStock   = m.QuantiteStock,
-                    QuantiteMin     = m.QuantiteMin,
-                    Unite           = m.Unite,
-                    ImageUrl        = m.ImageUrl,
-                    DateAjout       = m.DateAjout,
-                    CommandeId      = 0,
-                    NumeroCommande  = string.Empty,
-                    NomFournisseur  = string.Empty,
-                    QuantiteAchetee = 0,
-                    DateAchat       = DateTime.MinValue,
-                    NbArticles      = 0,
-                    NbDisponibles   = 0
+                    MaterielId = m.Id, Reference = m.Reference, Designation = m.Designation,
+                    Description = m.Description, Categorie = m.Categorie, QuantiteStock = m.QuantiteStock,
+                    QuantiteMin = m.QuantiteMin, Unite = m.Unite, ImageUrl = m.ImageUrl, DateAjout = m.DateAjout,
+                    CommandeId = 0, NumeroCommande = string.Empty, NomFournisseur = string.Empty,
+                    QuantiteAchetee = 0, DateAchat = DateTime.MinValue, NbArticles = 0, NbDisponibles = 0
                 });
             }
 
             return result.OrderBy(r => r.Designation).ThenByDescending(r => r.DateAchat);
         }
+
         public async Task<CommandeReponseDto> CreerAsync(CreerCommandeDto dto)
         {
             var materiel = await _db.Materiels.FindAsync(dto.MaterielId);
-            if (materiel is null)
-                return new CommandeReponseDto { Succes = false, Message = "Matériel introuvable." };
+            if (materiel is null) return new CommandeReponseDto { Succes = false, Message = "Matériel introuvable." };
 
             var fournisseur = await _db.Fournisseurs.FindAsync(dto.FournisseurId);
-            if (fournisseur is null)
-                return new CommandeReponseDto { Succes = false, Message = "Fournisseur introuvable." };
+            if (fournisseur is null) return new CommandeReponseDto { Succes = false, Message = "Fournisseur introuvable." };
 
             if (await _db.Commandes.AnyAsync(c => c.NumeroCommande == dto.NumeroCommande.Trim()))
                 return new CommandeReponseDto { Succes = false, Message = "Ce numéro de commande existe déjà." };
 
             var numerosSerieFournis = dto.NumerosSerie
-                .Where(ns => !string.IsNullOrWhiteSpace(ns))
-                .Select(ns => ns!.Trim())
-                .ToList();
+                .Where(ns => !string.IsNullOrWhiteSpace(ns)).Select(ns => ns!.Trim()).ToList();
 
             var doublonsInternes = numerosSerieFournis
                 .GroupBy(ns => ns, StringComparer.OrdinalIgnoreCase)
-                .Where(g => g.Count() > 1)
-                .Select(g => g.Key).ToList();
-
+                .Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             if (doublonsInternes.Any())
                 return new CommandeReponseDto { Succes = false, Message = $"Numéro(s) de série en double : {string.Join(", ", doublonsInternes)}." };
 
             if (numerosSerieFournis.Any())
             {
                 var existants = await _db.ArticlesIndividuels
-                    .Where(a => numerosSerieFournis.Contains(a.NumeroSerie!))
-                    .Select(a => a.NumeroSerie!).ToListAsync();
-
+                    .Where(a => numerosSerieFournis.Contains(a.NumeroSerie!)).Select(a => a.NumeroSerie!).ToListAsync();
                 if (existants.Any())
                     return new CommandeReponseDto { Succes = false, Message = $"Numéro(s) de série déjà utilisé(s) : {string.Join(", ", existants)}." };
             }
@@ -260,31 +226,61 @@ namespace AssetFlow.Infrastructure.Services
                 _db.Commandes.Add(commande);
                 await _db.SaveChangesAsync();
 
+                // Créer les articles et les conserver pour les hooks biographie
+                var nouveauxArticles = new List<ArticleIndividuel>();
                 for (int i = 0; i < dto.QuantiteAchetee; i++)
                 {
                     var ns = (i < dto.NumerosSerie.Count) ? dto.NumerosSerie[i] : null;
-                    _db.ArticlesIndividuels.Add(new ArticleIndividuel
+                    var article = new ArticleIndividuel
                     {
                         NumeroSerie = string.IsNullOrWhiteSpace(ns) ? null : ns.Trim(),
                         Statut      = StatutArticle.Disponible,
                         MaterielId  = dto.MaterielId,
                         CommandeId  = commande.Id
-                    });
+                    };
+                    _db.ArticlesIndividuels.Add(article);
+                    nouveauxArticles.Add(article);
                 }
 
                 materiel.QuantiteStock += dto.QuantiteAchetee;
                 await _db.SaveChangesAsync();
+
+                // ── BIOGRAPHIE : Acquisition + MiseEnStock pour chaque article ──
+                // On utilise DateLivraison si disponible, sinon DateAchat
+                var dateRef = dto.DateLivraison ?? dto.DateAchat;
+
+                foreach (var article in nouveauxArticles)
+                {
+                    _db.ArticleHistoriques.Add(new ArticleHistorique
+                    {
+                        ArticleId     = article.Id,
+                        TypeEvenement = TypeEvenementArticle.Acquisition,
+                        UtilisateurId = null,
+                        DateEvenement = dateRef,
+                        Description   = $"Commande {commande.NumeroCommande} — {fournisseur.Nom}"
+                    });
+
+                    _db.ArticleHistoriques.Add(new ArticleHistorique
+                    {
+                        ArticleId     = article.Id,
+                        TypeEvenement = TypeEvenementArticle.MiseEnStock,
+                        UtilisateurId = null,
+                        DateEvenement = dateRef,
+                        Description   = $"Mis en stock — {materiel.Designation}"
+                    });
+                }
+
+                await _db.SaveChangesAsync();
+                // ─────────────────────────────────────────────────────────────
+
                 await _notifier.NotifyAsync();
                 await _notifier.NotifyITAsync();
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-                {
-                    Type   = "materiel",
-                    NodeId = $"m-{dto.MaterielId}"
-                });
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{dto.MaterielId}" });
                 await transaction.CommitAsync();
+
                 await _audit.LogAsync(new CreateAuditLogDto
                 {
-                    Utilisateur = dto.Utilisateur,        // remplacez par l'utilisateur courant si disponible
+                    Utilisateur = dto.Utilisateur,
                     Email       = "system",
                     Action      = IAuditLogService.Actions.Creation,
                     Categorie   = IAuditLogService.Categories.Commande,
@@ -311,30 +307,26 @@ namespace AssetFlow.Infrastructure.Services
                 return new CommandeReponseDto { Succes = false, Message = msg };
             }
         }
+
         public async Task<CommandeReponseDto> ModifierAsync(ModifierCommandeDto dto)
         {
             var commande = await _db.Commandes.FindAsync(dto.Id);
-            if (commande is null)
-                return new CommandeReponseDto { Succes = false, Message = "Commande introuvable." };
+            if (commande is null) return new CommandeReponseDto { Succes = false, Message = "Commande introuvable." };
 
-            // Vérifier unicité du nouveau numéro
             var numTrimmed = dto.NumeroCommande.Trim();
             if (await _db.Commandes.AnyAsync(c => c.NumeroCommande == numTrimmed && c.Id != dto.Id))
                 return new CommandeReponseDto { Succes = false, Message = "Ce numéro de commande est déjà utilisé." };
 
-            // Résoudre le fournisseur
             int fournisseurId = dto.FournisseurId;
             if (fournisseurId == 0 && !string.IsNullOrWhiteSpace(dto.NomFournisseurLibre))
             {
                 var existing = await _db.Fournisseurs
                     .FirstOrDefaultAsync(f => f.Nom.ToLower() == dto.NomFournisseurLibre.Trim().ToLower());
                 if (existing is not null)
-                {
                     fournisseurId = existing.IdFournisseur;
-                }
                 else
                 {
-                    var newF = new AssetFlow.Domain.Entities.Fournisseur { Nom = dto.NomFournisseurLibre.Trim() };
+                    var newF = new Fournisseur { Nom = dto.NomFournisseurLibre.Trim() };
                     _db.Fournisseurs.Add(newF);
                     await _db.SaveChangesAsync();
                     fournisseurId = newF.IdFournisseur;
@@ -349,51 +341,41 @@ namespace AssetFlow.Infrastructure.Services
 
             await _db.SaveChangesAsync();
             await _notifier.NotifyAsync();
-            await _notifier.NotifyITAsync(); 
-            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-            {
-                Type   = "materiel",
-                NodeId = $"m-{commande.MaterielId}"
-            });   
+            await _notifier.NotifyITAsync();
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{commande.MaterielId}" });
 
             await _audit.LogAsync(new CreateAuditLogDto
-                {
-                    Utilisateur = dto.Utilisateur,        // remplacez par l'utilisateur courant si disponible
-                    Email       = "system",
-                    Action      = IAuditLogService.Actions.Modification,
-                    Categorie   = IAuditLogService.Categories.Commande,
-                    Entite      = $"Commande #{commande.NumeroCommande}",
-                    Details     = $"Commande modifiée : \"{commande.NumeroCommande}\" (Qté: {commande.QuantiteAchetee})"
-                });
-            return new CommandeReponseDto
             {
-                Succes     = true,
-                Message    = $"Commande {commande.NumeroCommande} modifiée.",
-                IdCommande = commande.Id
-            };
+                Utilisateur = dto.Utilisateur,
+                Email       = "system",
+                Action      = IAuditLogService.Actions.Modification,
+                Categorie   = IAuditLogService.Categories.Commande,
+                Entite      = $"Commande #{commande.NumeroCommande}",
+                Details     = $"Commande modifiée : \"{commande.NumeroCommande}\" (Qté: {commande.QuantiteAchetee})"
+            });
+
+            return new CommandeReponseDto { Succes = true, Message = $"Commande {commande.NumeroCommande} modifiée.", IdCommande = commande.Id };
         }
+
         public async Task<CommandeReponseDto> SupprimerAsync(string utilisateur, int id)
         {
-            var commande = await _db.Commandes
-                .Include(c => c.Articles)
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var commande = await _db.Commandes.Include(c => c.Articles).FirstOrDefaultAsync(c => c.Id == id);
+            if (commande is null) return new CommandeReponseDto { Succes = false, Message = "Commande introuvable." };
 
-            if (commande is null)
-                return new CommandeReponseDto { Succes = false, Message = "Commande introuvable." };
-
-            // Supprimer incidents liés aux articles
             var articleIds = commande.Articles.Select(a => a.Id).ToList();
             if (articleIds.Any())
             {
                 var incidents = await _db.Incidents
-                    .Where(i => i.ArticleId.HasValue && articleIds.Contains(i.ArticleId.Value))
-                    .ToListAsync();
+                    .Where(i => i.ArticleId.HasValue && articleIds.Contains(i.ArticleId.Value)).ToListAsync();
                 if (incidents.Any()) _db.Incidents.RemoveRange(incidents);
 
-                // Détacher les articles des affectations
+                // Supprimer aussi les historiques biographie
+                var historiques = await _db.ArticleHistoriques
+                    .Where(h => articleIds.Contains(h.ArticleId)).ToListAsync();
+                if (historiques.Any()) _db.ArticleHistoriques.RemoveRange(historiques);
+
                 var articlesAvecAffect = await _db.ArticlesIndividuels
-                    .Where(a => articleIds.Contains(a.Id) && a.AffectationId.HasValue)
-                    .ToListAsync();
+                    .Where(a => articleIds.Contains(a.Id) && a.AffectationId.HasValue).ToListAsync();
                 foreach (var art in articlesAvecAffect)
                     art.AffectationId = null;
             }
@@ -405,20 +387,18 @@ namespace AssetFlow.Infrastructure.Services
             _db.ArticlesIndividuels.RemoveRange(commande.Articles);
             _db.Commandes.Remove(commande);
             await _db.SaveChangesAsync();
-            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
-            {
-                Type   = "materiel",
-                NodeId = $"m-{commande.MaterielId}"
-            });
+
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{commande.MaterielId}" });
+
             await _audit.LogAsync(new CreateAuditLogDto
-                {
-                    Utilisateur = utilisateur,        // remplacez par l'utilisateur courant si disponible
-                    Email       = "system",
-                    Action      = IAuditLogService.Actions.Suppression,
-                    Categorie   = IAuditLogService.Categories.Commande,
-                    Entite      = $"Commande #{commande.NumeroCommande}",
-                    Details     = $"Commande supprimée : \"{commande.NumeroCommande}\" (Qté: {commande.QuantiteAchetee})"
-                });
+            {
+                Utilisateur = utilisateur,
+                Email       = "system",
+                Action      = IAuditLogService.Actions.Suppression,
+                Categorie   = IAuditLogService.Categories.Commande,
+                Entite      = $"Commande #{commande.NumeroCommande}",
+                Details     = $"Commande supprimée : \"{commande.NumeroCommande}\" (Qté: {commande.QuantiteAchetee})"
+            });
 
             return new CommandeReponseDto { Succes = true, Message = $"Commande {commande.NumeroCommande} supprimée." };
         }

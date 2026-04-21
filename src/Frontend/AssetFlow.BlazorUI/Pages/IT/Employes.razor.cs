@@ -71,9 +71,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private bool _menuOpen = false;
         private string _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
-
-        // ── Dark Mode ──
-        private bool _isDark = false;
         private HubConnection?       _hubConnection;
 
         // ── Computed ──
@@ -93,10 +90,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             UserName         = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT";
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
-
-            // Restaurer le dark mode depuis localStorage
-            _isDark = await LocalStorage.GetItemAsync<bool>("darkMode");
-            await ApplyDark(_isDark);
 
             await LoadEmployesAsync();
             await RefreshCountAsync();
@@ -194,15 +187,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _notifTimer?.Stop();
             _notifTimer?.Dispose();
         }
-
-        // ── Dark Mode ──
-        private async Task ToggleDark()
-        {
-            _isDark = !_isDark;
-            await LocalStorage.SetItemAsync("darkMode", _isDark);
-            await ApplyDark(_isDark);
-        }
-
         private async Task ApplyDark(bool dark)
         {
             await JS.InvokeVoidAsync("eval",

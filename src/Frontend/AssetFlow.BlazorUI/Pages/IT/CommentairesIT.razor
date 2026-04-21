@@ -59,23 +59,22 @@
     @* ══════ MAIN ══════ *@
     <main class="itc-main">
 
-        @* ── Topbar ── *@
-        <header class="itc-topbar">
-            <button class="aff-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
+        @* ── Header ── *@
+        <header class="itc-header">
+            <button class="itc-hamburger" @onclick="() => _menuOpen = !_menuOpen" aria-label="Menu">
                 <span></span><span></span><span></span>
             </button>
-            <div class="itc-topbar-title">
+            <div class="itc-header-left">
                 <div class="itc-topbar-icon">
                     <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 </div>
                 <div>
-                    <h1>Commentaires Équipements</h1>
-                    <span class="itc-topbar-sub">Vue globale IT · analyse de sentiment IA</span>
+                    <h1 class="itc-page-title">Commentaires Équipements</h1>
+                    <p class="itc-page-sub">Vue globale IT · analyse de sentiment IA</p>
                 </div>
             </div>
-            <div class="itc-topbar-right">
+            <div class="itc-header-right">
                 <span class="itc-count-badge">@CommentairesFiltres.Count commentaire@(CommentairesFiltres.Count > 1 ? "s" : "")</span>
-                @* Bouton analyse globale *@
                 @if (CommentairesFiltres.Any())
                 {
                     <button class="itc-btn-analyse-all"

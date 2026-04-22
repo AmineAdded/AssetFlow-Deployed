@@ -69,6 +69,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             await LoadConversationsAsync();
             await ConnectHubAsync();
         }
+
         private async Task ConnectHubAsync()
         {
             try
@@ -412,7 +413,21 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             var m = (int)secs / 60;
             var s = (int)secs % 60;
-            return $"{m:D2}:{s:D2}";
+            return $"{m}:{s:D2}";
+        }
+
+        // ── Génération déterministe des hauteurs de la waveform ───────────────
+        // Donne un profil "naturel" stable par message, identique à chaque rendu.
+        private int GetBarHeight(int msgId, int index)
+        {
+            unchecked
+            {
+                var seed = (msgId * 9176 + index * 31337) ^ 0x5A5A5A5A;
+                var v = (Math.Abs(seed) % 80) + 20; // 20..100
+                // Légère atténuation aux extrémités pour un look pro
+                if (index < 2 || index > 29) v = Math.Min(v, 35);
+                return v;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────

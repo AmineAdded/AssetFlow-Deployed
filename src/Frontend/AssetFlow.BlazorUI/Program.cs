@@ -63,5 +63,7 @@ builder.Services.AddScoped<CommentaireCircuitBreakerService>();
 builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<ArticleBiographieClientService>();
 builder.Services.AddScoped<GraphService>();
+// Singleton : une seule instance partagée pour toute la durée de vie de l'app
+builder.Services.AddSingleton<UnreadMessagesService>();
 
 await builder.Build().RunAsync();

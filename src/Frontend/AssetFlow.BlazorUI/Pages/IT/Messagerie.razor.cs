@@ -15,6 +15,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private ILocalStorageService     LocalStorage { get; set; } = default!;
         [Inject] private HttpClient               Http         { get; set; } = default!;
         [Inject] private IJSRuntime               JS           { get; set; } = default!;
+        [Inject] private UnreadMessagesService    UnreadSvc    { get; set; } = default!;
 
         private string UserName       { get; set; } = "IT";
         private int    CurrentUserId                = 0;
@@ -62,8 +63,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         protected override async Task OnInitializedAsync()
         {
-            UserName = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT User";
-            CurrentUserId = await LocalStorage.GetItemAsync<int>("user_id");
+            UserName         = await LocalStorage.GetItemAsync<string>("user_name") ?? "IT User";
+            CurrentUserId    = await LocalStorage.GetItemAsync<int>("user_id");
             _roleUtilisateur = await LocalStorage.GetItemAsync<string>("user_role") ?? "IT";
 
             await LoadConversationsAsync();
@@ -96,10 +97,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
                             if (msg.SenderId != CurrentUserId)
                             {
                                 CurrentMessages.Add(msg);
+                                // Lu immédiatement car la conversation est ouverte
+                                await MarkMessagesAsReadAsync(msg.SenderId);
                             }
                             else
                             {
-                                // Mise à jour du message optimiste (texte ou vocal)
                                 var optimistic = CurrentMessages.LastOrDefault(
                                     m => m.SenderId == CurrentUserId && m.Id < 0);
                                 if (optimistic != null)
@@ -109,9 +111,13 @@ namespace AssetFlow.BlazorUI.Pages.IT
                                     optimistic.AudioDurationSeconds = msg.AudioDurationSeconds;
                                 }
                             }
-                            if (msg.SenderId != CurrentUserId)
-                                await MarkMessagesAsReadAsync(msg.SenderId);
                         }
+                        else if (msg.ReceiverId == CurrentUserId && msg.SenderId != CurrentUserId)
+                        {
+                            // Message reçu mais conversation non ouverte → badge +1
+                            UnreadSvc.Increment();
+                        }
+
                         UpdateConversationWithMessage(msg);
                         StateHasChanged();
                         await ScrollToBottomAsync();
@@ -204,6 +210,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 }
             }
 
+            // Mettre à jour le service singleton avec le total réel
+            var totalUnread = Conversations.Sum(c => c.UnreadCount);
+            UnreadSvc.Set(totalUnread);
+
             LoadingConversations = false;
             StateHasChanged();
         }
@@ -212,8 +222,15 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             SelectedConv      = conv;
             _conversationOpen = true;
-            conv.UnreadCount  = 0;
-            LoadingMessages   = true;
+
+            // Décrémenter le badge du nombre de non-lus de cette conv
+            if (conv.UnreadCount > 0)
+            {
+                UnreadSvc.Decrement(conv.UnreadCount);
+                conv.UnreadCount = 0;
+            }
+
+            LoadingMessages = true;
             StateHasChanged();
 
             CurrentMessages = await MsgSvc.GetHistoryAsync(CurrentUserId, conv.EmployeId);
@@ -290,9 +307,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
             var otherId = msg.SenderId == CurrentUserId ? msg.ReceiverId : msg.SenderId;
             var conv = Conversations.FirstOrDefault(c => c.EmployeId == otherId);
             if (conv == null) return;
-            // Prévisualisation : vocal → emoji, texte → contenu
             conv.LastMessage     = msg.IsVoice ? "🎤 Message vocal" : msg.Content;
             conv.LastMessageTime = msg.SentAt;
+            // Note: l'incrémentation du badge se fait dans ReceiveMessage directement
+            // pour éviter les doublons avec le service singleton
             if (msg.SenderId != CurrentUserId && SelectedConv?.EmployeId != otherId)
                 conv.UnreadCount++;
         }
@@ -301,10 +319,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private async Task ToggleRecording()
         {
-            if (_isRecording)
-                await StopRecording();
-            else
-                await StartRecording();
+            if (_isRecording) await StopRecording();
+            else await StartRecording();
         }
 
         private async Task StartRecording()
@@ -318,7 +334,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _recordTimer.Elapsed += async (_, _) =>
             {
                 _recordingSeconds++;
-                // Arrêt automatique après 60 secondes
                 if (_recordingSeconds >= MaxVoiceSeconds)
                     await InvokeAsync(StopRecording);
                 else
@@ -342,7 +357,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             _recordTimer?.Stop();
             _recordTimer?.Dispose();
-            _recordTimer = null;
+            _recordTimer  = null;
             _isRecording  = false;
 
             try
@@ -381,7 +396,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             var receiverId = SelectedConv.EmployeId;
             var duration   = (int)Math.Min(_recordingSeconds, MaxVoiceSeconds);
 
-            // Message optimiste affiché immédiatement
             var optimisticMsg = new ChatMessageDto
             {
                 Id                   = -(CurrentMessages.Count + 1),
@@ -401,11 +415,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             StateHasChanged();
             await ScrollToBottomAsync();
 
-            // Envoi via la nouvelle méthode Hub dédiée aux vocaux
-            try
-            {
-                await _hub.SendAsync("SendVoiceMessage", CurrentUserId, receiverId, base64, duration);
-            }
+            try { await _hub.SendAsync("SendVoiceMessage", CurrentUserId, receiverId, base64, duration); }
             catch (Exception ex) { Console.WriteLine($"Erreur envoi vocal: {ex.Message}"); }
         }
 
@@ -416,21 +426,16 @@ namespace AssetFlow.BlazorUI.Pages.IT
             return $"{m}:{s:D2}";
         }
 
-        // ── Génération déterministe des hauteurs de la waveform ───────────────
-        // Donne un profil "naturel" stable par message, identique à chaque rendu.
         private int GetBarHeight(int msgId, int index)
         {
             unchecked
             {
                 var seed = (msgId * 9176 + index * 31337) ^ 0x5A5A5A5A;
-                var v = (Math.Abs(seed) % 80) + 20; // 20..100
-                // Légère atténuation aux extrémités pour un look pro
+                var v = (Math.Abs(seed) % 80) + 20;
                 if (index < 2 || index > 29) v = Math.Min(v, 35);
                 return v;
             }
         }
-
-        // ─────────────────────────────────────────────────────────────────────
 
         private void BackToList() { _conversationOpen = false; SelectedConv = null; }
 

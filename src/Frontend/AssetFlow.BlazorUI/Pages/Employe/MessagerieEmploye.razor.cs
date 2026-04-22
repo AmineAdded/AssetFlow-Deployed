@@ -58,8 +58,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
-
-        // ── Connexion SignalR ─────────────────────────────────────────────────
         private async Task ConnectHubAsync()
         {
             try
@@ -83,6 +81,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                             if (msg.SenderId != CurrentUserId)
                             {
                                 Messages.Add(msg);
+                                await MarkMessagesAsReadAsync(msg.SenderId);
                             }
                             else
                             {
@@ -95,8 +94,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                                     opt.AudioDurationSeconds = msg.AudioDurationSeconds;
                                 }
                             }
-                            if (msg.SenderId != CurrentUserId)
-                                await MarkMessagesAsReadAsync(msg.SenderId);
                         }
                         UpdateITWithMessage(msg);
                         StateHasChanged();
@@ -349,17 +346,18 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             return $"{m}:{s:D2}";
         }
 
-        // ── Génération déterministe des hauteurs de la waveform ───────────────
-        // Donne un profil "naturel" stable par message, identique à chaque rendu.
-        private int GetBarHeight(int msgId, int index)
+        // ── Hauteur déterministe d'une barre de la waveform (0..100) ──────────
+        // Identique à l'Achat : assure des barres stables entre les rendus.
+        private static int GetBarHeight(int msgId, int index)
         {
             unchecked
             {
-                var seed = (msgId * 9176 + index * 31337) ^ 0x5A5A5A5A;
-                var v = (Math.Abs(seed) % 80) + 20; // 20..100
-                // Légère atténuation aux extrémités pour un look pro
-                if (index < 2 || index > 29) v = Math.Min(v, 35);
-                return v;
+                var h = (uint)(msgId * 9176 + index * 374761393);
+                h ^= (h >> 13);
+                h *= 1274126177;
+                h ^= (h >> 16);
+                // Plage 25..100 % pour rester lisible
+                return 25 + (int)(h % 76u);
             }
         }
 
@@ -437,12 +435,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         {
             _typingTimer?.Dispose();
             _recordTimer?.Dispose();
-            if (_hub != null)
-            {
-                if (_hub.State == HubConnectionState.Connected)
-                    try { await _hub.SendAsync("UserDisconnected", CurrentUserId); } catch { }
-                await _hub.DisposeAsync();
-            }
+            if (_hub != null) await _hub.DisposeAsync();
         }
     }
 }

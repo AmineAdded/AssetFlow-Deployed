@@ -116,7 +116,7 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
 .msg-bubble-text { font-size:0.875rem; line-height:1.45; word-break:break-word; white-space:pre-wrap; }
 .msg-bubble-meta { display:flex; align-items:center; justify-content:flex-end; gap:0.3rem; margin-top:0.1rem; }
 .msg-bubble-time { font-size:0.62rem; opacity:0.7; white-space:nowrap; }
-.bubble-me   .msg-bubble-time { color:rgba(255,255,255,0.78); }
+.bubble-me   .msg-bubble-time { color:rgba(255,255,255,0.75); }
 .bubble-them .msg-bubble-time { color:var(--text-faint); }
 .msg-typing-bubble { padding:0.625rem 0.875rem; min-width:56px; }
 .msg-typing-bubble .msg-typing-dots span { background:var(--text-muted); }
@@ -126,61 +126,72 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
 
 
 /* ═══════════════════════════════════════════════════════════════
-   ── TICKS DE LECTURE PROFESSIONNELS (style WhatsApp / pro) ──
-   Identiques à la messagerie Achat
+   ── TICKS DE LECTURE (envoyé / lu) ──
    ═══════════════════════════════════════════════════════════════ */
 
 .msg-read-status {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    margin-left: 3px;
+    margin-left: 2px;
     line-height: 1;
 }
 
-.msg-ticks {
-    display: block;
-    height: 12px;
-    width: auto;
-    fill: none;
-    stroke-width: 1.8;
-    overflow: visible;
-}
-
 /* ── 1 tick : envoyé (non lu) ── */
-.ticks-sent {
-    width: 14px;
-    stroke: rgba(255,255,255,0.85);
-    opacity: 0.95;
+.msg-tick-single {
+    display: inline-flex;
+    align-items: center;
 }
-.bubble-them .ticks-sent { stroke: var(--text-faint); }
+.msg-tick-single svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: rgba(255,255,255,0.55);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
 
-/* ── 2 ticks : LU — bleu vif "WhatsApp" ── */
-.ticks-read {
-    width: 18px;
-    stroke: #4fc3f7;
-    filter: drop-shadow(0 0 3px rgba(79,195,247,0.55));
+/* ── 2 ticks : lu ── */
+.msg-tick-double {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
 }
-/* Sur bulle blanche (côté "them" — rare mais possible) */
-.bubble-them .ticks-read { stroke: #0ea5e9; filter: none; }
+.msg-tick-double .tick-first,
+.msg-tick-double .tick-second {
+    display: flex;
+    align-items: center;
+}
+.msg-tick-double .tick-second {
+    margin-left: -5px;
+}
+.msg-tick-double svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: #53d8fb;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 3px rgba(83,216,251,0.45));
+    transition: stroke 0.25s, filter 0.25s;
+}
 
-/* Animation d'apparition au passage en "lu" */
-@keyframes empTickPop {
-    0%   { opacity: 0; transform: scale(0.4); }
-    60%  { opacity: 1; transform: scale(1.15); }
-    100% { opacity: 1; transform: scale(1); }
+@keyframes empTickSeen {
+    from { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+    to   { opacity: 1; transform: scale(1)   rotate(0deg); }
 }
-.ticks-read.animate {
-    animation: empTickPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
-    transform-origin: center;
+.msg-tick-double.animate svg:last-child {
+    animation: empTickSeen 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 
 
 /* ═══════════════════════════════════════════════════════════════
-   ── LECTEUR VOCAL PROFESSIONNEL (style WhatsApp/Telegram) ──
-   Identique à la messagerie Achat — utilise voice-player.js (toggleVoice)
+   ── LECTEUR VOCAL — Style WhatsApp/Telegram (vibration passante)
+   ── Aligné avec la messagerie Achat/IT
    ═══════════════════════════════════════════════════════════════ */
 
-.msg-voice {
+.msg-audio-player {
     display: flex;
     align-items: center;
     gap: 0.65rem;
@@ -191,7 +202,7 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
 }
 
 /* ── Bouton play/pause circulaire premium ── */
-.msg-voice-play {
+.msg-play-btn {
     width: 38px;
     height: 38px;
     border-radius: 50%;
@@ -207,38 +218,38 @@ html.dark .bubble-them { background:#161f2e; border-color:#1e2d42; }
                 background 0.18s ease;
 }
 
-.bubble-me .msg-voice-play {
+.bubble-me .msg-play-btn {
     background: rgba(255,255,255,0.95);
     color: var(--primary);
     box-shadow: 0 2px 8px rgba(0,0,0,0.18),
                 inset 0 1px 0 rgba(255,255,255,0.6);
 }
-.bubble-them .msg-voice-play {
+.bubble-them .msg-play-btn {
     background: var(--primary);
     color: white;
     box-shadow: 0 2px 10px rgba(19,109,236,0.35);
 }
-html.dark .bubble-them .msg-voice-play {
+html.dark .bubble-them .msg-play-btn {
     box-shadow: 0 2px 12px rgba(19,109,236,0.45);
 }
 
-.msg-voice-play:hover  { transform: scale(1.08); }
-.msg-voice-play:active { transform: scale(0.94); }
+.msg-play-btn:hover  { transform: scale(1.08); }
+.msg-play-btn:active { transform: scale(0.94); }
 
-.msg-voice-play svg {
+.msg-play-btn svg {
     width: 16px;
     height: 16px;
     fill: currentColor;
     stroke: none;
     pointer-events: none;
 }
-.msg-voice-play .ico-play  { display: block; margin-left: 2px; }
-.msg-voice-play .ico-pause { display: none; }
-.msg-voice-play.playing .ico-play  { display: none; }
-.msg-voice-play.playing .ico-pause { display: block; margin-left: 0; }
+.msg-play-btn .ico-play  { display: block; margin-left: 2px; }
+.msg-play-btn .ico-pause { display: none; }
+.msg-play-btn.playing .ico-play  { display: none; }
+.msg-play-btn.playing .ico-pause { display: block; margin-left: 0; }
 
-/* ── Track : waveform + durée ── */
-.msg-voice-track {
+/* ── Zone centrale : waveform + durée ── */
+.msg-audio-center {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -248,20 +259,19 @@ html.dark .bubble-them .msg-voice-play {
 }
 
 /* ── Waveform (32 barres dynamiques) ── */
-.msg-voice-wave {
+.msg-audio-wave {
     display: flex;
     align-items: center;
     gap: 2px;
     height: 26px;
     cursor: pointer;
     position: relative;
-    /* Couleur de "lu" via currentColor */
     color: rgba(255,255,255,0.45);
 }
-.bubble-me   .msg-voice-wave { color: rgba(255,255,255,0.45); }
-.bubble-them .msg-voice-wave { color: rgba(19,109,236,0.32); }
+.bubble-me   .msg-audio-wave { color: rgba(255,255,255,0.45); }
+.bubble-them .msg-audio-wave { color: rgba(19,109,236,0.32); }
 
-.msg-voice-wave span {
+.msg-audio-wave span {
     flex: 1;
     min-width: 2px;
     max-width: 4px;
@@ -271,27 +281,27 @@ html.dark .bubble-them .msg-voice-play {
     transform-origin: center;
 }
 
-/* Bandes "déjà lues" — opaques (couleur principale) */
-.bubble-me   .msg-voice-wave span.played { background: rgba(255,255,255,0.98); }
-.bubble-them .msg-voice-wave span.played { background: var(--primary); }
+/* Bandes "déjà lues" — opaques */
+.bubble-me   .msg-audio-wave span.played { background: rgba(255,255,255,0.98); }
+.bubble-them .msg-audio-wave span.played { background: var(--primary); }
 
-/* Hover sur la waveform = barres plus visibles */
-.msg-voice-wave:hover span { transform: scaleY(1.08); }
+/* Hover sur la waveform */
+.msg-audio-wave:hover span { transform: scaleY(1.08); }
 
-/* Animation pendant la lecture (subtile) */
-.msg-voice-play.playing ~ .msg-voice-track .msg-voice-wave span.played {
+/* ── Animation "vibration passante" pendant la lecture ── */
+.msg-play-btn.playing ~ .msg-audio-center .msg-audio-wave span.played {
     animation: empVoiceBeat 1s ease-in-out infinite alternate;
 }
-.msg-voice-play.playing ~ .msg-voice-track .msg-voice-wave span.played:nth-child(3n)   { animation-delay: 0.10s; }
-.msg-voice-play.playing ~ .msg-voice-track .msg-voice-wave span.played:nth-child(3n+1) { animation-delay: 0.20s; }
-.msg-voice-play.playing ~ .msg-voice-track .msg-voice-wave span.played:nth-child(3n+2) { animation-delay: 0.05s; }
+.msg-play-btn.playing ~ .msg-audio-center .msg-audio-wave span.played:nth-child(3n)   { animation-delay: 0.10s; }
+.msg-play-btn.playing ~ .msg-audio-center .msg-audio-wave span.played:nth-child(3n+1) { animation-delay: 0.20s; }
+.msg-play-btn.playing ~ .msg-audio-center .msg-audio-wave span.played:nth-child(3n+2) { animation-delay: 0.05s; }
 @keyframes empVoiceBeat {
     from { transform: scaleY(0.85); }
     to   { transform: scaleY(1.05); }
 }
 
 /* ── Durée ── */
-.msg-voice-time {
+.msg-audio-dur {
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -299,8 +309,8 @@ html.dark .bubble-them .msg-voice-play {
     line-height: 1;
     opacity: 0.85;
 }
-.bubble-me   .msg-voice-time { color: rgba(255,255,255,0.85); }
-.bubble-them .msg-voice-time { color: var(--text-muted); }
+.bubble-me   .msg-audio-dur { color: rgba(255,255,255,0.85); }
+.bubble-them .msg-audio-dur { color: var(--text-muted); }
 
 
 /* ═══════════════════════════════════════════════════════════════
@@ -336,7 +346,7 @@ html.dark .msg-input-wrap { background:#0d1520; border-color:#1e2d42; }
 
 .msg-send-btn { width:36px; height:36px; border-radius:0.625rem; border:none; background:var(--border); color:var(--text-faint); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all 0.18s; }
 .msg-send-btn.active { background:var(--primary); color:white; box-shadow:0 2px 10px rgba(19,109,236,0.3); }
-.msg-send-btn.active:hover { transform:scale(1.06); }
+.msg-send-btn.active:hover { background:var(--primary-hover); transform:scale(1.06); }
 .msg-send-btn:disabled:not(.active) { cursor:not-allowed; opacity:0.5; }
 .msg-send-btn svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 .msg-input-hint { font-size:0.65rem; color:var(--text-faint); margin:0.4rem 0 0; }
@@ -610,7 +620,7 @@ html.dark .msg-voice-preview-bar { background: rgba(19,109,236,0.1); border-colo
     .header-title-group { flex: 1; }
     .msg-voice-recording-bar { gap: 0.5rem; padding: 0.5rem 0.75rem; }
     .msg-rec-label { display: none; }
-    .msg-voice { min-width: 200px; max-width: 240px; }
+    .msg-audio-player { min-width: 200px; }
     .emp-hamburger-btn { display: flex; }
     .employe-sidebar   { display: none; }
 }

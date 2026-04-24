@@ -22,7 +22,11 @@ html.dark .msg-sidebar { background:#060d18; }
 /* ── Header ── */
 .msg-header { background:var(--surface); border-bottom:1px solid var(--border); padding:0.6rem 1.2rem; padding-right:4.5rem; display:flex; align-items:center; gap:1.5rem; flex-shrink:0; flex-wrap:wrap; }
 html.dark .msg-header { background:rgba(16,24,34,0.9); border-bottom-color:rgba(255,255,255,0.07); }
-.msg-page-title { font-size:1.3rem; font-weight:800; color:var(--text); margin:0 0 0.15rem; letter-spacing:-0.025em; }
+.msg-page-title { font-size: 17px;
+    font-weight: 700;
+    color: var(--text, #0f172a);
+    margin: 0 0 2px;
+    letter-spacing: -0.025em;  }
 .msg-page-sub   { font-size:0.78rem; color:var(--text-muted); margin:0; }
 
 /* Connection badge */

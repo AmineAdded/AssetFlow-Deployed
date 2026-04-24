@@ -166,10 +166,10 @@ html.dark .aff-header {
 .aff-header-left { min-width: 0; }
 
 .aff-page-title {
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: var(--text);
-    margin: 0 0 0.15rem;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text, #0f172a);
+    margin: 0 0 2px;
     letter-spacing: -0.025em;
 }
 

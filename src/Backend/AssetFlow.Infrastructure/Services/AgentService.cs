@@ -66,7 +66,6 @@ namespace AssetFlow.Infrastructure.Services
 
                         if (existant != null)
                         {
-                            // Pré-remplir le proposal avec les infos du matériel existant
                             action.MaterielProposal.Reference     = existant.Reference;
                             action.MaterielProposal.Designation   = existant.Designation;
                             action.MaterielProposal.Description   = existant.Description;
@@ -75,7 +74,6 @@ namespace AssetFlow.Infrastructure.Services
                             action.MaterielProposal.QuantiteMin   = existant.QuantiteMin;
                             action.MaterielProposal.Unite         = existant.Unite;
                             action.MaterielProposal.Emplacement   = existant.Emplacement;
-                            // Marquer comme matériel existant
                             action.Label = $"exists:{existant.Id}";
                         }
                     }
@@ -147,7 +145,7 @@ namespace AssetFlow.Infrastructure.Services
 
                         var p = request.MaterielProposal;
 
-                        // ── Vérifier si référence existe déjà ────────────
+                        // ── Vérifier si référence matériel existe déjà ────────────
                         var existant = await _db.Materiels
                             .FirstOrDefaultAsync(m => m.Reference.ToLower() == p.Reference.Trim().ToLower());
 
@@ -155,12 +153,10 @@ namespace AssetFlow.Infrastructure.Services
 
                         if (existant != null)
                         {
-                            // Matériel existant → réutiliser sans re-créer
                             materielId = existant.Id;
                         }
                         else
                         {
-                            // Nouveau matériel → créer
                             var result = await _materielService.CreerAsync(new CreerMaterielDto
                             {
                                 Utilisateur   = request.Utilisateur,
@@ -180,6 +176,17 @@ namespace AssetFlow.Infrastructure.Services
                         // ── Commande associée ─────────────────────────────
                         if (p.Commande != null && !string.IsNullOrWhiteSpace(p.Commande.NumeroCommande))
                         {
+                            // ── Vérifier doublon numéro de commande ───────
+                            var doublonCmd = await _db.Commandes
+                                .FirstOrDefaultAsync(c => c.NumeroCommande.ToLower() == p.Commande.NumeroCommande.Trim().ToLower());
+
+                            if (doublonCmd != null)
+                                return new AgentApprovalResponse
+                                {
+                                    Succes  = false,
+                                    Message = $"duplicate_commande:{p.Commande.NumeroCommande}"
+                                };
+
                             var fournisseurId = p.Commande.FournisseurId;
                             if (fournisseurId == 0 && !string.IsNullOrWhiteSpace(p.Commande.NomFournisseur))
                             {
@@ -229,6 +236,18 @@ namespace AssetFlow.Infrastructure.Services
                             return Fail("Données commande manquantes.");
 
                         var p = request.CommandeProposal;
+
+                        // ── Vérifier doublon numéro de commande ───────────
+                        var doublon = await _db.Commandes
+                            .FirstOrDefaultAsync(c => c.NumeroCommande.ToLower() == p.NumeroCommande.Trim().ToLower());
+
+                        if (doublon != null)
+                            return new AgentApprovalResponse
+                            {
+                                Succes  = false,
+                                Message = $"duplicate_commande:{p.NumeroCommande}"
+                            };
+
                         var fournisseurId = p.FournisseurId;
 
                         if (fournisseurId == 0 && !string.IsNullOrWhiteSpace(p.NomFournisseur))

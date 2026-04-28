@@ -407,7 +407,20 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             };
 
             var resp = await AgentSvc.ApproveAsync(request, _username ?? "Utilisateur");
-            _isApproving        = false;
+            _isApproving = false;
+
+            // ── Cas spécial : numéro de commande en doublon ───────────────
+            // Le formulaire reste ouvert, l'erreur s'affiche inline
+            if (resp?.Succes == false && resp.Message?.StartsWith("duplicate_commande:") == true)
+            {
+                var numCmd = resp.Message["duplicate_commande:".Length..];
+                msg.FieldErrors["NumeroCommande"] = $"Ce numéro existe déjà en base. Veuillez en choisir un autre.";
+                msg.ValidationErrors.Clear();
+                msg.ValidationErrors.Add($"⚠️ Le numéro de commande « {numCmd} » existe déjà. Modifiez-le et réessayez.");
+                StateHasChanged();
+                return;  // ← on NE ferme PAS le formulaire
+            }
+
             msg.ActionProcessed = true;
 
             var resultMsg = resp?.Message ?? (approved ? "✅ Action effectuée." : "❌ Action annulée.");

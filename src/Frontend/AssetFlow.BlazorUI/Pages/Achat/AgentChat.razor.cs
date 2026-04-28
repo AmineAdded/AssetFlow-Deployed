@@ -15,6 +15,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private IJSRuntime           JS            { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage  { get; set; } = default!;
         [Inject] private StockAlertService    StockAlertSvc { get; set; } = default!;
+        [Inject] private FournisseurService FournisseurSvc { get; set; } = default!;
+        private List<FournisseurDto> _fournisseurs = new();
 
         // ── ChatMessage ─────────────────────────────────────────────
         private class ChatMessage
@@ -85,6 +87,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             catch { }
 
             await LoadInitialAlerts();
+            try { _fournisseurs = await FournisseurSvc.GetAllAsync(); }
+            catch { }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)

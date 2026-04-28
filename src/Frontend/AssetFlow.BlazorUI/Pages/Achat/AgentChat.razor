@@ -32,12 +32,24 @@
                 </button>
                 <div class="ai-topbar-brand">
                     <div class="ai-brand-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z"/>
-                            <path d="M8 12h8M12 8v8"/>
-                            <circle cx="12" cy="12" r="3" fill="currentColor" opacity=".3"/>
-                        </svg>
-                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Tête du robot -->
+                        <rect x="7" y="6" width="10" height="9" rx="2"/>
+                        <!-- Antenne -->
+                        <line x1="12" y1="3" x2="12" y2="6"/>
+                        <circle cx="12" cy="2.5" r="0.8" fill="currentColor"/>
+                        <!-- Yeux -->
+                        <circle cx="10" cy="10" r="1" fill="currentColor"/>
+                        <circle cx="14" cy="10" r="1" fill="currentColor"/>
+                        <!-- Bouche -->
+                        <path d="M10 13h4"/>
+                        <!-- Corps / cou -->
+                        <path d="M9 15v2a3 3 0 0 0 6 0v-2"/>
+                        <!-- Oreilles -->
+                        <line x1="7" y1="9" x2="5" y2="9"/>
+                        <line x1="17" y1="9" x2="19" y2="9"/>
+                    </svg>
+                </div>
                     <div>
                         <span class="ai-brand-title">AssetFlow AI</span>
                         <span class="ai-brand-sub">Agent intelligent de gestion</span>
@@ -128,11 +140,17 @@
                 <div class="ai-msg @(msg.IsUser ? "ai-msg-user" : "ai-msg-bot")">
                     @if (!msg.IsUser)
                     {
-                        <div class="ai-msg-avatar">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M8 12h8M12 8v8"/>
-                                <circle cx="12" cy="12" r="3" fill="currentColor" opacity=".3"/>
+                       <div class="ai-msg-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="7" y="6" width="10" height="9" rx="2"/>
+                                <line x1="12" y1="3" x2="12" y2="6"/>
+                                <circle cx="12" cy="2.5" r="0.8" fill="currentColor"/>
+                                <circle cx="10" cy="10" r="1" fill="currentColor"/>
+                                <circle cx="14" cy="10" r="1" fill="currentColor"/>
+                                <path d="M10 13h4"/>
+                                <path d="M9 15v2a3 3 0 0 0 6 0v-2"/>
+                                <line x1="7" y1="9" x2="5" y2="9"/>
+                                <line x1="17" y1="9" x2="19" y2="9"/>
                             </svg>
                         </div>
                     }
@@ -281,8 +299,15 @@
                                         </div>
                                         <div class="ai-form-field">
                                             <label>Fournisseur</label>
-                                            <input class="ai-inp" @bind="msg.Action.MaterielProposal.Commande.NomFournisseur"
-                                                   placeholder="Nom du fournisseur" />
+                                            <input class="ai-inp"
+                                                value="@msg.Action.MaterielProposal.Commande.NomFournisseur"
+                                                @oninput="e => msg.Action.MaterielProposal.Commande.NomFournisseur = e.Value?.ToString() ?? string.Empty"
+                                                placeholder="Nom du fournisseur"
+                                                list="fournisseur-agent-list-@msg.GetHashCode()" />
+                                            <datalist id="fournisseur-agent-list-@msg.GetHashCode()">
+                                                @foreach (var f in _fournisseurs)
+                                                { <option value="@f.Nom" /> }
+                                            </datalist>
                                         </div>
                                         <div class="ai-form-field">
                                             <label>Quantité *</label>
@@ -354,7 +379,15 @@
                                         </div>
                                         <div class="ai-form-field">
                                             <label>Fournisseur</label>
-                                            <input class="ai-inp" @bind="msg.Action.CommandeProposal.NomFournisseur" />
+                                            <input class="ai-inp"
+                                                value="@msg.Action.CommandeProposal.NomFournisseur"
+                                                @oninput="e => msg.Action.CommandeProposal.NomFournisseur = e.Value?.ToString() ?? string.Empty"
+                                                placeholder="Nom du fournisseur"
+                                                list="fournisseur-agent-cmd-list-@msg.GetHashCode()" />
+                                            <datalist id="fournisseur-agent-cmd-list-@msg.GetHashCode()">
+                                                @foreach (var f in _fournisseurs)
+                                                { <option value="@f.Nom" /> }
+                                            </datalist>
                                         </div>
                                         <div class="ai-form-field">
                                             <label>Quantité *</label>
@@ -491,10 +524,17 @@
             {
                 <div class="ai-msg ai-msg-bot">
                     <div class="ai-msg-avatar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M8 12h8M12 8v8"/>
-                        </svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="7" y="6" width="10" height="9" rx="2"/>
+                        <line x1="12" y1="3" x2="12" y2="6"/>
+                        <circle cx="12" cy="2.5" r="0.8" fill="currentColor"/>
+                        <circle cx="10" cy="10" r="1" fill="currentColor"/>
+                        <circle cx="14" cy="10" r="1" fill="currentColor"/>
+                        <path d="M10 13h4"/>
+                        <path d="M9 15v2a3 3 0 0 0 6 0v-2"/>
+                        <line x1="7" y1="9" x2="5" y2="9"/>
+                        <line x1="17" y1="9" x2="19" y2="9"/>
+                    </svg>
                     </div>
                     <div class="ai-msg-content-wrap">
                         <div class="ai-msg-bubble ai-thinking">

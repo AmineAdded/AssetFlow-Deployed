@@ -197,14 +197,19 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
         public async Task<AgentMaterielProposal> GenerateMaterielProposalAsync(AlerteStock alerte)
         {
             var groqKey = _config["GroqApiKey"];
-            
+
+            // Quantité à commander : ce qui manque pour dépasser le seuil minimum
+            var quantiteACommander = alerte.QuantiteMin - alerte.QuantiteStock > 0
+                ? alerte.QuantiteMin - alerte.QuantiteStock
+                : 1;
+
             // Proposition par défaut
             var defaultProposal = new AgentMaterielProposal
             {
                 Reference     = $"REAPRO-{alerte.Reference}",
                 Designation   = $"{alerte.Designation} (réapprovisionnement)",
                 Categorie     = alerte.Categorie,
-                QuantiteStock = alerte.QuantiteMin * 3,
+                QuantiteStock = alerte.QuantiteMin + 1,
                 QuantiteMin   = alerte.QuantiteMin,
                 Unite         = "pièce",
                 Description   = $"Réapprovisionnement automatique pour {alerte.Designation}",
@@ -213,7 +218,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
                     NumeroCommande  = $"CMD-{DateTime.UtcNow:yyyy}-REAPRO-{alerte.Reference}-{DateTime.UtcNow:MMdd}",
                     MaterielId      = alerte.MaterielId,
                     NomMateriel     = alerte.Designation,
-                    QuantiteAchetee = alerte.QuantiteMin * 3,
+                    QuantiteAchetee = quantiteACommander,
                     DateAchat       = DateTime.UtcNow
                 }
             };
@@ -238,7 +243,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
   ""designation"": ""{alerte.Designation}"",
   ""description"": ""Description courte"",
   ""categorie"": ""{alerte.Categorie}"",
-  ""quantiteStock"": {alerte.QuantiteMin * 3},
+  ""quantiteStock"": {alerte.QuantiteMin + 1},
   ""quantiteMin"": {alerte.QuantiteMin},
   ""unite"": ""pièce"",
   ""commande"": {{
@@ -247,7 +252,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
     ""nomMateriel"": ""{alerte.Designation}"",
     ""nomFournisseur"": """",
     ""fournisseurId"": 0,
-    ""quantiteAchetee"": {alerte.QuantiteMin * 3},
+    ""quantiteAchetee"": {quantiteACommander},
     ""dateAchat"": ""{DateTime.UtcNow:yyyy-MM-dd}"",
     ""dateLivraison"": ""{DateTime.UtcNow.AddDays(14):yyyy-MM-dd}"",
     ""dateFinGarantie"": null

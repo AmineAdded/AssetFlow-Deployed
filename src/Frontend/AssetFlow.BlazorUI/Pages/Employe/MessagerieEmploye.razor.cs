@@ -15,6 +15,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         [Inject] private HttpClient           Http         { get; set; } = default!;
         [Inject] private IJSRuntime           JS           { get; set; } = default!;
+        [Inject] private UnreadMessagesService UnreadSvc   { get; set; } = default!;
 
         private int  CurrentUserId     = 0;
         private bool _hubConnected     = false;
@@ -58,6 +59,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             await LoadITUsersAsync();
             await ConnectHubAsync();
         }
+
         private async Task ConnectHubAsync()
         {
             try
@@ -81,11 +83,11 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                             if (msg.SenderId != CurrentUserId)
                             {
                                 Messages.Add(msg);
+                                // Lu immédiatement car conversation ouverte
                                 await MarkMessagesAsReadAsync(msg.SenderId);
                             }
                             else
                             {
-                                // Mise à jour du message optimiste (texte ou vocal)
                                 var opt = Messages.LastOrDefault(m => m.SenderId == CurrentUserId && m.Id < 0);
                                 if (opt != null)
                                 {
@@ -95,6 +97,12 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                                 }
                             }
                         }
+                        else if (msg.ReceiverId == CurrentUserId && msg.SenderId != CurrentUserId)
+                        {
+                            // Conversation non ouverte → incrémenter le badge
+                            UnreadSvc.Increment();
+                        }
+
                         UpdateITWithMessage(msg);
                         StateHasChanged();
                         await ScrollToBottomAsync();
@@ -183,6 +191,10 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                         it.UnreadCount     = s.UnreadCount;
                     }
                 }
+
+                // Synchroniser le service singleton avec le total réel
+                var totalUnread = ITUsers.Sum(u => u.UnreadCount);
+                UnreadSvc.Set(totalUnread);
             }
             catch { }
 
@@ -195,8 +207,15 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         {
             SelectedIT        = it;
             _conversationOpen = true;
-            it.UnreadCount    = 0;
-            LoadingMessages   = true;
+
+            // Décrémenter le badge du nombre de non-lus de cet agent
+            if (it.UnreadCount > 0)
+            {
+                UnreadSvc.Decrement(it.UnreadCount);
+                it.UnreadCount = 0;
+            }
+
+            LoadingMessages = true;
             StateHasChanged();
 
             Messages = await MsgSvc.GetHistoryAsync(CurrentUserId, it.Id);
@@ -311,7 +330,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             var receiverId = SelectedIT.Id;
             var duration   = (int)Math.Min(_recordingSeconds, MaxVoiceSeconds);
 
-            // Message optimiste affiché immédiatement
             var optimistic = new ChatMessageDto
             {
                 Id                   = -(Messages.Count + 1),
@@ -331,11 +349,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             StateHasChanged();
             await ScrollToBottomAsync();
 
-            // Envoi via Hub
-            try
-            {
-                await _hub.SendAsync("SendVoiceMessage", CurrentUserId, receiverId, base64, duration);
-            }
+            try { await _hub.SendAsync("SendVoiceMessage", CurrentUserId, receiverId, base64, duration); }
             catch (Exception ex) { Console.WriteLine($"Erreur envoi vocal: {ex.Message}"); }
         }
 
@@ -344,6 +358,21 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             var m = (int)secs / 60;
             var s = (int)secs % 60;
             return $"{m}:{s:D2}";
+        }
+
+// ── Hauteur déterministe d'une barre de la waveform (0..100) ──────────
+        // Identique à l'Achat : assure des barres stables entre les rendus.
+        private static int GetBarHeight(int msgId, int index)
+        {
+            unchecked
+            {
+                var h = (uint)(msgId * 9176 + index * 374761393);
+                h ^= (h >> 13);
+                h *= 1274126177;
+                h ^= (h >> 16);
+                // Plage 25..100 % pour rester lisible
+                return 25 + (int)(h % 76u);
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -383,7 +412,6 @@ namespace AssetFlow.BlazorUI.Pages.Employe
             var otherId = msg.SenderId == CurrentUserId ? msg.ReceiverId : msg.SenderId;
             var it = ITUsers.FirstOrDefault(u => u.Id == otherId);
             if (it == null) return;
-            // Prévisualisation : vocal → emoji, texte → contenu
             it.LastMessage     = msg.IsVoice ? "🎤 Message vocal" : msg.Content;
             it.LastMessageTime = msg.SentAt;
             if (msg.SenderId != CurrentUserId && SelectedIT?.Id != otherId)

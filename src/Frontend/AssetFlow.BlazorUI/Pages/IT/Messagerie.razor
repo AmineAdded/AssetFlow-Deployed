@@ -148,13 +148,13 @@
                         <div class="msg-chat-info">
                             <p class="msg-chat-name">@SelectedConv.FullName</p>
                             <p class="msg-chat-status">
-                                @if (SelectedConv.IsOnline)
-                                {
-                                    <span class="msg-status-online"><span class="msg-dot-green"></span>En ligne</span>
-                                }
-                                else if (SelectedConv.IsTyping)
+                                @if (SelectedConv.IsTyping)
                                 {
                                     <span class="msg-status-typing">est en train d'écrire<span class="msg-typing-dots"><span></span><span></span><span></span></span></span>
+                                }
+                                else if (SelectedConv.IsOnline)
+                                {
+                                    <span class="msg-status-online"><span class="msg-dot-green"></span>En ligne</span>
                                 }
                                 else
                                 {
@@ -192,28 +192,40 @@
                                         {
                                             <div class="msg-bubble-avatar">@SelectedConv.Initials</div>
                                         }
-                                        <div class="msg-bubble @(isMe ? "bubble-me" : "bubble-them")">
+                                        <div class="msg-bubble @(isMe ? "bubble-me" : "bubble-them") @(msg.IsVoice ? "is-voice" : "")">
 
-                                            @* ── CORRECTION : utiliser msg.IsVoice au lieu de msg.Content.StartsWith("[VOICE]") ── *@
+                                            @* ── Vocal (style Achat — waveform progressive cliquable) ── *@
                                             @if (msg.IsVoice)
                                             {
-                                                @* ── Audio player ── *@
-                                                <div class="msg-audio-player">
-                                                    <button class="msg-play-btn"
-                                                            onclick="playVoiceMessage(this, '@msg.AudioData')">
-                                                        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                                var audioId = $"audio-{msg.Id}";
+                                                <div class="msg-voice" id="@($"voice-{msg.Id}")">
+                                                    <button type="button"
+                                                            class="msg-voice-play"
+                                                            onclick="@($"toggleVoice('{audioId}', this)")"
+                                                            aria-label="Lire le message vocal">
+                                                        <svg class="ico-play"  viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path d="M8 5.5v13a1 1 0 0 0 1.55.83l10-6.5a1 1 0 0 0 0-1.66l-10-6.5A1 1 0 0 0 8 5.5z"/>
+                                                        </svg>
+                                                        <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <rect x="6"  y="5" width="4" height="14" rx="1.5"/>
+                                                            <rect x="14" y="5" width="4" height="14" rx="1.5"/>
+                                                        </svg>
                                                     </button>
-                                                    <div class="msg-audio-center">
-                                                        <div class="msg-audio-wave">
-                                                            <span></span><span></span><span></span>
-                                                            <span></span><span></span><span></span>
-                                                            <span></span><span></span><span></span>
-                                                            <span></span><span></span><span></span>
+
+                                                    <div class="msg-voice-track">
+                                                        <div class="msg-voice-wave" data-progress="0">
+                                                            @for (int i = 0; i < 32; i++)
+                                                            {
+                                                                <span style="height:@(GetBarHeight(msg.Id, i))%"></span>
+                                                            }
                                                         </div>
-                                                        <span class="msg-audio-dur">
+                                                        <span class="msg-voice-time">
                                                             @(msg.AudioDurationSeconds > 0 ? FormatRecordTime(msg.AudioDurationSeconds) : "0:00")
                                                         </span>
                                                     </div>
+
+                                                    <audio id="@audioId" preload="metadata"
+                                                           src="data:audio/webm;base64,@msg.AudioData"></audio>
                                                 </div>
                                             }
                                             else
@@ -225,14 +237,21 @@
                                                 <span class="msg-bubble-time">@msg.SentAt.ToString("HH:mm")</span>
                                                 @if (isMe)
                                                 {
-                                                    <span class="msg-read-status" title="@(msg.IsRead ? "Vu" : "Envoyé")">
+                                                    <span class="msg-read-status">
                                                         @if (msg.IsRead)
                                                         {
-                                                            <svg class="msg-check-icon seen" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/><path d="M16 6 8 14" opacity="0.5"/></svg>
+                                                            @* ── Double tick : LU (style WhatsApp pro) ── *@
+                                                            <svg class="msg-ticks ticks-read animate" viewBox="0 0 18 12" aria-label="Lu">
+                                                                <path d="M1 6.5 L4.5 10 L10.5 2"  stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                                                <path d="M6 6.5 L9.5 10 L17  2"  stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                                            </svg>
                                                         }
                                                         else
                                                         {
-                                                            <svg class="msg-check-icon sent" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                                                            @* ── Simple tick : ENVOYÉ ── *@
+                                                            <svg class="msg-ticks ticks-sent" viewBox="0 0 14 12" aria-label="Envoyé">
+                                                                <path d="M1 6.5 L5 10.5 L13 2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                                            </svg>
                                                         }
                                                     </span>
                                                 }

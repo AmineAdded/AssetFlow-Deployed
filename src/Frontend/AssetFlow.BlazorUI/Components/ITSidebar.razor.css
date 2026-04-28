@@ -192,3 +192,16 @@ html.dark .aff-sidebar {
         display: block;
     }
 }
+.sidebar-badge-rouge{
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    margin-left: auto;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.6;
+    flex-shrink: 0;
+}

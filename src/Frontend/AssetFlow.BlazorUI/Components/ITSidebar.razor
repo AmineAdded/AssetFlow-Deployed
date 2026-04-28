@@ -73,7 +73,6 @@
             <span class="aff-nav-text">Mes achats</span>
         </a>
 
-        @* ── Biographie des articles ── *@
         <a href="/it/biographie" class="aff-nav-link @(ActivePage=="biographie" ? "active" : "")" @onclick="CloseDrawer">
             <svg class="aff-nav-icon" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/>
@@ -82,11 +81,16 @@
             <span class="aff-nav-text">Biographie</span>
         </a>
 
+        @* ── MESSAGERIE avec badge non lus ── *@
         <a href="/it/messagerie" class="aff-nav-link @(ActivePage=="messagerie" ? "active" : "")" @onclick="CloseDrawer">
             <svg class="aff-nav-icon" viewBox="0 0 24 24">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span class="aff-nav-text">Messagerie</span>
+            @if (UnreadSvc.UnreadCount > 0)
+            {
+                <span class="sidebar-badge-rouge">@(UnreadSvc.UnreadCount > 99 ? "99+" : UnreadSvc.UnreadCount.ToString())</span>
+            }
         </a>
 
         <a href="/it/commentaires" class="aff-nav-link @(ActivePage=="commentaires" ? "active" : "")" @onclick="CloseDrawer">

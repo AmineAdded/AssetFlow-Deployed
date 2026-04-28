@@ -143,3 +143,16 @@ html.dark .employe-sidebar { background: #060d18; }
     .nav-text        { font-size: 0.875rem; }
     .sidebar-profile { display: flex; }
 }
+.sidebar-badge-rouge{
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    margin-left: auto;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.6;
+    flex-shrink: 0;
+}

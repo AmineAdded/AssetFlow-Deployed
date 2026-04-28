@@ -27,11 +27,17 @@
             </svg>
             <span class="nav-text">Signaler un Incident</span>
         </a>
+
+        @* ── MESSAGERIE avec badge non lus ── *@
         <a href="/employe/messagerie" class="nav-link @(ActivePage == "messagerie" ? "active" : "")" @onclick="() => _drawerOpen = false">
             <svg class="nav-icon" viewBox="0 0 24 24">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
             <span class="nav-text">Messagerie</span>
+            @if (UnreadSvc.UnreadCount > 0)
+            {
+                <span class="sidebar-badge-rouge">@(UnreadSvc.UnreadCount > 99 ? "99+" : UnreadSvc.UnreadCount.ToString())</span>
+            }
         </a>
     </nav>
 

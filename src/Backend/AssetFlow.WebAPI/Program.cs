@@ -148,6 +148,10 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IConnectionTracker, ConnectionTracker>(); // Singleton obligatoire !
 builder.Services.AddScoped<IChatOffreService, ChatOffreService>();
 builder.Services.AddScoped<IOffreSelectionService, OffreSelectionService>();
+builder.Services.AddScoped<IWebSearchAgentService,    WebSearchAgentService>();
+builder.Services.AddScoped<IDatabaseAgentService,     DatabaseAgentService>();
+builder.Services.AddScoped<IOrchestratorAgentService, OrchestratorAgentService>();
+builder.Services.AddScoped<IAgentService, AgentService>();
 builder.Services.AddScoped<IDashboardNotifier>(sp =>
 {
     var hub = sp.GetRequiredService<IHubContext<DashboardHub>>();

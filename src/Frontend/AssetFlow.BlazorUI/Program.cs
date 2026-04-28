@@ -64,6 +64,7 @@ builder.Services.AddScoped<AuditLogService>();
 builder.Services.AddScoped<ArticleBiographieClientService>();
 builder.Services.AddScoped<GraphService>();
 builder.Services.AddScoped<AgentChatService>();
+builder.Services.AddSingleton<StockAlertService>();
 // Singleton : une seule instance partagée pour toute la durée de vie de l'app
 builder.Services.AddSingleton<UnreadMessagesService>();
 

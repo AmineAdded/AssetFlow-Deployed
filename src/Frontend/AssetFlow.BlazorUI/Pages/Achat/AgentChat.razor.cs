@@ -5,14 +5,16 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using System.Text.RegularExpressions;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
     public partial class AgentChat : ComponentBase
     {
-        [Inject] private AgentChatService  AgentSvc     { get; set; } = default!;
-        [Inject] private IJSRuntime        JS           { get; set; } = default!;
-        [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
+        [Inject] private AgentChatService     AgentSvc      { get; set; } = default!;
+        [Inject] private IJSRuntime           JS            { get; set; } = default!;
+        [Inject] private ILocalStorageService LocalStorage  { get; set; } = default!;
+        [Inject] private StockAlertService    StockAlertSvc { get; set; } = default!;
 
         // ── ChatMessage ─────────────────────────────────────────────
         private class ChatMessage
@@ -24,15 +26,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             public bool          ActionProcessed { get; set; }
             public DateTime      Timestamp       { get; set; } = DateTime.Now;
 
-            // Infos du matériel pour le formulaire add_article
             public AgentMaterielInfo? MaterielInfo { get; set; }
 
-            // Erreurs de validation inline
-            public List<string>            ValidationErrors { get; set; } = new();
-            public Dictionary<string,string> FieldErrors    { get; set; } = new();
+            public List<string>              ValidationErrors { get; set; } = new();
+            public Dictionary<string,string> FieldErrors      { get; set; } = new();
         }
 
-        // Infos matériel pour affichage lecture seule dans add_article
         private class AgentMaterielInfo
         {
             public string  Reference     { get; set; } = string.Empty;
@@ -53,7 +52,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private bool    _isApproving  = false;
         private bool    _showAlertes  = true;
         private bool    _sidebarOpen  = false;
-        private bool    _chatStarted  = false; // true dès que l'user envoie un message
+        private bool    _chatStarted  = false;
         private string  _initiales    = "U";
         private string? _username     = "Utilisateur";
         private string? _role         = "EquipeAchat";
@@ -101,8 +100,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _alertes     = resp.Alertes;
             _showAlertes = _alertes.Count > 0;
 
-            // Message d'alerte affiché dans le chat UNIQUEMENT si le chat a déjà démarré
-            // Au premier chargement on ne l'ajoute pas (les alertes sont dans la barre sticky)
+            // Mettre à jour le service singleton
+            StockAlertSvc.Set(_alertes.Count);
+
             if (_chatStarted && !string.IsNullOrEmpty(resp.Message))
             {
                 _messages.Add(new ChatMessage
@@ -121,7 +121,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             var text = _inputText.Trim();
             if (string.IsNullOrEmpty(text) || _isLoading) return;
 
-            // Marquer le chat comme démarré → les suggestions disparaissent
             _chatStarted = true;
 
             _messages.Add(new ChatMessage { IsUser = true, Content = text });
@@ -151,17 +150,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                     Timestamp  = DateTime.Now
                 };
 
-                // Pour add_article : essayer de récupérer les infos du matériel
                 if (resp.Action?.Type == "add_article" && resp.Action.ArticleProposal != null)
-                {
                     botMsg.MaterielInfo = BuildMaterielInfoFromContext(resp.Action.ArticleProposal.NomMateriel);
-                }
 
-                // Pour add_materiel avec matériel existant : initialiser les numéros de série
                 if (resp.Action?.Type == "add_materiel" && resp.Action.MaterielProposal?.Commande != null)
-                {
                     AjusterArticlesCommande(resp.Action.MaterielProposal.Commande);
-                }
 
                 _messages.Add(botMsg);
                 _history.Add(new AgentChatHistory { Role = "assistant", Content = resp.Message });
@@ -193,7 +186,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             if (msg.Action == null) return;
 
-            // Validation avant envoi
             if (approved)
             {
                 msg.ValidationErrors.Clear();
@@ -232,10 +224,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 Timestamp  = DateTime.Now
             });
 
-            // Si Commander depuis alerte et succès → retirer l'alerte de la barre
-            if (resp?.Succes == true && msg.Action.Type == "add_materiel")
+            // Si succès → recharger les alertes et mettre à jour le compteur global
+            if (resp?.Succes == true)
             {
-                // Retirer l'alerte correspondante
                 var refConcernee = msg.Action.MaterielProposal?.Reference;
                 if (!string.IsNullOrEmpty(refConcernee))
                 {
@@ -243,7 +234,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         a.Reference.Equals(refConcernee, StringComparison.OrdinalIgnoreCase));
                     if (_alertes.Count == 0) _showAlertes = false;
                 }
-                // Recharger les alertes complètes depuis l'API
                 await LoadInitialAlerts();
             }
 
@@ -259,7 +249,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             if (msg.Action.Type == "add_materiel" && msg.Action.MaterielProposal != null)
             {
-                var p = msg.Action.MaterielProposal;
+                var p          = msg.Action.MaterielProposal;
                 var isExisting = msg.Action.Label?.StartsWith("exists:") == true;
 
                 if (!isExisting)
@@ -281,7 +271,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 }
                 else
                 {
-                    // Pas de commande → erreur car on en a toujours besoin
                     msg.ValidationErrors.Add("Une commande associée est requise.");
                     ok = false;
                 }
@@ -306,13 +295,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
 
             if (!ok && msg.FieldErrors.Count > 0)
-            {
                 msg.ValidationErrors.Add("Veuillez corriger les erreurs ci-dessous.");
-            }
+
             return ok;
         }
 
-        // ── Ajuster les numéros de série selon la quantité ─────────
+        // ── Ajuster les numéros de série ───────────────────────────
         private void AjusterArticlesMsg(ChatMessage msg)
         {
             if (msg.Action?.MaterielProposal?.Commande == null) return;
@@ -335,11 +323,9 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             while (p.NumerosSerie.Count > p.QuantiteAchetee) p.NumerosSerie.RemoveAt(p.NumerosSerie.Count - 1);
         }
 
-        // ── Construire les infos matériel depuis le contexte ───────
         private AgentMaterielInfo? BuildMaterielInfoFromContext(string nomMateriel)
         {
             if (string.IsNullOrEmpty(nomMateriel)) return null;
-            // Chercher dans les alertes existantes
             var alerte = _alertes.FirstOrDefault(a =>
                 a.Designation.Equals(nomMateriel, StringComparison.OrdinalIgnoreCase) ||
                 a.Reference.Equals(nomMateriel, StringComparison.OrdinalIgnoreCase));
@@ -357,14 +343,12 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             return new AgentMaterielInfo { Designation = nomMateriel };
         }
 
-        // ── Ouvrir proposition depuis alerte ───────────────────────
         private void OpenAlertProposal(AlerteStock alerte)
         {
             if (alerte.Proposition == null) return;
 
             _chatStarted = true;
 
-            // S'assurer que la commande est initialisée
             if (alerte.Proposition.Commande == null)
                 alerte.Proposition.Commande = new AgentCommandeProposal();
             AjusterArticlesCommande(alerte.Proposition.Commande);
@@ -383,7 +367,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 Timestamp = DateTime.Now
             });
 
-            // NE PAS cacher la barre d'alertes — elle reste visible jusqu'à clôture ou traitement
             StateHasChanged();
         }
 
@@ -447,12 +430,37 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             _                => "Agent IA"
         };
 
+        /// <summary>
+        /// Transforme le Markdown en HTML, y compris les liens cliquables.
+        /// </summary>
         private static string FormatMessage(string text)
         {
             if (string.IsNullOrEmpty(text)) return string.Empty;
-            text = System.Text.RegularExpressions.Regex.Replace(text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
-            text = System.Text.RegularExpressions.Regex.Replace(text, @"\*(.+?)\*", "<em>$1</em>");
-            text = System.Text.RegularExpressions.Regex.Replace(text, @"`(.+?)`", "<code>$1</code>");
+
+            // Liens Markdown [texte](url) → <a href="url" target="_blank">texte</a>
+            text = Regex.Replace(text,
+                @"\[([^\]]+)\]\((https?://[^\)]+)\)",
+                "<a href=\"$2\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"ai-link\">$1</a>");
+
+            // Gras
+            text = Regex.Replace(text, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+            // Italique
+            text = Regex.Replace(text, @"\*(.+?)\*", "<em>$1</em>");
+            // Code inline
+            text = Regex.Replace(text, @"`(.+?)`", "<code>$1</code>");
+
+            // Titres ## Sources → section mise en valeur
+            text = Regex.Replace(text,
+                @"^## (.+)$",
+                "<div class=\"ai-sources-title\">$1</div>",
+                RegexOptions.Multiline);
+
+            // Listes à puce (- item)
+            text = Regex.Replace(text,
+                @"^- (.+)$",
+                "<div class=\"ai-list-item\">$1</div>",
+                RegexOptions.Multiline);
+
             text = text.Replace("\n", "<br/>");
             return text;
         }

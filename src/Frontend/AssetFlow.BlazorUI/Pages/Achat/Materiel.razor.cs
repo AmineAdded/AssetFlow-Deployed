@@ -397,8 +397,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 {
                     if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
                         _erreursCommande["NumeroCommande"] = "Obligatoire.";
-                    if (string.IsNullOrWhiteSpace(_formCommande.NomFournisseurLibre))
-                        _erreursCommande["Fournisseur"] = "Obligatoire.";
+                    
                     if (_formCommande.QuantiteAchetee <= 0)
                         _erreursCommande["Quantite"] = "Doit être > 0.";
                     if (_formCommande.DateLivraison.HasValue && _formCommande.DateLivraison.Value <= _formCommande.DateAchat)
@@ -419,8 +418,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 }
                 if (string.IsNullOrWhiteSpace(_formCommande.NumeroCommande))
                     _erreursCommande["NumeroCommande"] = "Obligatoire.";
-                if (string.IsNullOrWhiteSpace(_formCommande.NomFournisseurLibre))
-                    _erreursCommande["Fournisseur"] = "Obligatoire.";
+                
                 if (_formCommande.QuantiteAchetee <= 0)
                     _erreursCommande["Quantite"] = "Doit être > 0.";
                 if (_formCommande.DateLivraison.HasValue && _formCommande.DateLivraison.Value <= _formCommande.DateAchat)
@@ -559,8 +557,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
             if (string.IsNullOrWhiteSpace(_formModifCommande.NumeroCommande))
                 _erreursModifCommande["NumeroCommande"] = "Obligatoire.";
-            if (string.IsNullOrWhiteSpace(_formModifCommande.NomFournisseurLibre))
-                _erreursModifCommande["Fournisseur"] = "Obligatoire.";
+          
             if (_formModifCommande.DateLivraison.HasValue && _formModifCommande.DateLivraison.Value <= _formModifCommande.DateAchat)
                 _erreursModifCommande["DateLivraison"] = "La date de livraison doit être supérieure à la date d'achat.";
 

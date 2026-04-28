@@ -4,6 +4,7 @@ namespace AssetFlow.Application.DTOs
     {
         public string Utilisateur { get; set; } = string.Empty;
         public string NumeroCommande { get; set; } = string.Empty;
+        public string NomFournisseurLibre { get; set; } = string.Empty;
         public int MaterielId { get; set; }
         public int FournisseurId { get; set; }
         public int QuantiteAchetee { get; set; }

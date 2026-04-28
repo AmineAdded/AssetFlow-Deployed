@@ -372,7 +372,7 @@
                             @if (_erreursCommande.TryGetValue("NumeroCommande", out var enc)) { <span class="sk-err-msg">@enc</span> }
                         </div>
                         <div class="sk-field">
-                            <label class="sk-label">Fournisseur <span class="req">*</span></label>
+                            <label class="sk-label">Fournisseur</label>
                             <input class="sk-inp @(_erreursCommande.ContainsKey("Fournisseur") ? "inp-err" : "")"
                                    value="@_formCommande.NomFournisseurLibre"
                                    @oninput="OnFournisseurInput"

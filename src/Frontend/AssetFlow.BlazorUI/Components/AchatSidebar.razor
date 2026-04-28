@@ -1,3 +1,4 @@
+@* src/Frontend/AssetFlow.BlazorUI/Components/AchatSidebar.razor *@
 @* Sidebar réutilisable pour toutes les pages Achat *@
 
 @using AssetFlow.BlazorUI.Components
@@ -65,12 +66,16 @@
                 <span class="sidebar-badge-rouge">@(_unreadMessages > 99 ? "99+" : _unreadMessages.ToString())</span>
             }
         </a>
-            <a href="/agent-chat" class="achat-nav-link @(ActivePage=="agent" ? "active" : "")">
-        <span class="achat-nav-icon">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
-        </span>
-        <span class="achat-nav-text">Agent IA</span>
-    </a>
+        <a href="/agent-chat" class="achat-nav-link @(ActivePage=="agent" ? "active" : "")" @onclick="() => _drawerOpen = false">
+            <span class="achat-nav-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+            </span>
+            <span class="achat-nav-text">Agent IA</span>
+            @if (_stockAlertCount > 0)
+            {
+                <span class="sidebar-badge-orange" title="@_stockAlertCount alerte(s) de stock">@_stockAlertCount</span>
+            }
+        </a>
     </nav>
 
     <div class="achat-sidebar-profile">

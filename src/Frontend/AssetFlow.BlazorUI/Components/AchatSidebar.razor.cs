@@ -1,3 +1,4 @@
+// src/Frontend/AssetFlow.BlazorUI/Components/AchatSidebar.razor.cs
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using AssetFlow.BlazorUI.Services;
@@ -9,12 +10,14 @@ namespace AssetFlow.BlazorUI.Components
 {
     public partial class AchatSidebar : ComponentBase, IAsyncDisposable
     {
-        [Inject] private IJSRuntime            JS             { get; set; } = default!;
+        [Inject] private IJSRuntime            JS              { get; set; } = default!;
         [Inject] private DemandeAchatService   DemandeAchatSvc { get; set; } = default!;
-        [Inject] private UnreadMessagesService UnreadSvc      { get; set; } = default!;
-        [Inject] private MessagerieService     MsgSvc         { get; set; } = default!;
-        [Inject] private ILocalStorageService  LocalStorage   { get; set; } = default!;
-        [Inject] private HttpClient            Http           { get; set; } = default!;
+        [Inject] private UnreadMessagesService UnreadSvc       { get; set; } = default!;
+        [Inject] private MessagerieService     MsgSvc          { get; set; } = default!;
+        [Inject] private ILocalStorageService  LocalStorage    { get; set; } = default!;
+        [Inject] private HttpClient            Http            { get; set; } = default!;
+        [Inject] private StockAlertService     StockAlertSvc   { get; set; } = default!;
+        [Inject] private AgentChatService      AgentSvc        { get; set; } = default!;
 
         [Parameter] public string ActivePage { get; set; } = string.Empty;
         [Parameter] public bool   ForceOpen  { get; set; } = false;
@@ -24,6 +27,9 @@ namespace AssetFlow.BlazorUI.Components
 
         // ── Messagerie IT non lus ──
         private int    _unreadMessages => UnreadSvc.UnreadCount;
+
+        // ── Alertes de stock ──
+        private int    _stockAlertCount => StockAlertSvc.AlertCount;
 
         private bool   _drawerOpen      = false;
         private string _nomUtilisateur  = "Agent Achat";
@@ -66,8 +72,12 @@ namespace AssetFlow.BlazorUI.Components
             _nombreNonVus = await DemandeAchatSvc.GetCountNonVusAsync();
             await RefreshUnreadMessagesAsync();
 
-            // ── Abonnement au service singleton (changements déclenchés par MessagerieIT) ──
-            UnreadSvc.OnChanged += OnUnreadChanged;
+            // ── Charger le compteur d'alertes de stock si pas encore chargé ──
+            await RefreshStockAlertsAsync();
+
+            // ── Abonnements aux services singletons ──
+            UnreadSvc.OnChanged    += OnUnreadChanged;
+            StockAlertSvc.OnChanged += OnStockAlertChanged;
 
             // ── Connexions SignalR ──
             await ConnecterDashboardHubAsync();
@@ -77,6 +87,18 @@ namespace AssetFlow.BlazorUI.Components
         protected override void OnParametersSet()
         {
             if (ForceOpen) _drawerOpen = true;
+        }
+
+        // ── Chargement des alertes de stock ─────────────────────────────────
+        private async Task RefreshStockAlertsAsync()
+        {
+            try
+            {
+                var resp = await AgentSvc.GetInitialAlertsAsync();
+                if (resp != null)
+                    StockAlertSvc.Set(resp.Alertes.Count);
+            }
+            catch { }
         }
 
         // ── Chargement initial du compteur de messages non lus ────────────────
@@ -115,7 +137,11 @@ namespace AssetFlow.BlazorUI.Components
                 try { await _hubDashboard.InvokeAsync("JoinDashboard"); } catch { }
                 await InvokeAsync(async () =>
                 {
-                    try { _nombreNonVus = await DemandeAchatSvc.GetCountNonVusAsync(); }
+                    try
+                    {
+                        _nombreNonVus = await DemandeAchatSvc.GetCountNonVusAsync();
+                        await RefreshStockAlertsAsync();
+                    }
                     catch { }
                     finally { StateHasChanged(); }
                 });
@@ -125,7 +151,11 @@ namespace AssetFlow.BlazorUI.Components
             {
                 await InvokeAsync(async () =>
                 {
-                    try { _nombreNonVus = await DemandeAchatSvc.GetCountNonVusAsync(); }
+                    try
+                    {
+                        _nombreNonVus = await DemandeAchatSvc.GetCountNonVusAsync();
+                        await RefreshStockAlertsAsync();
+                    }
                     catch { }
                     finally { StateHasChanged(); }
                 });
@@ -184,15 +214,21 @@ namespace AssetFlow.BlazorUI.Components
             catch { }
         }
 
-        // ── Callback du service singleton ─────────────────────────────────────
+        // ── Callbacks des services singletons ─────────────────────────────────
         private void OnUnreadChanged()
+        {
+            InvokeAsync(StateHasChanged);
+        }
+
+        private void OnStockAlertChanged()
         {
             InvokeAsync(StateHasChanged);
         }
 
         public async ValueTask DisposeAsync()
         {
-            UnreadSvc.OnChanged -= OnUnreadChanged;
+            UnreadSvc.OnChanged     -= OnUnreadChanged;
+            StockAlertSvc.OnChanged -= OnStockAlertChanged;
 
             if (_hubDashboard is not null)
             {

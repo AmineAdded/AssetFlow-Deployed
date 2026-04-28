@@ -729,3 +729,67 @@ html.dark .ai-alertes-bar {
     .ai-topbar-right .ai-clear-btn span { display: none; }
     .ai-clear-btn { padding: .4rem .55rem; }
 }
+/* ── Ajouts au fichier AgentChat.razor.css ── */
+
+/* ══════════════════════════════════════════
+   LIENS MARKDOWN (résultats web)
+══════════════════════════════════════════ */
+.ai-link {
+    color: #136dec;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-all;
+    transition: color .15s;
+}
+.ai-link:hover {
+    color: #0f5cc7;
+}
+
+/* Section "## Sources" */
+.ai-sources-title {
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin: .75rem 0 .3rem;
+    padding-top: .65rem;
+    border-top: 1px solid var(--border);
+}
+
+/* Items de liste dans les réponses */
+.ai-list-item {
+    padding: .15rem 0 .15rem .85rem;
+    position: relative;
+    font-size: .875rem;
+    line-height: 1.6;
+}
+.ai-list-item::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════════
+   TOPBAR — décalage des boutons Prêt / Nouveau
+   pour éviter la superposition avec le bouton
+   dark mode (fixe à droite)
+══════════════════════════════════════════ */
+.ai-topbar-right {
+    /* Ajout d'un margin-right pour laisser de la place au bouton dark mode */
+    margin-right: 52px;
+}
+
+/* Sur mobile, réduire si peu de place */
+@media (max-width: 768px) {
+    .ai-topbar-right {
+        margin-right: 50px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ai-topbar-right {
+        margin-right: 48px;
+    }
+}

@@ -19,8 +19,8 @@ namespace AssetFlow.Infrastructure.Services
             _config      = config;
         }
 
-        // ── Détermine quel agent appeler ─────────────────────────────────
-        public async Task<string> DetermineAgentAsync(string userMessage)
+        // ── Détermine quel agent appeler (avec historique) ────────────────
+        public async Task<string> DetermineAgentAsync(string userMessage, List<AgentChatHistory>? history = null)
         {
             var groqKey = _config["GroqApiKey"];
             if (string.IsNullOrWhiteSpace(groqKey)) return "db";
@@ -28,9 +28,11 @@ namespace AssetFlow.Infrastructure.Services
             var http = _httpFactory.CreateClient();
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {groqKey}");
 
+            var historyContext = BuildHistorySummary(history);
+
             var prompt = $@"Tu es un orchestrateur d'agents pour un système de gestion de stock/actifs IT.
 
-Analyse le message utilisateur et décide quel agent utiliser. 
+Analyse le message utilisateur ET le contexte de la conversation pour décider quel agent utiliser.
 Réponds UNIQUEMENT avec un de ces mots exactement: web, db, action_add_materiel, action_add_commande, action_add_article
 
 Règles:
@@ -40,17 +42,11 @@ Règles:
 - 'action_add_commande' : l'utilisateur veut créer/passer une nouvelle commande
 - 'action_add_article' : l'utilisateur veut ajouter un article individuel à une commande
 
-Exemples:
-- 'liste mes matériels' → db
-- 'combien de PC en stock' → db
-- 'quel est le prix des SSD sur le marché' → web
-- 'trouve moi des fournisseurs de claviers' → web
-- 'ajoute un nouveau matériel laptop Dell' → action_add_materiel
-- 'je veux créer une commande pour les écrans' → action_add_commande
-- 'ajoute un article à la commande CMD-001' → action_add_article
-- 'quelles sont mes alertes de stock' → db
+IMPORTANT : Si le message est vague (ex: ""le meilleur"", ""compare-les"", ""lequel choisir"") mais que le contexte précédent parlait d'un sujet web (prix, fournisseurs, marché), réponds 'web'. Si le contexte parlait de données internes, réponds 'db'.
 
-Message: ""{userMessage}""
+{historyContext}
+
+Message actuel: ""{userMessage}""
 
 Réponse (un seul mot):";
 
@@ -80,7 +76,7 @@ Réponse (un seul mot):";
         }
 
         // ── Extrait une action structurée du message ──────────────────────
-        public async Task<AgentAction?> ExtractActionAsync(string userMessage)
+        public async Task<AgentAction?> ExtractActionAsync(string userMessage, List<AgentChatHistory>? history = null)
         {
             var groqKey = _config["GroqApiKey"];
             if (string.IsNullOrWhiteSpace(groqKey)) return null;
@@ -88,15 +84,16 @@ Réponse (un seul mot):";
             var http = _httpFactory.CreateClient();
             http.DefaultRequestHeaders.Add("Authorization", $"Bearer {groqKey}");
 
-            // Déterminer le type d'action
-            var agentType = await DetermineAgentAsync(userMessage);
+            var agentType = await DetermineAgentAsync(userMessage, history);
             if (!agentType.StartsWith("action_")) return null;
 
-            var actionType = agentType.Replace("action_", "add_");
+            var actionType    = agentType.Replace("action_", "add_");
+            var historyContext = BuildHistorySummary(history);
 
             var prompt = agentType switch
             {
-                "action_add_materiel" => $@"L'utilisateur veut ajouter un matériel. Extrait les infos du message et génère un JSON.
+                "action_add_materiel" => $@"L'utilisateur veut ajouter un matériel. Extrait les infos du message (et du contexte si utile) et génère un JSON.
+{historyContext}
 Message: ""{userMessage}""
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown):
@@ -112,7 +109,8 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
 }}
 Si une info manque, mets une valeur par défaut raisonnable. Catégorie doit être 'Infrastructure' ou 'Normal'.",
 
-                "action_add_commande" => $@"L'utilisateur veut créer une commande. Extrait les infos du message et génère un JSON.
+                "action_add_commande" => $@"L'utilisateur veut créer une commande. Extrait les infos du message (et du contexte si utile) et génère un JSON.
+{historyContext}
 Message: ""{userMessage}""
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown):
@@ -128,7 +126,8 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
   ""dateFinGarantie"": null
 }}",
 
-                "action_add_article" => $@"L'utilisateur veut ajouter un article. Extrait les infos du message et génère un JSON.
+                "action_add_article" => $@"L'utilisateur veut ajouter un article. Extrait les infos du message (et du contexte si utile) et génère un JSON.
+{historyContext}
 Message: ""{userMessage}""
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown):
@@ -164,17 +163,16 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
                 .GetProperty("content")
                 .GetString() ?? "{}";
 
-            // Nettoyer le JSON
             rawJson = Regex.Replace(rawJson, @"```json|```", "").Trim();
 
             try
             {
-                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var opts   = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var action = new AgentAction { Type = actionType };
 
                 if (agentType == "action_add_materiel")
                 {
-                    action.Label           = "Nouveau matériel à créer";
+                    action.Label            = "Nouveau matériel à créer";
                     action.MaterielProposal = JsonSerializer.Deserialize<AgentMaterielProposal>(rawJson, opts);
                 }
                 else if (agentType == "action_add_commande")
@@ -198,12 +196,10 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
         {
             var groqKey = _config["GroqApiKey"];
 
-            // Quantité à commander : ce qui manque pour dépasser le seuil minimum
             var quantiteACommander = alerte.QuantiteMin - alerte.QuantiteStock > 0
                 ? alerte.QuantiteMin - alerte.QuantiteStock
                 : 1;
 
-            // Proposition par défaut
             var defaultProposal = new AgentMaterielProposal
             {
                 Reference     = $"REAPRO-{alerte.Reference}",
@@ -286,6 +282,24 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown):
                 return result ?? defaultProposal;
             }
             catch { return defaultProposal; }
+        }
+
+        // ── Helper : résumé de l'historique pour injection dans les prompts ──
+        private static string BuildHistorySummary(List<AgentChatHistory>? history)
+        {
+            if (history == null || history.Count == 0)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Contexte de la conversation précédente (pour comprendre les références comme 'le meilleur', 'celui-là', etc.) :");
+            foreach (var h in history.TakeLast(6)) // max 6 derniers échanges
+            {
+                var role = h.Role == "user" ? "Utilisateur" : "Assistant";
+                // Tronquer les messages longs pour ne pas exploser le contexte
+                var content = h.Content.Length > 300 ? h.Content[..297] + "..." : h.Content;
+                sb.AppendLine($"  [{role}]: {content}");
+            }
+            return sb.ToString();
         }
     }
 }

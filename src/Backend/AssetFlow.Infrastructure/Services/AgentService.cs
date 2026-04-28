@@ -35,23 +35,24 @@ namespace AssetFlow.Infrastructure.Services
         // ── Traitement principal d'un message ─────────────────────────────
         public async Task<AgentChatResponse> ProcessMessageAsync(AgentChatRequest request)
         {
-            var agentType = await _orchestrator.DetermineAgentAsync(request.Message);
-
-            var response = new AgentChatResponse { AgentUsed = agentType };
+            // L'historique est passé à tous les agents pour maintenir le contexte
+            var history   = request.History;
+            var agentType = await _orchestrator.DetermineAgentAsync(request.Message, history);
+            var response  = new AgentChatResponse { AgentUsed = agentType };
 
             if (agentType == "web")
             {
-                response.Message   = await _webSearch.SearchAsync(request.Message);
+                response.Message   = await _webSearch.SearchAsync(request.Message, history);
                 response.AgentUsed = "web";
             }
             else if (agentType == "db")
             {
-                response.Message   = await _dbAgent.QueryAsync(request.Message);
+                response.Message   = await _dbAgent.QueryAsync(request.Message, history);
                 response.AgentUsed = "db";
             }
             else if (agentType.StartsWith("action_"))
             {
-                var action = await _orchestrator.ExtractActionAsync(request.Message);
+                var action = await _orchestrator.ExtractActionAsync(request.Message, history);
                 response.AgentUsed = "action";
                 response.Action    = action;
 
@@ -91,7 +92,7 @@ namespace AssetFlow.Infrastructure.Services
             }
             else
             {
-                response.Message   = await _dbAgent.QueryAsync(request.Message);
+                response.Message   = await _dbAgent.QueryAsync(request.Message, history);
                 response.AgentUsed = "db";
             }
 
@@ -145,7 +146,6 @@ namespace AssetFlow.Infrastructure.Services
 
                         var p = request.MaterielProposal;
 
-                        // ── Vérifier si référence matériel existe déjà ────────────
                         var existant = await _db.Materiels
                             .FirstOrDefaultAsync(m => m.Reference.ToLower() == p.Reference.Trim().ToLower());
 
@@ -173,10 +173,8 @@ namespace AssetFlow.Infrastructure.Services
                             materielId = result.IdMateriel!.Value;
                         }
 
-                        // ── Commande associée ─────────────────────────────
                         if (p.Commande != null && !string.IsNullOrWhiteSpace(p.Commande.NumeroCommande))
                         {
-                            // ── Vérifier doublon numéro de commande ───────
                             var doublonCmd = await _db.Commandes
                                 .FirstOrDefaultAsync(c => c.NumeroCommande.ToLower() == p.Commande.NumeroCommande.Trim().ToLower());
 
@@ -237,7 +235,6 @@ namespace AssetFlow.Infrastructure.Services
 
                         var p = request.CommandeProposal;
 
-                        // ── Vérifier doublon numéro de commande ───────────
                         var doublon = await _db.Commandes
                             .FirstOrDefaultAsync(c => c.NumeroCommande.ToLower() == p.NumeroCommande.Trim().ToLower());
 
@@ -249,7 +246,6 @@ namespace AssetFlow.Infrastructure.Services
                             };
 
                         var fournisseurId = p.FournisseurId;
-
                         if (fournisseurId == 0 && !string.IsNullOrWhiteSpace(p.NomFournisseur))
                         {
                             var f = await _db.Fournisseurs.FirstOrDefaultAsync(x =>

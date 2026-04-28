@@ -41,13 +41,11 @@ namespace AssetFlow.Infrastructure.Services
             }).ToList();
         }
 
-        // ── Réponse LLM basée sur les données DB ──────────────────────────
-        public async Task<string> QueryAsync(string question)
+        // ── Réponse LLM basée sur les données DB (avec historique) ────────
+        public async Task<string> QueryAsync(string question, List<AgentChatHistory>? history = null)
         {
-            // Construire le contexte depuis la DB
             var context = await BuildDbContextAsync();
-
-            var groqKey  = _config["GroqApiKey"];
+            var groqKey = _config["GroqApiKey"];
             if (string.IsNullOrWhiteSpace(groqKey)) return "Service IA non disponible.";
 
             var http = _httpFactory.CreateClient();
@@ -60,17 +58,17 @@ Tu as accès aux données suivantes de la base de données :
 
 Réponds en français, de manière précise, aux questions sur les matériels, commandes, affectations, incidents.
 Si on te demande d'ajouter/créer quelque chose, indique que tu vas préparer une proposition.
-Ne fabrique pas de données qui n'existent pas dans le contexte fourni.";
+Ne fabrique pas de données qui n'existent pas dans le contexte fourni.
+Utilise le contexte de la conversation pour comprendre les références comme ""celui-là"", ""le même"", ""combien il en reste"", etc.";
+
+            // Construire les messages avec l'historique complet
+            var messages = BuildMessagesWithHistory(history, systemPrompt, question);
 
             var payload = new
             {
                 model      = "llama-3.3-70b-versatile",
                 max_tokens = 1000,
-                messages   = new[]
-                {
-                    new { role = "system", content = systemPrompt },
-                    new { role = "user",   content = question      }
-                }
+                messages
             };
 
             var resp = await http.PostAsync(
@@ -93,14 +91,12 @@ Ne fabrique pas de données qui n'existent pas dans le contexte fourni.";
         {
             var sb = new StringBuilder();
 
-            // Matériels
             var materiels = await _db.Materiels.AsNoTracking()
                 .OrderBy(m => m.Designation).Take(50).ToListAsync();
             sb.AppendLine("=== MATÉRIELS ===");
             foreach (var m in materiels)
                 sb.AppendLine($"- [{m.Id}] {m.Reference} | {m.Designation} | Catégorie: {m.Categorie} | Stock: {m.QuantiteStock} {m.Unite} (min: {m.QuantiteMin}) | Emplacement: {m.Emplacement ?? "N/A"}");
 
-            // Commandes récentes
             var commandes = await _db.Commandes
                 .Include(c => c.Materiel)
                 .Include(c => c.Fournisseur)
@@ -113,24 +109,44 @@ Ne fabrique pas de données qui n'existent pas dans le contexte fourni.";
             foreach (var c in commandes)
                 sb.AppendLine($"- [{c.Id}] {c.NumeroCommande} | Matériel: {c.Materiel?.Designation} | Fournisseur: {c.Fournisseur?.Nom ?? "N/A"} | Qté: {c.QuantiteAchetee} | Date: {c.DateAchat:dd/MM/yyyy} | Articles: {c.Articles.Count}");
 
-            // Fournisseurs
             var fournisseurs = await _db.Fournisseurs.AsNoTracking().Take(30).ToListAsync();
             sb.AppendLine("\n=== FOURNISSEURS ===");
             foreach (var f in fournisseurs)
                 sb.AppendLine($"- [{f.IdFournisseur}] {f.Nom} | Tel: {f.Telephone ?? "N/A"} | Email: {f.Mail ?? "N/A"}");
 
-            // Stats rapides
-            var totalMat    = await _db.Materiels.CountAsync();
-            var totalCmd    = await _db.Commandes.CountAsync();
-            var totalArt    = await _db.ArticlesIndividuels.CountAsync();
-            var alertes     = await _db.Materiels.CountAsync(m => m.QuantiteStock <= m.QuantiteMin);
-            var incidents   = await _db.Incidents.CountAsync(i => i.Statut == AssetFlow.Domain.Entities.StatutIncident.EnAttente);
+            var totalMat  = await _db.Materiels.CountAsync();
+            var totalCmd  = await _db.Commandes.CountAsync();
+            var totalArt  = await _db.ArticlesIndividuels.CountAsync();
+            var alertes   = await _db.Materiels.CountAsync(m => m.QuantiteStock <= m.QuantiteMin);
+            var incidents = await _db.Incidents.CountAsync(i => i.Statut == AssetFlow.Domain.Entities.StatutIncident.EnAttente);
 
             sb.AppendLine("\n=== STATISTIQUES ===");
             sb.AppendLine($"Total matériels: {totalMat} | Total commandes: {totalCmd} | Total articles: {totalArt}");
             sb.AppendLine($"Matériels en alerte stock: {alertes} | Incidents en attente: {incidents}");
 
             return sb.ToString();
+        }
+
+        // ── Construit le tableau messages[] avec historique ───────────────
+        private static object[] BuildMessagesWithHistory(
+            List<AgentChatHistory>? history,
+            string systemPrompt,
+            string currentQuestion)
+        {
+            var messages = new List<object>
+            {
+                new { role = "system", content = systemPrompt }
+            };
+
+            if (history != null)
+            {
+                // On prend les N-1 derniers (le dernier = question actuelle, déjà ajoutée après)
+                foreach (var h in history.SkipLast(1).TakeLast(8))
+                    messages.Add(new { role = h.Role, content = h.Content });
+            }
+
+            messages.Add(new { role = "user", content = currentQuestion });
+            return messages.ToArray();
         }
     }
 }

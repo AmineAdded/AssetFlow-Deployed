@@ -12,19 +12,33 @@ namespace AssetFlow.Application.Interfaces
 
     public interface IWebSearchAgentService
     {
-        Task<string> SearchAsync(string query);
+        /// <param name="query">Requête de l'utilisateur</param>
+        /// <param name="history">Historique de la conversation (optionnel)</param>
+        Task<string> SearchAsync(string query,
+            List<AssetFlow.Application.DTOs.AgentDtos.AgentChatHistory>? history = null);
     }
 
     public interface IDatabaseAgentService
     {
-        Task<string> QueryAsync(string question);
-        Task<List<AlerteStock>> GetStockAlertsAsync();
+        Task<List<AssetFlow.Application.DTOs.AgentDtos.AlerteStock>> GetStockAlertsAsync();
+ 
+        /// <param name="question">Question de l'utilisateur</param>
+        /// <param name="history">Historique de la conversation (optionnel)</param>
+        Task<string> QueryAsync(string question,
+            List<AssetFlow.Application.DTOs.AgentDtos.AgentChatHistory>? history = null);
     }
 
     public interface IOrchestratorAgentService
     {
-        Task<string> DetermineAgentAsync(string userMessage);
-        Task<AgentAction?> ExtractActionAsync(string userMessage);
-        Task<AgentMaterielProposal> GenerateMaterielProposalAsync(AlerteStock alerte);
+        /// <param name="userMessage">Message actuel</param>
+        /// <param name="history">Historique de la conversation (optionnel)</param>
+        Task<string> DetermineAgentAsync(string userMessage,
+            List<AssetFlow.Application.DTOs.AgentDtos.AgentChatHistory>? history = null);
+ 
+        Task<AssetFlow.Application.DTOs.AgentDtos.AgentAction?> ExtractActionAsync(string userMessage,
+            List<AssetFlow.Application.DTOs.AgentDtos.AgentChatHistory>? history = null);
+ 
+        Task<AssetFlow.Application.DTOs.AgentDtos.AgentMaterielProposal> GenerateMaterielProposalAsync(
+            AssetFlow.Application.DTOs.AgentDtos.AlerteStock alerte);
     }
 }

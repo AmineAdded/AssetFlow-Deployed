@@ -73,7 +73,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             "📦 Liste mes matériels en alerte",
             "📊 Donne-moi les statistiques de stock",
             "🔍 Recherche des fournisseurs de PC",
-            "➕ Ajoute un nouveau matériel laptop",
             "📋 Montre mes dernières commandes",
             "⚠️ Quels incidents sont en attente ?"
         };

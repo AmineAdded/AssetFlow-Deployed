@@ -47,6 +47,18 @@ namespace AssetFlow.Infrastructure.Services
             }
             else if (agentType == "db")
             {
+                // Détecter si l'utilisateur essaie de créer un nouveau matériel (action non autorisée)
+                var msg = request.Message.ToLower();
+                var isCreationAttempt = (msg.Contains("ajoute") || msg.Contains("crée") || msg.Contains("créer") || msg.Contains("nouveau") || msg.Contains("nouvelle") || msg.Contains("add") || msg.Contains("insert"))
+                    && (msg.Contains("matériel") || msg.Contains("materiel") || msg.Contains("équipement") || msg.Contains("equipement"));
+
+                if (isCreationAttempt)
+                {
+                    response.Message   = "❌ Je ne suis pas autorisé à créer de nouveaux matériels. Seules les commandes sur des matériels existants sont permises. Si vous souhaitez commander un matériel existant, précisez sa référence.";
+                    response.AgentUsed = "db";
+                    return response;
+                }
+
                 response.Message   = await _dbAgent.QueryAsync(request.Message, history);
                 response.AgentUsed = "db";
             }
@@ -67,6 +79,7 @@ namespace AssetFlow.Infrastructure.Services
 
                         if (existant != null)
                         {
+                            // Matériel existant → autoriser la commande
                             action.MaterielProposal.Reference     = existant.Reference;
                             action.MaterielProposal.Designation   = existant.Designation;
                             action.MaterielProposal.Description   = existant.Description;
@@ -77,6 +90,22 @@ namespace AssetFlow.Infrastructure.Services
                             action.MaterielProposal.Emplacement   = existant.Emplacement;
                             action.Label = $"exists:{existant.Id}";
                         }
+                        else
+                        {
+                            // ← NOUVEAU : bloquer la création d'un nouveau matériel
+                            response.AgentUsed = "db";
+                            response.Action    = null;
+                            response.Message   = "❌ La création de nouveaux matériels n'est pas autorisée. Seuls les matériels existants peuvent recevoir une commande. Vérifiez la référence ou contactez un administrateur.";
+                            return response;
+                        }
+                    }
+                    else
+                    {
+                        // Référence vide → on ne peut pas vérifier
+                        response.AgentUsed = "db";
+                        response.Action    = null;
+                        response.Message   = "❌ Impossible de créer un matériel sans référence. Précisez la référence du matériel existant.";
+                        return response;
                     }
                 }
 
@@ -149,29 +178,11 @@ namespace AssetFlow.Infrastructure.Services
                         var existant = await _db.Materiels
                             .FirstOrDefaultAsync(m => m.Reference.ToLower() == p.Reference.Trim().ToLower());
 
-                        int materielId;
+                        // ── NOUVEAU : bloquer la création, seuls les matériels existants sont autorisés ──
+                        if (existant == null)
+                            return Fail("❌ Création de nouveaux matériels non autorisée. Le matériel doit déjà exister en base.");
 
-                        if (existant != null)
-                        {
-                            materielId = existant.Id;
-                        }
-                        else
-                        {
-                            var result = await _materielService.CreerAsync(new CreerMaterielDto
-                            {
-                                Utilisateur   = request.Utilisateur,
-                                Reference     = p.Reference,
-                                Designation   = p.Designation,
-                                Description   = p.Description,
-                                Categorie     = p.Categorie,
-                                QuantiteStock = p.QuantiteStock,
-                                QuantiteMin   = p.QuantiteMin,
-                                Unite         = p.Unite,
-                                Emplacement   = p.Emplacement
-                            });
-                            if (!result.Succes) return Fail(result.Message);
-                            materielId = result.IdMateriel!.Value;
-                        }
+                        int materielId = existant.Id;
 
                         if (p.Commande != null && !string.IsNullOrWhiteSpace(p.Commande.NumeroCommande))
                         {
@@ -202,28 +213,23 @@ namespace AssetFlow.Infrastructure.Services
 
                             await _commandeService.CreerAsync(new CreerCommandeDto
                             {
-                                Utilisateur     = request.Utilisateur,
-                                NumeroCommande  = p.Commande.NumeroCommande,
-                                MaterielId      = materielId,
-                                FournisseurId   = fournisseurId,
+                                Utilisateur         = request.Utilisateur,
+                                NumeroCommande      = p.Commande.NumeroCommande,
+                                MaterielId          = materielId,
+                                FournisseurId       = fournisseurId,
                                 NomFournisseurLibre = p.Commande.NomFournisseur,
-                                QuantiteAchetee = p.Commande.QuantiteAchetee,
-                                DateAchat       = p.Commande.DateAchat,
-                                DateLivraison   = p.Commande.DateLivraison,
-                                DateFinGarantie = p.Commande.DateFinGarantie,
-                                NumerosSerie    = p.Commande.NumerosSerie
+                                QuantiteAchetee     = p.Commande.QuantiteAchetee,
+                                DateAchat           = p.Commande.DateAchat,
+                                DateLivraison       = p.Commande.DateLivraison,
+                                DateFinGarantie     = p.Commande.DateFinGarantie,
+                                NumerosSerie        = p.Commande.NumerosSerie
                             });
                         }
-
-                        var nomAffiche = existant != null ? existant.Designation : p.Designation;
-                        var prefixe    = existant != null
-                            ? "✅ Commande ajoutée au matériel existant"
-                            : "✅ Matériel créé avec succès";
 
                         return new AgentApprovalResponse
                         {
                             Succes  = true,
-                            Message = $"{prefixe} **{nomAffiche}** !",
+                            Message = $"✅ Commande ajoutée au matériel existant **{existant.Designation}** !",
                             Id      = materielId
                         };
                     }

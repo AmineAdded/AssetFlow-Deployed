@@ -386,11 +386,16 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             if (msg.Action == null) return;
 
-            if (approved)
+            if (approved && msg.Action.Type == "add_materiel")
             {
-                msg.ValidationErrors.Clear();
-                msg.FieldErrors.Clear();
-                if (!ValidateAction(msg)) { StateHasChanged(); return; }
+                var isExisting = msg.Action.Label?.StartsWith("exists:") == true;
+                if (!isExisting)
+                {
+                    msg.ValidationErrors.Clear();
+                    msg.ValidationErrors.Add("❌ La création de nouveaux matériels n'est pas autorisée depuis cet espace.");
+                    StateHasChanged();
+                    return;
+                }
             }
 
             _isApproving = true;

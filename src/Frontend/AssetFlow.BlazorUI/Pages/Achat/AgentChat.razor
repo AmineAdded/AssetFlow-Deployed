@@ -6,13 +6,15 @@
 <RoleAuthGuard AllowedRoles="@(new[]{"EquipeAchat","Admin"})">
 <div class="ai-shell">
 
-    @* ── Sidebar nav selon rôle ── *@
-    @if (_estAdmin)
-        { <AdminSidebar ForceOpen="_sidebarOpen" /> }
-    else if (_role?.Contains("IT", StringComparison.OrdinalIgnoreCase) == true)
-        { <ITSidebar ActivePage="agent" ForceOpen="_sidebarOpen" /> }
-    else
-        { <AchatSidebar ActivePage="agent" ForceOpen="_sidebarOpen" /> }
+    @* ── AchatSidebar ── *@
+        @if (_estAdmin)
+        {
+            <AdminSidebar ForceOpen="_sidebarOpen" />
+        }
+        else
+        {
+            <AchatSidebar ActivePage="demandes" ForceOpen="_sidebarOpen" />
+        }
 
     @* ══════════════════════════════════════════════════════════
        HISTORY PANEL

@@ -49,7 +49,8 @@ namespace AssetFlow.BlazorUI.Components
                 // ── Auto-ouverture sous-menus ──
                 if (Navigation.Uri.Contains("/demandes-achat")
                     || Navigation.Uri.Contains("/achat/")
-                    || Navigation.Uri.Contains("/statistiques"))
+                    || Navigation.Uri.Contains("/statistiques")
+                    || Navigation.Uri.Contains("/agent-chat"))
                 { _espaceOpen = true; _achatOpen = true; }
                 else if (Navigation.Uri.Contains("/it")
                     || Navigation.Uri.Contains("/dashboard/it"))

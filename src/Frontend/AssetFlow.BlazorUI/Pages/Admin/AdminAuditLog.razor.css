@@ -70,10 +70,11 @@
 }
 
 .audit-title {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -0.4px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text, #0f172a);
+    margin: 0 0 2px;
+    letter-spacing: -0.025em;
 }
 
 .audit-subtitle {

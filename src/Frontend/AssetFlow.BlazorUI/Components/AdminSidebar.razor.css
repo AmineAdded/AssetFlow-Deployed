@@ -37,6 +37,24 @@ html.dark .admin-sidebar { background: #060d18; }
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    overflow-y: auto;        /* AJOUTER */
+    overflow-x: hidden;      /* AJOUTER */
+    scrollbar-width: thin;   /* AJOUTER - Firefox */
+    scrollbar-color: rgba(255,255,255,0.1) transparent; /* AJOUTER - Firefox */
+}
+/* AJOUTER - Chrome/Edge */
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 99px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
 }
 .nav-link {
     display: flex;

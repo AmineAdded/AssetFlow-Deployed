@@ -180,8 +180,6 @@ builder.Services.AddSingleton<IScrapingNotifier>(sp =>
 });
 builder.Services.AddScoped<IRedisScrapingService, RedisScrapingService>();
 builder.Services.AddScoped<IScrapingService, ScrapingService>();
-builder.Services.AddHttpContextAccessor();       
-builder.Services.AddScoped<GeoIpService>();       
 
 // === SIGNALR — limite augmentée pour les messages vocaux (base64 audio) ===
 builder.Services.AddSignalR(options =>
@@ -233,11 +231,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor 
-                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-});
 
 app.UseCors("BlazorPolicy");
 app.UseAuthentication();

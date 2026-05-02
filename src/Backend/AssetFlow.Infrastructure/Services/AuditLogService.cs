@@ -8,24 +8,17 @@ namespace AssetFlow.Infrastructure.Services
 {
     public class AuditLogService : IAuditLogService
     {
-        private readonly AppDbContext      _db;
+        private readonly AppDbContext _db;
         private readonly IDashboardNotifier _notifier;
-        private readonly GeoIpService      _geoIp;
 
-        public AuditLogService(AppDbContext db, IDashboardNotifier notifier, GeoIpService geoIp)
+        public AuditLogService(AppDbContext db, IDashboardNotifier notifier)
         {
-            _db       = db;
+            _db = db;
             _notifier = notifier;
-            _geoIp    = geoIp;
         }
 
         public async Task LogAsync(CreateAuditLogDto dto)
         {
-            // Géolocalisation si IP fournie
-            string? geoLocation = null;
-            if (!string.IsNullOrEmpty(dto.IpAddress))
-                geoLocation = await _geoIp.GetLocationAsync(dto.IpAddress);
-
             var log = new AuditLog
             {
                 Timestamp   = DateTime.UtcNow,
@@ -35,30 +28,35 @@ namespace AssetFlow.Infrastructure.Services
                 Categorie   = dto.Categorie,
                 Entite      = dto.Entite,
                 Details     = dto.Details,
-                UserId      = dto.UserId,
-                IpAddress   = dto.IpAddress,
-                GeoLocation = geoLocation ?? dto.GeoLocation,
+                UserId      = dto.UserId
             };
             _db.AuditLogs.Add(log);
             await _db.SaveChangesAsync();
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
+            
         }
 
         public async Task<AuditLogPagedDto> GetLogsAsync(AuditLogQueryDto query)
         {
             var q = _db.AuditLogs.AsNoTracking().AsQueryable();
 
+            // ── Filtres ──
             if (query.DateDebut.HasValue)
                 q = q.Where(l => l.Timestamp >= query.DateDebut.Value);
+
             if (query.DateFin.HasValue)
                 q = q.Where(l => l.Timestamp <= query.DateFin.Value.AddDays(1));
+
             if (!string.IsNullOrWhiteSpace(query.Utilisateur) && query.Utilisateur != "Tous les utilisateurs")
                 q = q.Where(l => l.Email == query.Utilisateur || l.Utilisateur.Contains(query.Utilisateur));
+
             if (!string.IsNullOrWhiteSpace(query.Action) && query.Action != "Toutes les actions")
                 q = q.Where(l => l.Action == query.Action);
+
             if (!string.IsNullOrWhiteSpace(query.Categorie) && query.Categorie != "Toutes")
                 q = q.Where(l => l.Categorie == query.Categorie);
+
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 var s = query.Search.Trim().ToLower();
@@ -84,9 +82,7 @@ namespace AssetFlow.Infrastructure.Services
                     Action      = l.Action,
                     Categorie   = l.Categorie,
                     Entite      = l.Entite,
-                    Details     = l.Details,
-                    IpAddress   = l.IpAddress,   // NOUVEAU
-                    GeoLocation = l.GeoLocation, // NOUVEAU
+                    Details     = l.Details
                 })
                 .ToListAsync();
 

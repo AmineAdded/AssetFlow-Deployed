@@ -17,6 +17,5 @@ namespace AssetFlow.Domain.Entities
         /// 478 points MediaPipe FaceLandmarker
         /// null si l'utilisateur n'a pas enregistré son visage
         public string? FaceKeypoints { get; set; }
-        public bool     ConsentIpTracking { get; set; } = false;
     }
 }

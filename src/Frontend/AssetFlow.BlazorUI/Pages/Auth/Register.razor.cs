@@ -24,8 +24,6 @@ namespace AssetFlow.BlazorUI.Pages.Auth
         private string ErrorMessage { get; set; } = string.Empty;
         private string SuccessMessage { get; set; } = string.Empty;
 
-        private bool AcceptIpTracking { get; set; } = false;
-
         /// Calcule la force du mot de passe (1=faible, 2=moyen, 3=fort)
         private int PasswordStrength
         {
@@ -90,8 +88,7 @@ namespace AssetFlow.BlazorUI.Pages.Auth
                 Email = Email,
                 Password = Password,
                 Department = Department,
-                RequestedRole = SelectedRole,
-                ConsentIpTracking = AcceptIpTracking,
+                RequestedRole = SelectedRole
             };
 
             var (success, message) = await AuthService.RegisterAsync(request);

@@ -276,8 +276,8 @@ html.dark .cat-purple  { background: rgba(83,74,183,0.15);   color: #a5a0f5; }
 html.dark .cat-teal    { background: rgba(29,158,117,0.13);  color: #9FE1CB; }
 
 /* Actions */
-.td-actions  { display: inline-flex; align-items: center; justify-content: flex-end; padding-right: 8px !important; }
-.sk-row-acts { display: flex; justify-content: flex-end; gap: 3px; }
+.td-actions  { display: inline-flex; align-items: center; justify-content: flex-start; padding-right: 8px !important; }
+.sk-row-acts { display: flex; justify-content: flex-start; gap: 3px; }
 .sk-act-btn {
     width: 30px; height: 30px; border-radius: var(--r-lg);
     display: flex; align-items: center; justify-content: center;

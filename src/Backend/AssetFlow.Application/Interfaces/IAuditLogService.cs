@@ -6,6 +6,10 @@ namespace AssetFlow.Application.Interfaces
     {
         Task<AuditLogPagedDto> GetLogsAsync(AuditLogQueryDto query);
         Task LogAsync(CreateAuditLogDto dto);
+        Task<int> SupprimerAvantDateAsync(DateTime date);        
+        Task<int> SupprimerParCategorieAsync(string categorie);  
+        Task<int> SupprimerToutAsync();                          
+        Task<AuditLogStatsDto> GetStatsAsync();                  
 
         // Helpers statiques pour les catégories et actions
         static class Categories

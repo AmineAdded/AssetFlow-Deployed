@@ -572,3 +572,82 @@ html.dark .audit-modal { box-shadow: 0 24px 60px rgba(0,0,0,0.5); }
     .audit-table td:nth-child(1) { display: none; }
     .audit-count-bar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 }
+
+/* ── Bouton Nettoyer ── */
+.audit-btn-clean {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer;
+    background: rgba(245,158,11,0.1);
+    color: #d97706;
+    border: 1px solid rgba(245,158,11,0.3);
+    transition: all var(--transition);
+}
+.audit-btn-clean svg { width: 15px; height: 15px; stroke: currentColor; fill: none; }
+.audit-btn-clean:hover { background: rgba(245,158,11,0.2); }
+
+/* ── Stats ── */
+.clean-stats {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+}
+.clean-stat-item {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 0.2rem; flex: 1; min-width: 80px;
+}
+.clean-stat-value {
+    font-size: 1.4rem; font-weight: 800; color: var(--primary);
+    font-family: 'Courier New', monospace;
+}
+.clean-stat-label { font-size: 0.68rem; color: var(--text-faint); text-transform: uppercase; }
+
+/* ── Options ── */
+.clean-option {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; gap: 0.75rem;
+    background: var(--surface-2);
+}
+.clean-option.danger { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.04); }
+
+.clean-option-header { display: flex; flex-direction: column; gap: 0.2rem; }
+.clean-option-title  { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+.clean-option-desc   { font-size: 0.75rem; color: var(--text-muted); }
+
+.clean-option-controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.clean-date { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: 0.82rem; outline: none; }
+
+/* ── Boutons action ── */
+.clean-btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; border: none;
+    transition: all var(--transition);
+}
+.clean-btn.warn {
+    background: rgba(245,158,11,0.15); color: #d97706;
+    border: 1px solid rgba(245,158,11,0.3);
+}
+.clean-btn.warn:hover:not(:disabled) { background: rgba(245,158,11,0.25); }
+.clean-btn.danger {
+    background: rgba(239,68,68,0.12); color: #ef4444;
+    border: 1px solid rgba(239,68,68,0.3);
+}
+.clean-btn.danger:hover:not(:disabled) { background: rgba(239,68,68,0.22); }
+.clean-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Alert success ── */
+.audit-alert-success {
+    padding: 0.75rem 1rem;
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    border-radius: var(--radius-lg);
+    color: var(--success);
+    font-size: 0.85rem;
+}

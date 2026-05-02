@@ -95,5 +95,65 @@ namespace AssetFlow.Infrastructure.Services
                 TotalPages = (int)Math.Ceiling(total / (double)query.PageSize)
             };
         }
+
+        public async Task<int> SupprimerAvantDateAsync(DateTime date)
+        {
+            var logs = await _db.AuditLogs
+                .Where(l => l.Timestamp < date)
+                .ToListAsync();
+
+            _db.AuditLogs.RemoveRange(logs);
+            await _db.SaveChangesAsync();
+            return logs.Count;
+        }
+
+        public async Task<int> SupprimerParCategorieAsync(string categorie)
+        {
+            // Protection — refuser si catégorie vide
+            if (string.IsNullOrWhiteSpace(categorie))
+                return 0;
+
+            Console.WriteLine($"[AUDIT] Suppression catégorie : '{categorie}'");
+
+            var logs = await _db.AuditLogs
+                .Where(l => l.Categorie == categorie)
+                .ToListAsync();
+
+            Console.WriteLine($"[AUDIT] Entrées trouvées : {logs.Count}");
+
+            if (logs.Count == 0) return 0;
+
+            _db.AuditLogs.RemoveRange(logs);
+            await _db.SaveChangesAsync();
+            return logs.Count;
+        }
+
+        public async Task<int> SupprimerToutAsync()
+        {
+            var total = await _db.AuditLogs.CountAsync();
+            await _db.AuditLogs.ExecuteDeleteAsync(); // EF Core 7+
+            return total;
+        }
+
+        public async Task<AuditLogStatsDto> GetStatsAsync()
+        {
+            var now   = DateTime.UtcNow;
+            var today = now.Date;
+            var month = new DateTime(now.Year, now.Month, 1);
+
+            var parCategorie = await _db.AuditLogs
+                .GroupBy(l => l.Categorie)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+
+            return new AuditLogStatsDto
+            {
+                TotalEntrees        = await _db.AuditLogs.CountAsync(),
+                EntreesAujourdhui   = await _db.AuditLogs.CountAsync(l => l.Timestamp >= today),
+                EntreesCeMois       = await _db.AuditLogs.CountAsync(l => l.Timestamp >= month),
+                PlusAncienneEntree  = await _db.AuditLogs.MinAsync(l => (DateTime?)l.Timestamp),
+                ParCategorie        = parCategorie
+            };
+        }
     }
 }

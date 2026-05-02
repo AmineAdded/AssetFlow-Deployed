@@ -48,6 +48,16 @@
                         </svg>
                         Actualiser
                     </button>
+                    <button class="audit-btn-clean" @onclick="OuvrirCleanModal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" 
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14H6L5 6"/>
+                            <path d="M10 11v6M14 11v6"/>
+                            <path d="M9 6V4h6v2"/>
+                        </svg>
+                        Nettoyer
+                    </button>
                 </div>
             </div>
 
@@ -314,6 +324,119 @@
                     <span class="audit-modal-label">Détails complets</span>
                     <p class="audit-modal-details">@(DetailLog.Details ?? "Aucun détail disponible.")</p>
                 </div>
+            </div>
+        </div>
+    </div>
+}
+@if (_showCleanModal)
+{
+    <div class="audit-modal-overlay" @onclick="() => _showCleanModal = false">
+        <div class="audit-modal clean-modal" @onclick:stopPropagation="true">
+
+            <div class="audit-modal-header">
+                <h2 class="audit-modal-title">🗑️ Nettoyer le Journal</h2>
+                <button class="audit-modal-close" @onclick="() => _showCleanModal = false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M18 6 6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            @* Stats *@
+            @if (_stats != null)
+            {
+                <div class="clean-stats">
+                    <div class="clean-stat-item">
+                        <span class="clean-stat-value">@_stats.TotalEntrees</span>
+                        <span class="clean-stat-label">Total entrées</span>
+                    </div>
+                    <div class="clean-stat-item">
+                        <span class="clean-stat-value">@_stats.EntreesAujourdhui</span>
+                        <span class="clean-stat-label">Aujourd'hui</span>
+                    </div>
+                    <div class="clean-stat-item">
+                        <span class="clean-stat-value">@_stats.EntreesCeMois</span>
+                        <span class="clean-stat-label">Ce mois</span>
+                    </div>
+                    @if (_stats.PlusAncienneEntree.HasValue)
+                    {
+                        <div class="clean-stat-item">
+                            <span class="clean-stat-value">
+                                @_stats.PlusAncienneEntree.Value.ToString("dd/MM/yyyy")
+                            </span>
+                            <span class="clean-stat-label">Plus ancienne</span>
+                        </div>
+                    }
+                </div>
+            }
+
+            <div class="audit-modal-body">
+
+                @* Option 1 — Avant date *@
+                <div class="clean-option">
+                    <div class="clean-option-header">
+                        <span class="clean-option-title">Supprimer avant une date</span>
+                        <span class="clean-option-desc">
+                            Supprime toutes les entrées antérieures à la date choisie
+                        </span>
+                    </div>
+                    <div class="clean-option-controls">
+                        <input type="date" class="audit-date-input clean-date"
+                               @bind="_cleanDate" />
+                        <button class="clean-btn warn" @onclick="SupprimerAvantDate"
+                                disabled="@_cleanLoading">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+
+                @* Option 2 — Par catégorie *@
+                <div class="clean-option">
+                    <div class="clean-option-header">
+                        <span class="clean-option-title">Supprimer par catégorie</span>
+                        <span class="clean-option-desc">
+                            Supprime toutes les entrées d'une catégorie spécifique
+                        </span>
+                    </div>
+                    <div class="clean-option-controls">
+                        <select class="audit-select" value="@_cleanCategorie" 
+                                @onchange="e => _cleanCategorie = e.Value?.ToString() ?? string.Empty">
+                            <option value="">-- Choisir --</option>
+                            <option value="Authentification">Authentification</option>
+                            <option value="Matériel">Matériel</option>
+                            <option value="Affectation">Affectation</option>
+                            <option value="DemandeAchat">Demande d'achat</option>
+                            <option value="Commande">Commande</option>
+                        </select>
+                        <button class="clean-btn warn" @onclick="SupprimerParCategorie"
+                                disabled="@(_cleanLoading || string.IsNullOrEmpty(_cleanCategorie))">
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+
+                @* Option 3 — Tout supprimer *@
+                <div class="clean-option danger">
+                    <div class="clean-option-header">
+                        <span class="clean-option-title">⚠️ Tout supprimer</span>
+                        <span class="clean-option-desc">
+                            Supprime TOUTES les entrées du journal. Action irréversible.
+                        </span>
+                    </div>
+                    <button class="clean-btn danger" @onclick="SupprimerTout"
+                            disabled="@_cleanLoading">
+                        Vider le journal
+                    </button>
+                </div>
+
+                @* Message résultat *@
+                @if (!string.IsNullOrEmpty(_cleanMessage))
+                {
+                    <div class="@(_cleanSuccess ? "audit-alert-success" : "audit-alert-error")">
+                        @_cleanMessage
+                    </div>
+                }
+
             </div>
         </div>
     </div>

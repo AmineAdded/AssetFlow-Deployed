@@ -435,7 +435,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 Quantite     = dto.Quantite,
                 Description  = dto.Description,
                 Statut       = dto.Statut,
-                DateCreation = dto.DateCreation.ToLocalTime(),
+                DateCreation = DateTime.SpecifyKind(dto.DateCreation, DateTimeKind.Utc).ToLocalTime(),
                 DemandeurNom = dto.DemandeurNom,
                 Initiales    = initiales,
                 MotifRefus   = dto.MotifRefus,
@@ -481,10 +481,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
 
         private static string FormatDateCarte(DateTime d)
         {
-            var diff = DateTime.Now - d;
-            if (diff.TotalMinutes < 60) return $"Il y a {(int)diff.TotalMinutes} min";
-            if (diff.TotalHours   < 24) return $"Il y a {(int)diff.TotalHours} h";
-            if (diff.TotalDays    <  2) return "Hier";
+            var diff = DateTime.Now - d; 
+            if (diff.TotalSeconds < 60)  return "À l'instant";
+            if (diff.TotalMinutes < 60)  return $"Il y a {(int)diff.TotalMinutes} min";
+            if (diff.TotalHours   < 24)  return $"Il y a {(int)diff.TotalHours} h";
+            if (diff.TotalDays    <  2)  return "Hier";
             return d.ToString("dd MMM");
         }
 
@@ -520,7 +521,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                         {
                             sb.AppendLine(
                                 $"{d.Reference};{d.NomProduit.Replace(";",",")};{LibelleStatut(d.Statut)};" +
-                                $"{d.DemandeurNom.Replace(";",",")};{d.DateCreation.ToLocalTime():dd/MM/yyyy HH:mm};" +
+                                $"{d.DemandeurNom.Replace(";",",")};{d.DateCreation:dd/MM/yyyy HH:mm};" +
                                 $"{(d.MotifRefus ?? "").Replace(";",",")};" +
                                 $"{l.Reference};{l.NomProduit.Replace(";",",")};{l.Quantite};{(l.Description ?? "").Replace(";",",")}");
                         }
@@ -580,7 +581,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                               $"<td>{d.Reference}</td><td>{d.NomProduit}</td>" +
                               $"<td class='{d.Statut}'>{LibelleStatut(d.Statut)}</td>" +
                               $"<td>{d.DemandeurNom}</td>" +
-                              $"<td>{d.DateCreation.ToLocalTime():dd/MM/yyyy}</td>" +
+                              $"<td>{d.DateCreation:dd/MM/yyyy}</td>" +
                               $"<td>{materiels}</td></tr>");
                 }
                 sb.Append("</tbody></table></body></html>");

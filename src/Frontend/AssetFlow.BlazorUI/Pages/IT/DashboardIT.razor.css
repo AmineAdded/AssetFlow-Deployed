@@ -381,10 +381,10 @@ html.dark .it-mini-select { background:#1B2533; color:var(--text-primary); }
 
 .it-btn-apply {
     padding:5px 12px;
-    background:var(--primary);
-    border:0.5px solid var(--primary);
+    background:var(--primary) !important;
+    border:0.5px solid var(--primary) !important;
     border-radius:var(--radius-sm);
-    color:#fff; font-size:11px; font-weight:500; white-space:nowrap;
+    color:#fff !important; font-size:11px; font-weight:500; white-space:nowrap;
     transition:all var(--t);
 }
 .it-btn-apply:hover { background:var(--primary-deep); border-color:var(--primary-deep); }

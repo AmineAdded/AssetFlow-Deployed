@@ -1,6 +1,5 @@
-@using AssetFlow.BlazorUI.Components
-@inject IJSRuntime JS
-@inject NavigationManager Navigation
+@using AssetFlow.BlazorUI.Services
+@using Blazored.LocalStorage
 
 @if (_drawerOpen)
 {
@@ -80,9 +79,26 @@
                             <a class="nav-leaf-link @(IsActive("/achat/equipements") ? "active" : "")"  href="/achat/equipements">Mes Équipements</a>
                             <a class="nav-leaf-link @(IsActive("/achat/materiel") ? "active" : "")"     href="/achat/materiel">Matériel</a>
                             <a class="nav-leaf-link @(IsActive("/achat/fournisseurs") ? "active" : "")" href="/achat/fournisseurs">Fournisseurs</a>
-                            <a class="nav-leaf-link @(IsActive("/demandes-achat") ? "active" : "")"     href="/demandes-achat">Demandes d'achat</a>
+                            <a class="nav-leaf-link @(IsActive("/demandes-achat") ? "active" : "")" href="/demandes-achat">
+                                Demandes d'achat
+                                @if (_nombreNonVus > 0)
+                                {
+                                    <span class="sidebar-badge-orange">@_nombreNonVus</span>
+                                }
+                            </a>                            
                             <a class="nav-leaf-link @(IsActive("/achat/web-scraping") ? "active" : "")" href="/achat/web-scraping">Scraping Marché</a>
                             <a class="nav-leaf-link @(IsActive("/achat/messagerie") ? "active" : "")"   href="/achat/messagerie">Messagerie IT</a>
+                            @* NOUVEAU *@
+                            <a class="nav-leaf-link @(IsActive("/agent-chat") ? "active" : "")"     href="/agent-chat">
+                                Agent IA
+                                @if (StockAlertSvc.AlertCount > 0)
+                                {
+                                    <span class="sidebar-badge-orange" 
+                                        title="@StockAlertSvc.AlertCount alerte(s) de stock">
+                                        @StockAlertSvc.AlertCount
+                                    </span>
+                                }
+                            </a>
                         </div>
                     }
 
@@ -135,53 +151,3 @@
     <LogoutButton />
 
 </aside>
-
-@code {
-    [Parameter] public bool ForceOpen { get; set; } = false;
-
-    private bool _drawerOpen  = false;
-    private bool _espaceOpen  = false;
-    private bool _itOpen      = false;
-    private bool _achatOpen   = false;
-    private string _nom       = "Admin";
-    private string _role      = "Administrateur";
-    private string _initiales = "AD";
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var nom  = await JS.InvokeAsync<string?>("eval", "localStorage.getItem('user_name')");
-            var role = await JS.InvokeAsync<string?>("eval", "localStorage.getItem('user_role')");
-            if (!string.IsNullOrWhiteSpace(nom))  { _nom  = nom.Trim().Trim('"', '\''); }
-            if (!string.IsNullOrWhiteSpace(role)) { _role = role.Trim().Trim('"', '\''); }
-            var parts = _nom.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            _initiales = parts.Length >= 2
-                ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
-                : _nom[..Math.Min(2, _nom.Length)].ToUpper();
-
-            // Ouvre automatiquement le sous-menu Achat si on est sur une page Achat
-            if (Navigation.Uri.Contains("/demandes-achat") 
-                || Navigation.Uri.Contains("/achat/") 
-                || Navigation.Uri.Contains("/statistiques"))
-            { _espaceOpen = true; _achatOpen = true; }
-            else if (Navigation.Uri.Contains("/it") 
-                || Navigation.Uri.Contains("/dashboard/it") 
-                || Navigation.Uri.Contains("/statistiques"))
-            { _espaceOpen = true; _itOpen = true; }
-        }
-        catch { }
-    }
-
-    protected override void OnParametersSet()
-    {
-        if (ForceOpen) _drawerOpen = true;
-    }
-
-    private bool IsActive(string href)
-        => Navigation.Uri.Contains(href, StringComparison.OrdinalIgnoreCase);
-
-    private bool IsActiveIT()
-    => Navigation.Uri.Contains("/it/demandes-IT", StringComparison.OrdinalIgnoreCase)
-    || Navigation.Uri.Contains("/it/offres/",     StringComparison.OrdinalIgnoreCase);
-}

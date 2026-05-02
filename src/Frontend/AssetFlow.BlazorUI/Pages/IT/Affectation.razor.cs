@@ -20,6 +20,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string                      MaterielSearch       { get; set; } = string.Empty;
         private bool                        LoadingMateriels     { get; set; } = false;
         private System.Timers.Timer?        _materielDebounce;
+        private System.Timers.Timer?        _toastTimer;             // ← nouveau
         private bool                        _menuOpen            = false;
 
         // ── Utilisateurs ──────────────────────────────────────
@@ -92,6 +93,35 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 LoadProjetsAsync()
             );
         }
+
+        // ── Toast auto-dismiss ─────────────────────────────────
+        private void ShowSuccess(string msg)
+        {
+            ErrorMessage   = string.Empty;
+            SuccessMessage = msg;
+            StartToastTimer();
+        }
+
+        private void ShowError(string msg)
+        {
+            SuccessMessage = string.Empty;
+            ErrorMessage   = msg;
+            StartToastTimer();
+        }
+
+        private void StartToastTimer()
+        {
+            _toastTimer?.Dispose();
+            _toastTimer = new System.Timers.Timer(3000) { AutoReset = false };
+            _toastTimer.Elapsed += async (_, _) =>
+            {
+                SuccessMessage = string.Empty;
+                ErrorMessage   = string.Empty;
+                await InvokeAsync(StateHasChanged);
+            };
+            _toastTimer.Start();
+        }
+        // ──────────────────────────────────────────────────────
 
         // ── Mode toggle ───────────────────────────────────────
         private void SetMode(bool projet)
@@ -234,7 +264,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
             if (result.Succes)
             {
-                SuccessMessage         = result.Message;
                 MaterielSelectionne    = null;
                 UtilisateurSelectionne = null;
                 ProjetSelectionne      = null;
@@ -242,14 +271,16 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 Commentaire            = string.Empty;
                 DateRetourPrevue       = null;
                 await LoadMaterielsAsync(MaterielSearch);
+                ShowSuccess(result.Message);  // ← après le reload pour ne pas écraser
             }
             else
             {
-                ErrorMessage = result.Message;
+                ShowError(result.Message);
             }
 
             StateHasChanged();
         }
+
         private string GetInitials()
         {
             var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -275,10 +306,10 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _          => ""
         };
 
-        // REMPLACER Dispose()
         public void Dispose()
         {
             _materielDebounce?.Dispose();
+            _toastTimer?.Dispose();                        // ← nouveau
         }
     }
 }

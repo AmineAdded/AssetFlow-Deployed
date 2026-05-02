@@ -1404,99 +1404,226 @@ html.dark .mda-ligne-badge {
 /* ══════════════════════════════════════
    MODAL SUPPRESSION
 ══════════════════════════════════════ */
+/* ══════════════════════════════════════
+   MODAL SUPPRESSION — Refined
+══════════════════════════════════════ */
 .mda-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.55);
-    backdrop-filter: blur(6px);
+    background: rgba(2, 6, 23, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 24px;
-    animation: mdaSlideDown .2s var(--mda-spring);
+    animation: mdaBackdropIn .2s ease;
+}
+
+@keyframes mdaBackdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .mda-modal {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(0,0,0,0.08));
-    border-radius: var(--mda-r-xl);
-    padding: 32px;
-    max-width: 420px;
+    background: var(--surface, #ffffff);
+    border: 1px solid rgba(220, 38, 38, 0.12);
+    border-radius: 24px;
+    padding: 36px 32px 28px;
+    max-width: 400px;
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: 0;
     text-align: center;
-    box-shadow: 0 28px 70px rgba(0,0,0,0.16);
-    animation: mdaModalUp .22s var(--mda-spring);
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 32px 80px rgba(0, 0, 0, 0.18),
+        0 8px 24px rgba(220, 38, 38, 0.08);
+    animation: mdaModalUp .28s cubic-bezier(.16,1,.3,1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle red glow strip at top */
+.mda-modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #EF4444, #DC2626, transparent);
+    border-radius: 24px 24px 0 0;
 }
 
 html.dark .mda-modal {
-    background: #141f30;
-    border-color: rgba(255,255,255,0.09);
-    box-shadow: 0 28px 70px rgba(0,0,0,0.5);
+    background: #111827;
+    border-color: rgba(220, 38, 38, 0.2);
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.05),
+        0 32px 80px rgba(0, 0, 0, 0.55),
+        0 8px 24px rgba(220, 38, 38, 0.12);
 }
 
 @keyframes mdaModalUp {
-    from { opacity: 0; transform: translateY(16px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ── Icon wrapper (halo + icon) ── */
+.mda-modal-icon-wrap {
+    position: relative;
+    width: 72px; height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.mda-modal-icon-halo {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(220,38,38,0.12) 0%, transparent 70%);
+    animation: mdaHaloPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes mdaHaloPulse {
+    0%, 100% { transform: scale(1);    opacity: 1; }
+    50%       { transform: scale(1.18); opacity: 0.6; }
 }
 
 .mda-modal-icon {
     width: 58px; height: 58px;
     border-radius: 50%;
-    background: var(--mda-red-bg);
-    border: 1px solid var(--mda-red-border);
+    background: linear-gradient(145deg, #FFF1F2, #FFE4E6);
+    border: 1.5px solid rgba(220, 38, 38, 0.18);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.16), inset 0 1px 0 rgba(255,255,255,0.8);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
 }
 
-.mda-modal-icon svg { width: 26px; height: 26px; stroke: var(--mda-red); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html.dark .mda-modal-icon {
+    background: linear-gradient(145deg, #2d1515, #3b1a1a);
+    border-color: rgba(220, 38, 38, 0.35);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.24), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.mda-modal-icon svg {
+    width: 24px; height: 24px;
+    color: #DC2626;
+    stroke: #DC2626;
+}
+
+/* ── Content block ── */
+.mda-modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border, rgba(0,0,0,0.07));
+    margin-bottom: 20px;
+}
+
+html.dark .mda-modal-content {
+    border-bottom-color: rgba(255,255,255,0.07);
+}
 
 .mda-modal-title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 800;
     color: var(--text, #0f172a);
     margin: 0;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
 }
 
+html.dark .mda-modal-title { color: #f1f5f9; }
+
 .mda-modal-body {
-    font-size: 13px;
+    font-size: 13.5px;
     color: var(--text-muted, #64748b);
-    line-height: 1.65;
+    line-height: 1.7;
     margin: 0;
 }
 
+.mda-modal-highlight {
+    color: var(--text, #0f172a);
+    font-weight: 700;
+}
+
+html.dark .mda-modal-highlight { color: #e2e8f0; }
+
+.mda-modal-ref {
+    color: var(--text-muted, #94a3b8);
+    font-size: 12.5px;
+}
+
+/* Warning badge */
+.mda-modal-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFF7ED;
+    border: 1px solid rgba(234, 88, 12, 0.22);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #C2410C;
+    margin-top: 4px;
+}
+
+html.dark .mda-modal-warning {
+    background: rgba(234, 88, 12, 0.1);
+    border-color: rgba(234, 88, 12, 0.3);
+    color: #FB923C;
+}
+
+.mda-modal-warning svg {
+    width: 13px; height: 13px;
+    stroke: currentColor;
+    flex-shrink: 0;
+}
+
+/* ── Actions ── */
 .mda-modal-actions {
     display: flex;
     gap: 10px;
     width: 100%;
-    margin-top: 6px;
 }
 
 .mda-modal-cancel {
     flex: 1;
-    padding: 11px;
+    padding: 11px 16px;
     background: var(--surface-2, #F8FAFC);
     border: 1px solid var(--border, rgba(0,0,0,0.1));
-    border-radius: var(--mda-r-md);
+    border-radius: 12px;
     color: var(--text, #0f172a);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: var(--mda-t);
+    transition: all .18s ease;
     font-family: inherit;
+}
+
+html.dark .mda-modal-cancel {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+    color: #e2e8f0;
 }
 
 .mda-modal-cancel:hover {
     border-color: var(--mda-indigo);
     color: var(--mda-indigo);
     background: var(--mda-indigo-light);
+    transform: translateY(-1px);
 }
 
 .mda-modal-confirm {
@@ -1505,26 +1632,29 @@ html.dark .mda-modal {
     align-items: center;
     justify-content: center;
     gap: 7px;
-    padding: 11px;
-    background: linear-gradient(135deg, #B91C1C, var(--mda-red, #DC2626));
+    padding: 11px 16px;
+    background: linear-gradient(135deg, #B91C1C 0%, #DC2626 50%, #EF4444 100%);
     border: none;
-    border-radius: var(--mda-r-md);
+    border-radius: 12px;
     color: #fff;
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    transition: var(--mda-t);
+    transition: all .18s ease;
     font-family: inherit;
-    box-shadow: 0 3px 10px rgba(220,38,38,0.32);
+    box-shadow: 0 4px 14px rgba(220,38,38,0.38), inset 0 1px 0 rgba(255,255,255,0.15);
+    letter-spacing: -0.01em;
 }
 
 .mda-modal-confirm:hover:not(:disabled) {
-    background: linear-gradient(135deg, #991B1B, #B91C1C);
-    box-shadow: 0 5px 16px rgba(220,38,38,0.42);
+    background: linear-gradient(135deg, #991B1B 0%, #B91C1C 50%, #DC2626 100%);
+    box-shadow: 0 6px 20px rgba(220,38,38,0.48), inset 0 1px 0 rgba(255,255,255,0.15);
     transform: translateY(-1px);
 }
 
-.mda-modal-confirm:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.mda-modal-confirm:active:not(:disabled) { transform: translateY(0); }
+
+.mda-modal-confirm:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
 
 /* ══════════════════════════════════════
    HAMBURGER + DRAWER MOBILE

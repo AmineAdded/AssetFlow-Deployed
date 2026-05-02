@@ -56,6 +56,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string              ModalCommentaire       { get; set; } = string.Empty;
 
         private System.Timers.Timer? _debounce;
+        private System.Timers.Timer? _toastTimer;         // ← nouveau
         private bool _menuOpen = false;
         private string      _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
@@ -67,6 +68,36 @@ namespace AssetFlow.BlazorUI.Pages.IT
             await LoadEmployesAsync();
             await ConnecterSignalR();
         }
+
+        // ── Toast auto-dismiss ──────────────────────────────────────────────────
+        private void ShowSuccess(string msg)
+        {
+            ErrorMsg   = string.Empty;
+            SuccessMsg = msg;
+            StartToastTimer();
+        }
+
+        private void ShowError(string msg)
+        {
+            SuccessMsg = string.Empty;
+            ErrorMsg   = msg;
+            StartToastTimer();
+        }
+
+        private void StartToastTimer()
+        {
+            _toastTimer?.Dispose();
+            _toastTimer = new System.Timers.Timer(3000) { AutoReset = false };
+            _toastTimer.Elapsed += async (_, _) =>
+            {
+                SuccessMsg = string.Empty;
+                ErrorMsg   = string.Empty;
+                await InvokeAsync(StateHasChanged);
+            };
+            _toastTimer.Start();
+        }
+        // ───────────────────────────────────────────────────────────────────────
+
         private async Task ConnecterSignalR()
         {
             _hubConnection = new HubConnectionBuilder()
@@ -152,9 +183,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
             }
             catch { /* reste statique si SignalR non dispo */ }
         }
+
         public async ValueTask DisposeAsync()
         {
             _debounce?.Dispose();
+            _toastTimer?.Dispose();                        // ← nouveau
             if (_hubConnection is not null)
             {
                 try
@@ -196,8 +229,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             IsProcessing = true; StateHasChanged();
             var (ok, msg) = await Svc.ChangerStatutAsync(incidentId, statut);
-            if (ok) { SuccessMsg = msg; await RefreshMateriels(); }
-            else      ErrorMsg  = msg;
+            if (ok) { ShowSuccess(msg); await RefreshMateriels(); }
+            else      ShowError(msg);
             IsProcessing = false; StateHasChanged();
         }
 
@@ -228,8 +261,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
             IsProcessing = true; StateHasChanged();
             var (ok, msg) = await Svc.ChangerStatutAsync(ModalIncident.Id, "Resolu", ModalCommentaire);
             FermerModal();
-            if (ok) { SuccessMsg = msg; await RefreshMateriels(); }
-            else      ErrorMsg  = msg;
+            if (ok) { ShowSuccess(msg); await RefreshMateriels(); }
+            else      ShowError(msg);
             IsProcessing = false; StateHasChanged();
         }
 
@@ -239,8 +272,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
             IsProcessing = true; StateHasChanged();
             var (ok, msg) = await Svc.ResolveAllByArticleAsync(ModalArticleResolveAll.ArticleId, ModalCommentaire);
             FermerModal();
-            if (ok) { SuccessMsg = msg; await RefreshMateriels(); }
-            else      ErrorMsg  = msg;
+            if (ok) { ShowSuccess(msg); await RefreshMateriels(); }
+            else      ShowError(msg);
             IsProcessing = false; StateHasChanged();
         }
 

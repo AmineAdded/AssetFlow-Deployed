@@ -21,7 +21,7 @@ namespace AssetFlow.Infrastructure.Services
                 SenderId   = senderId,
                 ReceiverId = receiverId,
                 Content    = content.Trim(),
-                SentAt     = DateTime.UtcNow,
+                SentAt     = DateTime.Now,
                 IsRead     = false
             };
 
@@ -45,7 +45,7 @@ namespace AssetFlow.Infrastructure.Services
                 Content              = string.Empty,      // vide pour les vocaux
                 AudioData            = audioBase64,
                 AudioDurationSeconds = durationSeconds,
-                SentAt               = DateTime.UtcNow,
+                SentAt               = DateTime.Now,
                 IsRead               = false
             };
 

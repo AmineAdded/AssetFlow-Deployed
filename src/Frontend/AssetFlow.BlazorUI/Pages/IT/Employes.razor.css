@@ -136,15 +136,6 @@ html.dark .emp-layout::before {
     box-shadow: 0 1px 20px rgba(0,0,0,0.04);
 }
 
-/* Ligne décorative bleue en haut du header */
-.emp-header::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #136DEC, #1D4ED8, var(--teal-400));
-    border-radius: 0 0 3px 3px;
-}
 
 .emp-header > div:first-of-type { min-width: 0; }
 

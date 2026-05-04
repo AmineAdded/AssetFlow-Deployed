@@ -443,23 +443,60 @@
 {
     <div class="mda-modal-backdrop" @onclick="AnnulerSuppression">
         <div class="mda-modal" @onclick:stopPropagation="true">
-            <div class="mda-modal-icon">
-                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+
+            @* ── Icône destructive animée ── *@
+            <div class="mda-modal-icon-wrap">
+                <div class="mda-modal-icon-halo"></div>
+                <div class="mda-modal-icon">
+                    <svg viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                        <path d="M9 6V4h6v2"/>
+                    </svg>
+                </div>
             </div>
-            <h3 class="mda-modal-title">Supprimer la demande ?</h3>
-            <p class="mda-modal-body">
-                Vous allez supprimer <strong>@_demandeASupprimer.NomProduit</strong>
-                (@_demandeASupprimer.Reference).<br/>
-                Toutes les offres fournisseurs associées seront également supprimées.
-                <br/><strong>Cette action est irréversible.</strong>
-            </p>
+
+            @* ── Texte ── *@
+            <div class="mda-modal-content">
+                <h3 class="mda-modal-title">Supprimer la demande ?</h3>
+                <p class="mda-modal-body">
+                    Vous allez supprimer
+                    <strong class="mda-modal-highlight">@_demandeASupprimer.NomProduit</strong>
+                    <span class="mda-modal-ref">(@_demandeASupprimer.Reference)</span>.
+                    <br/>Toutes les offres fournisseurs associées seront également supprimées.
+                </p>
+                <div class="mda-modal-warning">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Cette action est irréversible.
+                </div>
+            </div>
+
+            @* ── Actions ── *@
             <div class="mda-modal-actions">
-                <button class="mda-modal-cancel"  @onclick="AnnulerSuppression">Annuler</button>
+                <button class="mda-modal-cancel" @onclick="AnnulerSuppression">Annuler</button>
                 <button class="mda-modal-confirm" disabled="@_isDeleting" @onclick="ConfirmerSuppression">
-                    @if (_isDeleting) { <div class="mda-mini-spinner"></div><span>Suppression...</span> }
-                    else              { <span>Confirmer la suppression</span> }
+                    @if (_isDeleting)
+                    {
+                        <div class="mda-mini-spinner"></div>
+                        <span>Suppression...</span>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        </svg>
+                        <span>Confirmer la suppression</span>
+                    }
                 </button>
             </div>
+
         </div>
     </div>
 }

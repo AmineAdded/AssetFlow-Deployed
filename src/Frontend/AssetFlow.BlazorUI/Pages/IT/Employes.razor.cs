@@ -68,6 +68,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private System.Timers.Timer?    _notifTimer;
 
         private System.Timers.Timer? _debounce;
+        private System.Timers.Timer? _toastTimer;             // ← nouveau
         private bool _menuOpen = false;
         private string _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
@@ -108,6 +109,36 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _notifTimer.Start();
             await ConnecterSignalR();
         }
+
+        // ── Toast auto-dismiss ─────────────────────────────────
+        private void ShowSuccess(string msg)
+        {
+            ErrorMsg   = string.Empty;
+            SuccessMsg = msg;
+            StartToastTimer();
+        }
+
+        private void ShowError(string msg)
+        {
+            SuccessMsg = string.Empty;
+            ErrorMsg   = msg;
+            StartToastTimer();
+        }
+
+        private void StartToastTimer()
+        {
+            _toastTimer?.Dispose();
+            _toastTimer = new System.Timers.Timer(3000) { AutoReset = false };
+            _toastTimer.Elapsed += async (_, _) =>
+            {
+                SuccessMsg = string.Empty;
+                ErrorMsg   = string.Empty;
+                await InvokeAsync(StateHasChanged);
+            };
+            _toastTimer.Start();
+        }
+        // ──────────────────────────────────────────────────────
+
         private async Task ConnecterSignalR()
         {
             _hubConnection = new HubConnectionBuilder()
@@ -186,7 +217,14 @@ namespace AssetFlow.BlazorUI.Pages.IT
         {
             _notifTimer?.Stop();
             _notifTimer?.Dispose();
+            _toastTimer?.Dispose();                        // ← nouveau
+            _debounce?.Dispose();
+            if (_hubConnection is not null)
+            {
+                try { await _hubConnection.DisposeAsync(); } catch { }
+            }
         }
+
         private async Task ApplyDark(bool dark)
         {
             await JS.InvokeVoidAsync("eval",
@@ -233,13 +271,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             StateHasChanged();
         }
 
-        // private static string GetNiveauClass(string niveau) => niveau switch
-        // {
-        //     "Critique"      => "critique",
-        //     "Avertissement" => "avertissement",
-        //     _               => "info"
-        // };
-
         // ── Mode toggle ──
         private async Task SetMode(bool projet)
         {
@@ -262,6 +293,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             LoadingEmployes = false;
             StateHasChanged();
         }
+
         private void OnSearchInput(ChangeEventArgs e) => Search = e.Value?.ToString() ?? string.Empty;
 
         private async Task SelectEmploye(EmployeListeDto emp)
@@ -284,6 +316,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             LoadingProjets = false;
             StateHasChanged();
         }
+
         private void OnProjetSearchInput(ChangeEventArgs e)
         {
             ProjetSearch = e.Value?.ToString() ?? string.Empty;
@@ -297,6 +330,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             _debounce.AutoReset = false;
             _debounce.Start();
         }
+
         private async Task SelectProjet(ProjetAffectationListeDto projet)
         {
             ProjetSelectionne   = projet;
@@ -323,7 +357,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             AffectationARetirer = null;
             if (succes)
             {
-                SuccessMsg = message;
                 if (!ModeProjet && EmployeSelectionne != null)
                 {
                     Affectations = await Svc.GetAffectationsAsync(EmployeSelectionne.Id);
@@ -337,8 +370,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 // Rafraîchir les notifications après retrait
                 _notifications.Clear();
                 await RefreshCountAsync();
+                ShowSuccess(message);  // ← après les reloads
             }
-            else { ErrorMsg = message; }
+            else
+            {
+                ShowError(message);
+            }
             StateHasChanged();
         }
 
@@ -352,7 +389,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             "terminé"  or "termine"  => "statut-termine",
             _                        => "statut-encours",
         };
- 
+
         private static string GetPrioriteClass(string? priorite) => (priorite ?? "").ToLower() switch
         {
             "haute"    => "priorite-haute",
@@ -361,7 +398,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
             "faible"   => "priorite-faible",
             _          => "priorite-normale",
         };
- 
+
         private static string GetNiveauClass(string? niveau) => (niveau ?? "").ToLower() switch
         {
             "critique" => "niveau-critique",

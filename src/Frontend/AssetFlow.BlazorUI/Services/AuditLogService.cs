@@ -43,5 +43,51 @@ namespace AssetFlow.BlazorUI.Services
                 return null;
             }
         }
-    }
+
+        public async Task<AuditLogStatsDto?> GetStatsAsync()
+        {
+            try { return await _http.GetFromJsonAsync<AuditLogStatsDto>("api/audit-logs/stats"); }
+            catch { return null; }
+        }
+
+        public async Task<(bool success, string message)> SupprimerAvantDateAsync(DateTime date)
+        {
+            try
+            {
+                var res = await _http.DeleteAsync(
+                    $"api/audit-logs/avant-date?date={date:yyyy-MM-dd}");
+                var data = await res.Content.ReadFromJsonAsync<DeleteResultDto>();
+                return (res.IsSuccessStatusCode, data?.Message ?? "Erreur");
+            }
+            catch (Exception ex) { return (false, ex.Message); }
+        }
+
+        public async Task<(bool success, string message)> SupprimerParCategorieAsync(string categorie)
+        {
+            try
+            {
+                var res = await _http.DeleteAsync(
+                    $"api/audit-logs/par-categorie?categorie={Uri.EscapeDataString(categorie)}");
+                var data = await res.Content.ReadFromJsonAsync<DeleteResultDto>();
+                return (res.IsSuccessStatusCode, data?.Message ?? "Erreur");
+            }
+            catch (Exception ex) { return (false, ex.Message); }
+        }
+
+        public async Task<(bool success, string message)> SupprimerToutAsync()
+        {
+            try
+            {
+                var res  = await _http.DeleteAsync("api/audit-logs/tout");
+                var data = await res.Content.ReadFromJsonAsync<DeleteResultDto>();
+                return (res.IsSuccessStatusCode, data?.Message ?? "Erreur");
+            }
+            catch (Exception ex) { return (false, ex.Message); }
+        }
+
+        // DTO helper
+        private record DeleteResultDto(
+            [property: System.Text.Json.Serialization.JsonPropertyName("supprimés")] int Supprimes,
+            [property: System.Text.Json.Serialization.JsonPropertyName("message")]   string Message);
+        }
 }

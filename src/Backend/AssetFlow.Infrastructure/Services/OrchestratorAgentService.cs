@@ -30,17 +30,16 @@ namespace AssetFlow.Infrastructure.Services
 
             var historyContext = BuildHistorySummary(history);
 
-            var prompt = $@"Tu es un orchestrateur d'agents pour un système de gestion de stock/actifs IT.
+var prompt = $@"Tu es un orchestrateur d'agents pour un système de gestion de stock/actifs IT.
 
 Analyse le message utilisateur ET le contexte de la conversation pour décider quel agent utiliser.
-Réponds UNIQUEMENT avec un de ces mots exactement: web, db, action_add_materiel, action_add_commande, action_add_article
+Réponds UNIQUEMENT avec un de ces mots exactement: web, db, action_add_commande, action_add_article
 
 Règles:
 - 'web' : recherche internet, tendances marché, infos fournisseurs externes, comparaisons prix
-- 'db' : questions sur les données de la base (liste matériels, stock, commandes, incidents, stats, affectations, qui a quoi, combien...)
-- 'action_add_materiel' : l'utilisateur veut ajouter/créer un nouveau matériel
-- 'action_add_commande' : l'utilisateur veut créer/passer une nouvelle commande
-- 'action_add_article' : l'utilisateur veut ajouter un article individuel à une commande
+- 'db' : questions sur les données de la base (liste matériels, stock, commandes, incidents, stats, affectations, qui a quoi, combien...) ET toute demande de création/ajout d'un nouveau matériel qui n'existe pas encore
+- 'action_add_commande' : l'utilisateur veut créer/passer une nouvelle commande pour un matériel qui EXISTE DEJA en base
+- 'action_add_article' : l'utilisateur veut ajouter un article individuel à une commande existante
 
 IMPORTANT : Si le message est vague (ex: ""le meilleur"", ""compare-les"", ""lequel choisir"") mais que le contexte précédent parlait d'un sujet web (prix, fournisseurs, marché), réponds 'web'. Si le contexte parlait de données internes, réponds 'db'.
 
@@ -71,7 +70,7 @@ Réponse (un seul mot):";
                 .GetProperty("content")
                 .GetString()?.Trim().ToLower() ?? "db";
 
-            var valid = new[] { "web", "db", "action_add_materiel", "action_add_commande", "action_add_article" };
+            var valid = new[] { "web", "db", "action_add_commande", "action_add_article" };
             return valid.Contains(result) ? result : "db";
         }
 
@@ -87,7 +86,8 @@ Réponse (un seul mot):";
             var agentType = await DetermineAgentAsync(userMessage, history);
             if (!agentType.StartsWith("action_")) return null;
 
-            var actionType    = agentType.Replace("action_", "add_");
+            // "action_add_materiel" → "add_materiel"  (pas "add_add_materiel")
+            var actionType = agentType.Substring("action_".Length);
             var historyContext = BuildHistorySummary(history);
 
             var prompt = agentType switch

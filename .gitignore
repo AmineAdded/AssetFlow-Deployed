@@ -9,3 +9,6 @@ obj/
 # Fichiers système
 .DS_Store
 Thumbs.dbwwwroot/lib/
+
+# Configuration sensible
+appsettings.json

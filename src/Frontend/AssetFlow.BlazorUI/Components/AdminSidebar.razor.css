@@ -37,6 +37,24 @@ html.dark .admin-sidebar { background: #060d18; }
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    overflow-y: auto;        /* AJOUTER */
+    overflow-x: hidden;      /* AJOUTER */
+    scrollbar-width: thin;   /* AJOUTER - Firefox */
+    scrollbar-color: rgba(255,255,255,0.1) transparent; /* AJOUTER - Firefox */
+}
+/* AJOUTER - Chrome/Edge */
+.sidebar-nav::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 99px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
 }
 .nav-link {
     display: flex;
@@ -187,7 +205,8 @@ html.dark .admin-sidebar { background: #060d18; }
 }
 
 .nav-leaf-link {
-    display: block;
+    display: flex; 
+    align-items: center;
     padding: 0.45rem 1rem;
     color: #64748b;
     font-size: 0.8rem;
@@ -238,4 +257,24 @@ html.dark .admin-sidebar { background: #060d18; }
     .admin-drawer-overlay {
         display: block;
     }
+}
+
+.sidebar-badge-orange {
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 9999px;
+    margin-left: auto;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.6;
+    flex-shrink: 0;
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+    50%       { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0); }
 }

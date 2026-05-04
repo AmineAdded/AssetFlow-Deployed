@@ -46,6 +46,81 @@ namespace AssetFlow.BlazorUI.Pages.Admin
             !string.IsNullOrWhiteSpace(FilterCategorie) ||
             !string.IsNullOrWhiteSpace(FilterAction)    ||
             !string.IsNullOrWhiteSpace(FilterSearch);
+        
+        private bool     _showCleanModal  = false;
+        private bool     _cleanLoading    = false;
+        private bool     _cleanSuccess    = false;
+        private string   _cleanMessage    = string.Empty;
+        private DateTime _cleanDate       = DateTime.Today.AddMonths(-3);
+        private string   _cleanCategorie  = string.Empty;
+        private AuditLogStatsDto? _stats  = null;
+
+        // Ouvrir modal + charger stats
+        private async Task OuvrirCleanModal()
+        {
+            _cleanMessage = string.Empty;
+            _stats = await AuditService.GetStatsAsync();
+            _showCleanModal = true;
+        }
+
+        private async Task SupprimerAvantDate()
+        {
+            if (!await ConfirmerAction(
+                $"Supprimer toutes les entrées avant le {_cleanDate:dd/MM/yyyy} ?")) return;
+
+            _cleanLoading = true;
+            var (ok, msg) = await AuditService.SupprimerAvantDateAsync(_cleanDate);
+            _cleanSuccess = ok;
+            _cleanMessage = msg;
+            _cleanLoading = false;
+
+            if (ok) { await LoadLogsAsync(); _stats = await AuditService.GetStatsAsync(); }
+        }
+
+        private async Task SupprimerParCategorie()
+        {
+            // Vérification explicite
+            if (string.IsNullOrWhiteSpace(_cleanCategorie))
+            {
+                _cleanSuccess = false;
+                _cleanMessage = "Veuillez sélectionner une catégorie.";
+                return;
+            }
+
+            Console.WriteLine($"[DEBUG] Catégorie sélectionnée : '{_cleanCategorie}'");
+
+            if (!await ConfirmerAction(
+                $"Supprimer toutes les entrées de la catégorie '{_cleanCategorie}' ?")) return;
+
+            _cleanLoading = true;
+            _cleanMessage = string.Empty;
+            StateHasChanged();
+
+            var (ok, msg) = await AuditService.SupprimerParCategorieAsync(_cleanCategorie);
+            _cleanSuccess = ok;
+            _cleanMessage = msg;
+            _cleanLoading = false;
+
+            if (ok) { await LoadLogsAsync(); _stats = await AuditService.GetStatsAsync(); }
+            StateHasChanged();
+        }
+
+        private async Task SupprimerTout()
+        {
+            if (!await ConfirmerAction(
+                "ATTENTION : Supprimer TOUTES les entrées du journal ? Cette action est irréversible !")) return;
+
+            _cleanLoading = true;
+            var (ok, msg) = await AuditService.SupprimerToutAsync();
+            _cleanSuccess = ok;
+            _cleanMessage = msg;
+            _cleanLoading = false;
+
+            if (ok) { await LoadLogsAsync(); _stats = await AuditService.GetStatsAsync(); }
+        }
+
+        private async Task<bool> ConfirmerAction(string message)
+            => await JS.InvokeAsync<bool>("confirm", message);
 
         protected override async Task OnInitializedAsync()
         {

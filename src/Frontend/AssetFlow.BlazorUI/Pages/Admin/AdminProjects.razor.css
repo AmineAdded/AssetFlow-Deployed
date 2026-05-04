@@ -58,7 +58,7 @@ html.dark .admin-main::before {
 ══════════════════════════════════════════════════════ */
 .proj-page {
     padding: 1rem 1.5rem;
-    padding-top: 1.2rem;
+    padding-top: 0.35rem; 
     min-height: 100vh;
     background: transparent;
     position: relative;
@@ -79,11 +79,12 @@ html.dark .admin-main::before {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid var(--border);
     min-height: 44px; /* même hauteur que le toggle dark mode */
+    padding-top: 0.1rem; 
 }
 
 .proj-header-left {

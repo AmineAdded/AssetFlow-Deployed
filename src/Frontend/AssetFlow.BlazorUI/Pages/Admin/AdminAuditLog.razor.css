@@ -57,7 +57,8 @@ html.dark .admin-main::before {
 ══════════════════════════════════════════════════════ */
 .audit-page {
     padding: 1.5rem 2.5rem 2rem 2.5rem;
-    padding-right: 5rem;          /* espace libre pour le theme-toggle fixe */
+    padding-right: 5rem; 
+    padding-top: 0.35rem;          /* espace libre pour le theme-toggle fixe */
     min-height: 100vh;
     background: transparent;
     position: relative;

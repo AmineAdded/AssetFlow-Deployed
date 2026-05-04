@@ -38,7 +38,7 @@ namespace AssetFlow.Infrastructure.Services
 
             // 1. Trouver l'utilisateur
             var user = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email && u.IsApproved);
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             Console.WriteLine($"[FACE] Email: '{request.Email}', User: {user != null}");
 

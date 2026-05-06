@@ -211,7 +211,7 @@ html.dark .ws-segmented { background: rgba(255,255,255,0.08); }
 .ws-search-btn {
     display: flex; align-items: center; gap: 8px;
     padding: 0.75rem 1.5rem;
-    background: var(--primary); color: #fff;
+    background: linear-gradient(135deg, #136dec, #1d4ed8) !important; color: #fff;
     border: none; border-radius: var(--radius-md);
     font-size: 0.875rem; font-weight: 700; cursor: pointer;
     white-space: nowrap; transition: all var(--t);

@@ -81,17 +81,44 @@ namespace AssetFlow.Infrastructure.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var p = await _db.Projects.FindAsync(id);
+            var p = await _db.Projects
+                .Include(p => p.Affectations)          // AJOUT
+                    .ThenInclude(a => a.Articles)       // AJOUT
+                .Include(p => p.Affectations)          // AJOUT
+                    .ThenInclude(a => a.Materiel)       // AJOUT
+                .FirstOrDefaultAsync(p => p.Id == id); // AJOUT (remplace FindAsync)
+
             if (p == null) return false;
+
+            // ── NOUVEAU : clôturer les affectations et libérer le stock ──────────
+            foreach (var affectation in p.Affectations)
+            {
+                // 1. Marquer l'affectation comme Terminée
+                affectation.Etat     = EtatAffectation.Terminee;
+                affectation.DateRetour = DateTime.UtcNow;
+                affectation.ProjetId = null;
+
+                // 2. Remettre les articles individuels en Disponible
+                foreach (var article in affectation.Articles)
+                {
+                    article.Statut       = StatutArticle.Disponible;
+                    article.AffectationId = null;
+                }
+
+                // 3. Remettre la quantité au stock du matériel
+                affectation.Materiel.QuantiteStock += affectation.QuantiteAffectee;
+            }
+            // ─────────────────────────────────────────────────────────────────────
+
             _db.Projects.Remove(p);
             await _db.SaveChangesAsync();
-            // ── MEMORY ──────────────────────────────────────────────────────────
+
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "projet",
                 NodeId = $"p-{id}"
             });
-            // ────────────────────────────────────────────────────────────────────
+
             return true;
         }
 

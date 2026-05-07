@@ -13,6 +13,7 @@ namespace AssetFlow.Domain.Entities
         public DateTime? DateFin { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<Affectation> Affectations { get; set; } = new List<Affectation>();
     }
 
     public enum StatutProjet

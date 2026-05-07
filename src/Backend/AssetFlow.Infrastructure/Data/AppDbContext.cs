@@ -68,7 +68,7 @@ namespace AssetFlow.Infrastructure.Data
                           .HasMaxLength(20)
                           .HasDefaultValue(EtatAffectation.Courante);
                         entity.HasOne(a => a.Projet)
-                          .WithMany()
+                          .WithMany(p => p.Affectations)
                           .HasForeignKey(a => a.ProjetId)
                           .OnDelete(DeleteBehavior.SetNull)
                           .IsRequired(false);
@@ -271,6 +271,10 @@ namespace AssetFlow.Infrastructure.Data
                         entity.Property(p => p.Budget).HasColumnType("decimal(18,2)");
                         entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                         entity.Property(p => p.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                        entity.HasMany(p => p.Affectations)
+                        .WithOne(a => a.Projet)
+                        .HasForeignKey(a => a.ProjetId)
+                        .OnDelete(DeleteBehavior.SetNull); 
                   });
 
                   modelBuilder.Entity<LigneDemande>(entity =>

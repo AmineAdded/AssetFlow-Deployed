@@ -54,16 +54,36 @@ namespace AssetFlow.BlazorUI.Services
             try
             {
                 var response = await _httpClient.PostAsJsonAsync("api/auth/register", request);
-                var result   = await response.Content.ReadFromJsonAsync<RegisterResponse>();
 
-                if (result != null)
-                    return (result.Success, result.Message);
-
-                return (false, "Erreur inconnue.");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<RegisterResponse>();
+                    if (result != null)
+                        return (result.Success, result.Message);
+                    return (true, "Compte créé avec succès.");
+                }
+                else
+                {
+                    var errorText = await response.Content.ReadAsStringAsync();
+                    
+                    try
+                    {
+                        // Le backend retourne du JSON → on extrait juste le message
+                        var errorJson = System.Text.Json.JsonSerializer.Deserialize<RegisterResponse>(errorText,
+                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                        
+                        return (false, errorJson?.Message ?? "Une erreur est survenue.");
+                    }
+                    catch
+                    {
+                        // Fallback si c'est une string brute
+                        return (false, errorText.Trim().Trim('"'));
+                    }
+                }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return (false, $"Erreur réseau: {ex.Message}");
+                return (false, "Une erreur réseau est survenue. Veuillez réessayer.");
             }
         }
 

@@ -45,7 +45,7 @@ namespace AssetFlow.WebAPI.Controllers
             var result = await _authService.RegisterAsync(request);
 
             if (!result.Success)
-                return BadRequest(result.Message);
+                return BadRequest(new { success = false, message = result.Message });
 
             // 201 Created avec message de succès
             return Created("", result);

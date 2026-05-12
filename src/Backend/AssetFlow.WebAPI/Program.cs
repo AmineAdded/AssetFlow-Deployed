@@ -181,6 +181,7 @@ builder.Services.AddSingleton<IScrapingNotifier>(sp =>
 builder.Services.AddScoped<IRedisScrapingService, RedisScrapingService>();
 builder.Services.AddScoped<IScrapingService, ScrapingService>();
 builder.Services.AddScoped<ITeamsIncidentNotifier, TeamsIncidentNotifier>();
+builder.Services.AddScoped<ITeamsDemandeAchatNotifier, TeamsDemandeAchatNotifier>();
 
 // === SIGNALR — limite augmentée pour les messages vocaux (base64 audio) ===
 builder.Services.AddSignalR(options =>

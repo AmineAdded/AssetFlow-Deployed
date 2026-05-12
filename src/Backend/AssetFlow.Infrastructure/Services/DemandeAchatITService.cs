@@ -11,12 +11,14 @@ namespace AssetFlow.Infrastructure.Services
         private readonly AppDbContext _context;
         private readonly IDashboardNotifier _notifier;
         private readonly IAuditLogService _audit;
+        private readonly ITeamsDemandeAchatNotifier _teamsNotifier;
 
-        public DemandeAchatITService(AppDbContext context, IDashboardNotifier notifier, IAuditLogService audit)
+        public DemandeAchatITService(AppDbContext context, IDashboardNotifier notifier, IAuditLogService audit,ITeamsDemandeAchatNotifier teamsNotifier)
         {
             _context  = context;
             _notifier = notifier;
             _audit    = audit;
+            _teamsNotifier = teamsNotifier; 
         }
 
         public async Task<IEnumerable<DemandeAchatITDto>> GetAllAsync(int? userId)
@@ -80,6 +82,7 @@ namespace AssetFlow.Infrastructure.Services
                 Entite      = $"Demande d'achat #{demande.Reference}",
                 Details     = $"Nouvelle demande d'achat créée : \"{demande.NomProduit}\" (Qté: {demande.Quantite})"
             });
+            await _teamsNotifier.NotifierNouvelleDemandeAsync(demande.IdDemande);
             return ToDto(demande);
         }
 

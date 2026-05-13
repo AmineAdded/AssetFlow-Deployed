@@ -69,13 +69,12 @@ def trouver_url_categorie(query: str, categories: dict) -> str | None:
 def creer_driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    options.add_argument("--window-size=1920,1080")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    return webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=options
-    )
+    options.add_argument("--window-size=1920,1080")
+    options.binary_location = os.environ.get("CHROME_BIN", "/usr/bin/chromium")
+    service = Service(os.environ.get("CHROMEDRIVER_PATH", "/usr/bin/chromedriver"))
+    return webdriver.Chrome(service=service, options=options)
 
 
 # =============================================================================

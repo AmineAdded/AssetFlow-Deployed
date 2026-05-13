@@ -29,7 +29,8 @@ builder.Services.AddScoped(sp =>
 // === HTTP CLIENT — API Python ===
 builder.Services.AddHttpClient("PythonScraper", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5000/");
+    var scraperUrl = builder.Configuration["ScraperUrl"] ?? "http://localhost:5000/";
+    client.BaseAddress = new Uri(scraperUrl);
     client.Timeout = TimeSpan.FromMinutes(5);
 });
 

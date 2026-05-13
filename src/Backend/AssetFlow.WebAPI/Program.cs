@@ -223,7 +223,7 @@ builder.Services.AddHttpClient("MistralClient", client =>
 // HTTP Client Python
 builder.Services.AddHttpClient("PythonScraper", c =>
 {
-    c.BaseAddress = new Uri("http://localhost:5000/");
+    c.BaseAddress = new Uri("https://assetflow-scraper.onrender.com/");
     c.Timeout = TimeSpan.FromMinutes(5);
 });
 

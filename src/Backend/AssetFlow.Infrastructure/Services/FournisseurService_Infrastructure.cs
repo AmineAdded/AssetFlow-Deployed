@@ -14,6 +14,11 @@ namespace AssetFlow.Infrastructure.Services
             _context = context;
         }
 
+        // ── Helper : force UTC ────────────────────────────────────────────────
+        private static DateTime? ToUtc(DateTime? dt)
+            => dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
+        // ─────────────────────────────────────────────────────────────────────
+
         // GET ALL — Retourne tous les fournisseurs
         public async Task<List<Fournisseur>> GetAllAsync()
         {
@@ -22,7 +27,6 @@ namespace AssetFlow.Infrastructure.Services
                 .AsNoTracking()
                 .ToListAsync();
 
-            // Calculer le nombre réel de commandes par fournisseur
             var comptes = await _context.Commandes
                 .Where(c => c.FournisseurId != null)
                 .GroupBy(c => c.FournisseurId)
@@ -37,6 +41,7 @@ namespace AssetFlow.Infrastructure.Services
 
             return fournisseurs;
         }
+
         // GET BY ID — Retourne un fournisseur par son IdFournisseur
         public async Task<Fournisseur?> GetByIdAsync(int id)
         {
@@ -44,6 +49,7 @@ namespace AssetFlow.Infrastructure.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(f => f.IdFournisseur == id);
         }
+
         // RECHERCHER — Filtre sur Nom, Telephone, Adresse, Mail
         public async Task<List<Fournisseur>> RechercherAsync(string terme)
         {
@@ -51,8 +57,8 @@ namespace AssetFlow.Infrastructure.Services
 
             return await _context.Fournisseurs
                 .Where(f =>
-                    f.Nom.ToLower().Contains(t)                          ||
-                    (f.Telephone != null && f.Telephone.Contains(t))     ||
+                    f.Nom.ToLower().Contains(t)                              ||
+                    (f.Telephone != null && f.Telephone.Contains(t))         ||
                     (f.Adresse   != null && f.Adresse.ToLower().Contains(t)) ||
                     (f.Mail      != null && f.Mail.ToLower().Contains(t)))
                 .OrderBy(f => f.Nom)
@@ -63,15 +69,17 @@ namespace AssetFlow.Infrastructure.Services
         // AJOUTER — Insère un nouveau fournisseur
         public async Task<Fournisseur> AjouterAsync(Fournisseur fournisseur)
         {
+            // Normaliser DerniereCommande si elle est renseignée à la création
+            fournisseur.DerniereCommande = ToUtc(fournisseur.DerniereCommande); // ← UTC
+
             _context.Fournisseurs.Add(fournisseur);
             await _context.SaveChangesAsync();
-            return fournisseur;   // IdFournisseur est maintenant peuplé
+            return fournisseur;
         }
 
         // MODIFIER — Met à jour un fournisseur existant
         public async Task ModifierAsync(Fournisseur fournisseur)
         {
-            // Récupérer l'enregistrement avec tracking (pour détecter les changements)
             var existant = await _context.Fournisseurs
                 .FirstOrDefaultAsync(f => f.IdFournisseur == fournisseur.IdFournisseur);
 
@@ -79,15 +87,13 @@ namespace AssetFlow.Infrastructure.Services
                 throw new KeyNotFoundException(
                     $"Fournisseur ID {fournisseur.IdFournisseur} introuvable.");
 
-            // Mettre à jour uniquement les champs modifiables
-existant.Nom = fournisseur.Nom;
-existant.Telephone = fournisseur.Telephone;
-existant.Adresse = fournisseur.Adresse;
-existant.Mail = fournisseur.Mail;
-
-existant.TauxLivraisonATemps = fournisseur.TauxLivraisonATemps;
-existant.ScoreFiabilite = fournisseur.ScoreFiabilite;
-existant.DerniereCommande = fournisseur.DerniereCommande;
+            existant.Nom                  = fournisseur.Nom;
+            existant.Telephone            = fournisseur.Telephone;
+            existant.Adresse              = fournisseur.Adresse;
+            existant.Mail                 = fournisseur.Mail;
+            existant.TauxLivraisonATemps  = fournisseur.TauxLivraisonATemps;
+            existant.ScoreFiabilite       = fournisseur.ScoreFiabilite;
+            existant.DerniereCommande     = ToUtc(fournisseur.DerniereCommande); // ← UTC
 
             await _context.SaveChangesAsync();
         }

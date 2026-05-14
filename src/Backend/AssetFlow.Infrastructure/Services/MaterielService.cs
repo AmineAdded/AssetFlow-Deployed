@@ -11,6 +11,7 @@ namespace AssetFlow.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IDashboardNotifier _notifier;
         private readonly IAuditLogService _audit;
+
         public MaterielService(AppDbContext db, IDashboardNotifier notifier, IAuditLogService audit)
         { _db = db; _notifier = notifier; _audit = audit; }
 
@@ -86,7 +87,7 @@ namespace AssetFlow.Infrastructure.Services
                 Unite         = dto.Unite.Trim(),
                 Emplacement   = dto.Emplacement?.Trim(),
                 ImageUrl      = dto.ImageUrl?.Trim(),
-                DateAjout     = DateTime.UtcNow
+                DateAjout     = DateTime.UtcNow  // ✅ déjà UTC, aucun changement nécessaire
             };
 
             _db.Materiels.Add(materiel);
@@ -95,13 +96,14 @@ namespace AssetFlow.Infrastructure.Services
             await _notifier.NotifyITAsync();
             await _audit.LogAsync(new CreateAuditLogDto
             {
-                Utilisateur = dto.Utilisateur,        // remplacez par l'utilisateur courant si disponible
+                Utilisateur = dto.Utilisateur,
                 Email       = "system",
                 Action      = IAuditLogService.Actions.Creation,
                 Categorie   = IAuditLogService.Categories.Materiel,
                 Entite      = $"Matériel #{materiel.Reference}",
                 Details     = $"Nouveau matériel ajouté : \"{materiel.Designation}\" (Qté: {materiel.QuantiteStock})"
             });
+
             return new MaterielResultDto { Succes = true, Message = "Matériel créé avec succès.", IdMateriel = materiel.Id };
         }
 
@@ -123,32 +125,28 @@ namespace AssetFlow.Infrastructure.Services
             materiel.Unite         = dto.Unite.Trim();
             materiel.Emplacement   = dto.Emplacement?.Trim();
             materiel.ImageUrl      = dto.ImageUrl?.Trim();
+            // Pas de date utilisateur dans ModifierMaterielDto → rien à normaliser ✅
 
             await _db.SaveChangesAsync();
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
             await _audit.LogAsync(new CreateAuditLogDto
             {
-                Utilisateur = dto.Utilisateur,        // remplacez par l'utilisateur courant si disponible
+                Utilisateur = dto.Utilisateur,
                 Email       = "system",
                 Action      = IAuditLogService.Actions.Modification,
                 Categorie   = IAuditLogService.Categories.Materiel,
                 Entite      = $"Matériel #{dto.Reference}",
                 Details     = $"Matériel mis à jour : \"{dto.Designation}\""
             });
+
             return new MaterielResultDto { Succes = true, Message = "Matériel mis à jour." };
         }
 
-        public async Task<MaterielResultDto> SupprimerAsync(string userName,int id)
-            => await SupprimerAvecCascadeAsync(userName,id);
+        public async Task<MaterielResultDto> SupprimerAsync(string userName, int id)
+            => await SupprimerAvecCascadeAsync(userName, id);
 
-        //   1. Incidents liés aux articles de toutes les commandes
-        //   2. Articles individuels de toutes les commandes
-        //   3. Commandes du matériel
-        //   4. Incidents liés aux affectations (via AffectationId)
-        //   5. Affectations du matériel
-        //   6. Le matériel lui-même
-        public async Task<MaterielResultDto> SupprimerAvecCascadeAsync(string userName,int id)
+        public async Task<MaterielResultDto> SupprimerAvecCascadeAsync(string userName, int id)
         {
             var materiel = await _db.Materiels.FindAsync(id);
             if (materiel is null)
@@ -157,14 +155,9 @@ namespace AssetFlow.Infrastructure.Services
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                // 1. Articles de toutes les commandes de ce matériel
-                var articles = await _db.ArticlesIndividuels
-                    .Where(a => a.MaterielId == id)
-                    .ToListAsync();
+                var articles    = await _db.ArticlesIndividuels.Where(a => a.MaterielId == id).ToListAsync();
+                var articleIds  = articles.Select(a => a.Id).ToList();
 
-                var articleIds = articles.Select(a => a.Id).ToList();
-
-                // 2. Incidents liés aux articles
                 if (articleIds.Any())
                 {
                     var incidentsArticles = await _db.Incidents
@@ -173,14 +166,9 @@ namespace AssetFlow.Infrastructure.Services
                     if (incidentsArticles.Any()) _db.Incidents.RemoveRange(incidentsArticles);
                 }
 
-                // 3. Affectations du matériel
-                var affectations = await _db.Affectations
-                    .Where(a => a.MaterielId == id)
-                    .ToListAsync();
+                var affectations    = await _db.Affectations.Where(a => a.MaterielId == id).ToListAsync();
+                var affectationIds  = affectations.Select(a => a.Id).ToList();
 
-                var affectationIds = affectations.Select(a => a.Id).ToList();
-
-                // 4. Incidents liés aux affectations
                 if (affectationIds.Any())
                 {
                     var incidentsAffect = await _db.Incidents
@@ -191,22 +179,18 @@ namespace AssetFlow.Infrastructure.Services
                     _db.Affectations.RemoveRange(affectations);
                 }
 
-                // 5. Articles individuels
                 if (articles.Any()) _db.ArticlesIndividuels.RemoveRange(articles);
 
-                // 6. Commandes
-                var commandes = await _db.Commandes
-                    .Where(c => c.MaterielId == id)
-                    .ToListAsync();
+                var commandes = await _db.Commandes.Where(c => c.MaterielId == id).ToListAsync();
                 if (commandes.Any()) _db.Commandes.RemoveRange(commandes);
 
-                // 7. Matériel
                 _db.Materiels.Remove(materiel);
 
                 await _db.SaveChangesAsync();
                 await _notifier.NotifyAsync();
                 await _notifier.NotifyITAsync();
                 await tx.CommitAsync();
+
                 await _audit.LogAsync(new CreateAuditLogDto
                 {
                     Utilisateur = userName,
@@ -227,7 +211,11 @@ namespace AssetFlow.Infrastructure.Services
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                return new MaterielResultDto { Succes = false, Message = $"Erreur : {ex.InnerException?.Message ?? ex.Message}" };
+                return new MaterielResultDto
+                {
+                    Succes  = false,
+                    Message = $"Erreur : {ex.InnerException?.Message ?? ex.Message}"
+                };
             }
         }
     }

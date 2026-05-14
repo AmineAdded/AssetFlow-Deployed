@@ -13,12 +13,12 @@ namespace AssetFlow.Infrastructure.Services
         private readonly IAuditLogService _audit;
         private readonly ITeamsDemandeAchatNotifier _teamsNotifier;
 
-        public DemandeAchatITService(AppDbContext context, IDashboardNotifier notifier, IAuditLogService audit,ITeamsDemandeAchatNotifier teamsNotifier)
+        public DemandeAchatITService(AppDbContext context, IDashboardNotifier notifier, IAuditLogService audit, ITeamsDemandeAchatNotifier teamsNotifier)
         {
-            _context  = context;
-            _notifier = notifier;
-            _audit    = audit;
-            _teamsNotifier = teamsNotifier; 
+            _context       = context;
+            _notifier      = notifier;
+            _audit         = audit;
+            _teamsNotifier = teamsNotifier;
         }
 
         public async Task<IEnumerable<DemandeAchatITDto>> GetAllAsync(int? userId)
@@ -39,7 +39,9 @@ namespace AssetFlow.Infrastructure.Services
             if (dto.Lignes == null || !dto.Lignes.Any())
                 throw new ArgumentException("Au moins une ligne de matériel est obligatoire.");
 
-            var referenceGlobale = $"SN-{DateTime.Now:yyyy}-{Guid.NewGuid().ToString()[..4].ToUpper()}";
+            var now = DateTime.UtcNow;   // ← une seule source de vérité, UTC
+
+            var referenceGlobale = $"SN-{now:yyyy}-{Guid.NewGuid().ToString()[..4].ToUpper()}"; // ← UTC
 
             var demande = new DemandeAchat
             {
@@ -52,7 +54,7 @@ namespace AssetFlow.Infrastructure.Services
                 Description  = dto.Description?.Trim(),
                 DemandeurNom = dto.DemandeurNom ?? "IT",
                 Statut       = "en_attente",
-                DateCreation = DateTime.Now,
+                DateCreation = now,   // ← UTC
                 Lignes       = dto.Lignes.Select(l => new LigneDemande
                 {
                     Reference   = l.Reference?.Trim() ?? string.Empty,
@@ -66,13 +68,11 @@ namespace AssetFlow.Infrastructure.Services
             await _context.SaveChangesAsync();
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
-            // ── MEMORY ──────────────────────────────────────────────────────────
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "demande",
                 NodeId = $"d-{demande.IdDemande}"
             });
-            // ────────────────────────────────────────────────────────────────────
             await _audit.LogAsync(new CreateAuditLogDto
             {
                 Utilisateur = dto.Utilisateur,
@@ -113,13 +113,11 @@ namespace AssetFlow.Infrastructure.Services
             await _context.SaveChangesAsync();
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
-            // ── MEMORY ──────────────────────────────────────────────────────────
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "demande",
                 NodeId = $"d-{id}"
             });
-            // ────────────────────────────────────────────────────────────────────
             await _audit.LogAsync(new CreateAuditLogDto
             {
                 Utilisateur = dto.Utilisateur,
@@ -140,21 +138,18 @@ namespace AssetFlow.Infrastructure.Services
                 .FirstOrDefaultAsync(d => d.IdDemande == id);
             if (demande == null) return false;
 
-            if (demande.Offres.Any())  _context.Set<OffreAchat>().RemoveRange(demande.Offres);
-            if (demande.Lignes.Any())  _context.Set<LigneDemande>().RemoveRange(demande.Lignes);
+            if (demande.Offres.Any()) _context.Set<OffreAchat>().RemoveRange(demande.Offres);
+            if (demande.Lignes.Any()) _context.Set<LigneDemande>().RemoveRange(demande.Lignes);
 
             _context.DemandeAchat.Remove(demande);
             await _context.SaveChangesAsync();
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
-            // ── MEMORY ──────────────────────────────────────────────────────────
-            // On notifie un refresh global des demandes (l'entité n'existe plus)
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "demande",
                 NodeId = $"d-{id}"
             });
-            // ────────────────────────────────────────────────────────────────────
             await _audit.LogAsync(new CreateAuditLogDto
             {
                 Utilisateur = userName,

@@ -25,6 +25,11 @@ namespace AssetFlow.Infrastructure.Services
             _biographie = biographie;
         }
 
+        // ── Helper : force UTC ────────────────────────────────────────────────
+        private static DateTime? ToUtc(DateTime? dt)
+            => dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
+        // ─────────────────────────────────────────────────────────────────────
+
         public async Task<List<UtilisateurDisponibleDto>> GetUtilisateursDisponiblesAsync(string? search = null)
         {
             var query = _db.Users.AsNoTracking();
@@ -157,10 +162,10 @@ namespace AssetFlow.Infrastructure.Services
                 MaterielId       = dto.MaterielId,
                 UtilisateurId    = dto.UtilisateurId,
                 ProjetId         = dto.ProjetId,
-                DateAffectation  = DateTime.UtcNow,
+                DateAffectation  = DateTime.UtcNow,              // ✅ déjà UTC
                 QuantiteAffectee = articles.Count,
                 Observations     = dto.Observations?.Trim(),
-                DateRetour       = dto.DateRetourPrevue
+                DateRetour       = ToUtc(dto.DateRetourPrevue)   // ← UTC
             };
 
             _db.Affectations.Add(affectation);
@@ -194,11 +199,11 @@ namespace AssetFlow.Infrastructure.Services
             await _notifier.NotifyAsync();
             await _notifier.NotifyITAsync();
 
-            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel", NodeId = $"m-{dto.MaterielId}" });
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "materiel",    NodeId = $"m-{dto.MaterielId}" });
             if (dto.UtilisateurId.HasValue)
                 await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "utilisateur", NodeId = $"u-{dto.UtilisateurId.Value}" });
             if (dto.ProjetId.HasValue)
-                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "projet", NodeId = $"p-{dto.ProjetId.Value}" });
+                await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new { Type = "projet",      NodeId = $"p-{dto.ProjetId.Value}" });
 
             await _audit.LogAsync(new CreateAuditLogDto
             {

@@ -25,7 +25,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var connStr = builder.Configuration["Redis:ConnectionString"] ?? "localhost:6379";
-    return ConnectionMultiplexer.Connect(connStr);
+    var options = ConfigurationOptions.Parse(connStr);
+    options.AbortOnConnectFail = false;
+    options.Ssl = connStr.StartsWith("rediss://");
+    return ConnectionMultiplexer.Connect(options);
 });
 
 // === AUTHENTIFICATION JWT — accepte Keycloak ET FaceAuth ===

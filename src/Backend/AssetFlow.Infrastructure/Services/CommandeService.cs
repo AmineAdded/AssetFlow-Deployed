@@ -105,7 +105,7 @@ namespace AssetFlow.Infrastructure.Services
 
         public async Task<IEnumerable<LigneMaterielDto>> GetLignesMaterielsAsync()
         {
-            var materiels = await _db.Materiels.AsNoTracking().OrderBy(m => m.Designation).ToListAsync();
+            var materiels = await _db.Materiels.AsNoTracking().OrderByDescending(m => m.DateAjout).ToListAsync();
             var commandes = await _db.Commandes.Include(c => c.Fournisseur).Include(c => c.Articles).AsNoTracking().ToListAsync();
 
             return materiels.Select(m => new LigneMaterielDto
@@ -184,7 +184,7 @@ namespace AssetFlow.Infrastructure.Services
                 });
             }
 
-            return result.OrderBy(r => r.Designation).ThenByDescending(r => r.DateAchat);
+            return result.OrderByDescending(r => r.DateAjout).ThenByDescending(r => r.DateAchat);
         }
 
         public async Task<CommandeReponseDto> CreerAsync(CreerCommandeDto dto)

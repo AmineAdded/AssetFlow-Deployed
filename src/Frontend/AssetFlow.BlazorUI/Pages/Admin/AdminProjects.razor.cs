@@ -187,6 +187,11 @@ namespace AssetFlow.BlazorUI.Pages.Admin
                 FormError = "Le nom du projet est obligatoire.";
                 return;
             }
+             if (Form.DateDebut.HasValue && Form.DateFin.HasValue && Form.DateDebut > Form.DateFin)
+            {
+                FormError = "La date de début ne peut pas être supérieure à la date de fin.";
+                return;
+            }
             FormLoading = true;
             try
             {

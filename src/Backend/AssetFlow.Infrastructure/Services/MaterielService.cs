@@ -11,9 +11,10 @@ namespace AssetFlow.Infrastructure.Services
         private readonly AppDbContext _db;
         private readonly IDashboardNotifier _notifier;
         private readonly IAuditLogService _audit;
+        private readonly CloudinaryService _cloudinary;
 
-        public MaterielService(AppDbContext db, IDashboardNotifier notifier, IAuditLogService audit)
-        { _db = db; _notifier = notifier; _audit = audit; }
+        public MaterielService(AppDbContext db, IDashboardNotifier notifier, IAuditLogService audit,CloudinaryService cloudinary)
+        { _db = db; _notifier = notifier; _audit = audit; _cloudinary = cloudinary; }
 
         private static MaterielDto ToDto(Materiel m) => new()
         {
@@ -75,6 +76,12 @@ namespace AssetFlow.Infrastructure.Services
         {
             if (await _db.Materiels.AnyAsync(m => m.Reference == dto.Reference.Trim()))
                 return new MaterielResultDto { Succes = false, Message = "Cette référence existe déjà." };
+            string? imageUrl = null;
+            if (!string.IsNullOrEmpty(dto.ImageUrl) && dto.ImageUrl.StartsWith("data:"))
+            {
+                var publicId = $"{dto.Reference.Trim()}_{DateTime.UtcNow.Ticks}";
+                imageUrl = await _cloudinary.UploadBase64Async(dto.ImageUrl, publicId);
+            }
 
             var materiel = new Materiel
             {
@@ -86,7 +93,7 @@ namespace AssetFlow.Infrastructure.Services
                 QuantiteMin   = dto.QuantiteMin,
                 Unite         = dto.Unite.Trim(),
                 Emplacement   = dto.Emplacement?.Trim(),
-                ImageUrl      = dto.ImageUrl?.Trim(),
+                ImageUrl      = imageUrl,
                 DateAjout     = DateTime.UtcNow  // ✅ déjà UTC, aucun changement nécessaire
             };
 
@@ -112,6 +119,19 @@ namespace AssetFlow.Infrastructure.Services
             var materiel = await _db.Materiels.FindAsync(dto.Id);
             if (materiel is null)
                 return new MaterielResultDto { Succes = false, Message = "Matériel introuvable." };
+            if (dto.ImageUrl == null)
+            {
+                // L'utilisateur a supprimé l'image → supprimer de Cloudinary
+                await _cloudinary.DeleteByUrlAsync(materiel.ImageUrl);
+                materiel.ImageUrl = null;
+            }
+            else if (dto.ImageUrl.StartsWith("data:"))
+            {
+                // Nouvelle image base64 → supprimer l'ancienne + uploader la nouvelle
+                await _cloudinary.DeleteByUrlAsync(materiel.ImageUrl);
+                var publicId = $"{dto.Reference.Trim()}_{DateTime.UtcNow.Ticks}";
+                materiel.ImageUrl = await _cloudinary.UploadBase64Async(dto.ImageUrl, publicId);
+            }
 
             if (await _db.Materiels.AnyAsync(m => m.Reference == dto.Reference.Trim() && m.Id != dto.Id))
                 return new MaterielResultDto { Succes = false, Message = "Cette référence est déjà utilisée." };

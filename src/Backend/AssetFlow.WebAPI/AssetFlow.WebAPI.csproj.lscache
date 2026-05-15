@@ -416,6 +416,7 @@ Program.cs
 <NUGET>/
  azure.core/1.47.1/lib/net8.0/Azure.Core.dll
  azure.identity/1.14.2/lib/net8.0/Azure.Identity.dll
+ cloudinarydotnet/1.29.1/lib/netstandard2.0/CloudinaryDotNet.dll
  microsoft.aspnetcore.authentication.jwtbearer/10.0.3/lib/net10.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
  microsoft.aspnetcore.openapi/10.0.1/lib/net10.0/Microsoft.AspNetCore.OpenApi.dll
  microsoft.bcl.asyncinterfaces/8.0.0/lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll

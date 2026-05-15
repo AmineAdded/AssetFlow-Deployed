@@ -32,7 +32,7 @@ namespace AssetFlow.BlazorUI.Services
                         await _localStorage.SetItemAsync("user_id",          result.UserId);
                         await _localStorage.SetItemAsync("access_token",     result.AccessToken);
                         await _localStorage.SetItemAsync("refresh_token",    result.RefreshToken);  // ← pour refresh auto
-                        await _localStorage.SetItemAsync("token_expires_at", DateTime.UtcNow.AddSeconds(result.ExpiresIn).ToString("o")); // ← date expiration
+                        await _localStorage.SetItemAsync("token_expires_at", GetTokenExpiry(result.AccessToken));// ← date expiration
                         await _localStorage.SetItemAsync("user_role",        result.Role);
                         await _localStorage.SetItemAsync("user_name",        result.FullName);
                         await _localStorage.SetItemAsync("user_email",        result.Email);
@@ -46,6 +46,29 @@ namespace AssetFlow.BlazorUI.Services
             catch (Exception ex)
             {
                 return (false, $"Erreur réseau: {ex.Message}");
+            }
+        }
+        private static string GetTokenExpiry(string accessToken)
+        {
+            try
+            {
+                // Le JWT est : header.payload.signature
+                var payload = accessToken.Split('.')[1];
+                
+                // Padding base64
+                var padded = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
+                var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
+                
+                var doc = System.Text.Json.JsonDocument.Parse(json);
+                var exp = doc.RootElement.GetProperty("exp").GetInt64();
+                
+                // exp est un Unix timestamp UTC → convertir en DateTime UTC
+                return DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime.ToString("o");
+            }
+            catch
+            {
+                // Fallback si décodage échoue
+                return DateTime.UtcNow.AddSeconds(3600).ToString("o");
             }
         }
 

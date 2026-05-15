@@ -65,19 +65,18 @@ namespace AssetFlow.BlazorUI.Services
 
             try
             {
-                // ← Créer un HttpClient RAW, sans passer par le handler
                 using var rawClient = new HttpClient();
 
                 var formData = new Dictionary<string, string>
                 {
-                    { "grant_type",    "refresh_token"                      },
-                    { "client_id",     "assetflow-client"                   },
-                    { "client_secret", "tU5jkiUUchoZMyr7V5nDYBAlD52PCOod"  },
-                    { "refresh_token", refreshToken                         }
+                    { "grant_type",    "refresh_token"                                          },
+                    { "client_id",     "assetflow-client"                                       },
+                    { "client_secret", "6ejwoHkAwcC2lyhXP0Td5ygJexf3nLUm"                      },
+                    { "refresh_token", refreshToken                                             }
                 };
 
                 var response = await rawClient.PostAsync(
-                    "http://localhost:8080/realms/assetflow/protocol/openid-connect/token",
+                    "https://assetflow-etmn.onrender.com/realms/assetflow/protocol/openid-connect/token",
                     new FormUrlEncodedContent(formData)
                 );
 
@@ -89,16 +88,32 @@ namespace AssetFlow.BlazorUI.Services
 
                 if (result == null) return null;
 
+                // ✅ Fix du bug de date — décoder l'expiration depuis le JWT lui-même
                 await _localStorage.SetItemAsync("access_token",     result.access_token);
                 await _localStorage.SetItemAsync("refresh_token",    result.refresh_token);
-                await _localStorage.SetItemAsync("token_expires_at",
-                    DateTime.UtcNow.AddSeconds(result.expires_in).ToString("o"));
+                await _localStorage.SetItemAsync("token_expires_at", GetTokenExpiry(result.access_token));
 
                 return result.access_token;
             }
             catch
             {
                 return null;
+            }
+        }
+        private static string GetTokenExpiry(string accessToken)
+        {
+            try
+            {
+                var payload = accessToken.Split('.')[1];
+                var padded  = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
+                var json    = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(padded));
+                var doc     = System.Text.Json.JsonDocument.Parse(json);
+                var exp     = doc.RootElement.GetProperty("exp").GetInt64();
+                return DateTimeOffset.FromUnixTimeSeconds(exp).UtcDateTime.ToString("o");
+            }
+            catch
+            {
+                return DateTime.UtcNow.AddSeconds(3600).ToString("o");
             }
         }
 

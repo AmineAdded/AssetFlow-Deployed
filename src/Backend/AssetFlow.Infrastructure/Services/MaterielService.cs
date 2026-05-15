@@ -32,7 +32,7 @@ namespace AssetFlow.Infrastructure.Services
 
         public async Task<IEnumerable<MaterielDto>> GetAllAsync()
         {
-            var list = await _db.Materiels.AsNoTracking().OrderBy(m => m.Designation).ToListAsync();
+            var list = await _db.Materiels.AsNoTracking().OrderByDescending(m => m.DateAjout).ToListAsync();
             return list.Select(ToDto);
         }
 

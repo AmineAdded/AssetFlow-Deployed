@@ -262,7 +262,8 @@ app.UseAuthentication();
 app.UseAuthorization();          // ← UseAuthorization AVANT MapHub
 
 // Pour invoquer UptimeRobot
-app.MapGet("/", () => Results.Ok(new { service = "AssetFlow API", status = "ok" }));
+app.MapMethods("/", new[] { "GET", "HEAD" }, 
+    () => Results.Ok(new { service = "AssetFlow API", status = "ok" }));
 app.MapControllers();
 app.MapHub<ChatHub>("/chathub"); // ← après UseAuthorization
 app.MapHub<DashboardHub>("/dashboardhub");

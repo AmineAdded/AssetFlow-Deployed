@@ -119,22 +119,30 @@ namespace AssetFlow.Infrastructure.Services
             var materiel = await _db.Materiels.FindAsync(dto.Id);
             if (materiel is null)
                 return new MaterielResultDto { Succes = false, Message = "Matériel introuvable." };
+
+            if (await _db.Materiels.AnyAsync(m => m.Reference == dto.Reference.Trim() && m.Id != dto.Id))
+                return new MaterielResultDto { Succes = false, Message = "Cette référence est déjà utilisée." };
+
+            // ── Gestion image Cloudinary ─────────────────────────────
             if (dto.ImageUrl == null)
             {
-                // L'utilisateur a supprimé l'image → supprimer de Cloudinary
+                // Image supprimée → supprimer de Cloudinary
                 await _cloudinary.DeleteByUrlAsync(materiel.ImageUrl);
                 materiel.ImageUrl = null;
             }
             else if (dto.ImageUrl.StartsWith("data:"))
             {
-                // Nouvelle image base64 → supprimer l'ancienne + uploader la nouvelle
+                // Nouvelle image base64 → supprimer ancienne + uploader nouvelle
                 await _cloudinary.DeleteByUrlAsync(materiel.ImageUrl);
                 var publicId = $"{dto.Reference.Trim()}_{DateTime.UtcNow.Ticks}";
                 materiel.ImageUrl = await _cloudinary.UploadBase64Async(dto.ImageUrl, publicId);
             }
-
-            if (await _db.Materiels.AnyAsync(m => m.Reference == dto.Reference.Trim() && m.Id != dto.Id))
-                return new MaterielResultDto { Succes = false, Message = "Cette référence est déjà utilisée." };
+            else if (dto.ImageUrl.StartsWith("https://"))
+            {
+                // URL Cloudinary existante → image inchangée
+                materiel.ImageUrl = dto.ImageUrl;
+            }
+            // ────────────────────────────────────────────────────────
 
             materiel.Reference     = dto.Reference.Trim();
             materiel.Designation   = dto.Designation.Trim();
@@ -144,8 +152,6 @@ namespace AssetFlow.Infrastructure.Services
             materiel.QuantiteMin   = dto.QuantiteMin;
             materiel.Unite         = dto.Unite.Trim();
             materiel.Emplacement   = dto.Emplacement?.Trim();
-            materiel.ImageUrl      = dto.ImageUrl?.Trim();
-            // Pas de date utilisateur dans ModifierMaterielDto → rien à normaliser ✅
 
             await _db.SaveChangesAsync();
             await _notifier.NotifyAsync();

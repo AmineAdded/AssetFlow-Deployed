@@ -156,6 +156,21 @@
     <script src="js/voice-player.js"></script>
     <script src="js/graphEngine.js"></script>
     <script src="js/scrapingNotify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        window.generateQrCode = function(canvasId, url) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            new QRCode(canvas, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: "#0F1E3C",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        };
+    </script>
 
 </body>
 

@@ -9,9 +9,13 @@ from price_scraper import scraper_prix
 app = Flask(__name__)
 CORS(app)
 
+# ✅ AJOUTER CETTE ROUTE
+@app.route('/')
+def health():
+    return jsonify({'status': 'ok', 'service': 'AssetFlow Scraper'}), 200
+
 
 def nettoyer_query(query: str) -> str:
-    """Supprime les caractères qui cassent les URLs."""
     return (
         query
         .replace('"', '')

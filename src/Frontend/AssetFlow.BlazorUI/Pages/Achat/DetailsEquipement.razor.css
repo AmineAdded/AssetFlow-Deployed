@@ -833,6 +833,7 @@ html.dark .incident-desc { color: rgba(251,146,60,0.7); }
 
 @media (max-width: 480px) {
 
+    .breadcrumb {display: none;}
     /* ── 1. Bloque tout débordement horizontal sur TOUS les ancêtres ── */
     .employe-layout {
         overflow-x: hidden;

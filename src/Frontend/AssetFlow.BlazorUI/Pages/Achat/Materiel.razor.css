@@ -1129,6 +1129,7 @@ html.dark .art-rep        { background: rgba(212,131,26,0.12); }
     .sk-cmd-row { grid-template-columns: 130px 100px 1fr 90px 90px 100px 90px; }
 }
 @media (max-width: 768px) {
+    .sk-expired-tag, .sk-soon-tag { display: none; }
     .sk-menu-btn  { display: flex !important; }
     .sk-topbar    { padding: 0 72px 0 16px; }
     .sk-content   { padding: 18px 16px; }

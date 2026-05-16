@@ -544,9 +544,11 @@ html.dark .card-footer {
     .incident-form   { padding: 1.5rem; gap: 1.5rem; }
     .card-footer     { padding: 1.25rem 1.5rem; }
     .radio-grid      { grid-template-columns: repeat(2, 1fr); }
+    .inc-sig-breadcrumb {display: none;}
 }
 @media (max-width: 480px) {
     .header-title { font-size: 1.2rem; }
     .radio-grid   { grid-template-columns: 1fr; }
     .btn-submit   { padding: 0.875rem; font-size: 0.85rem; }
+    .inc-sig-breadcrumb {display: none;}
 }

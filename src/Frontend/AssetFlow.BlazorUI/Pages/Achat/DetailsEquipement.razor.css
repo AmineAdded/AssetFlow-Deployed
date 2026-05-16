@@ -835,44 +835,41 @@ html.dark .incident-desc { color: rgba(251,146,60,0.7); }
 }
 
 @media (max-width: 480px) {
-    .detail-content { padding: 0.875rem; }
-    .equip-title { font-size: 1.2rem; }
-    .qr-card, .incident-card { padding: 1.25rem; }
-    .incidents-section-header, .specs-header { padding: 0.875rem 1rem; }
-    .incidents-timeline { padding: 1rem; }
-    .spec-lbl { font-size: 0.72rem; }
-
-    .detail-grid {
-        grid-template-columns: 1fr !important;
-        gap: 1rem !important;
-        width: 100% !important;
-        max-width: 100% !important;
+    /* Conteneurs — bloque tout débordement horizontal */
+    .employe-layout,
+    .detail-main,
+    .detail-content {
+        overflow-x: hidden !important;
+        max-width: 100vw !important;
     }
 
-    /* La photo ne dépasse pas */
+    .detail-content { padding: 0.75rem !important; }
+
+    /* Grille : 1 colonne, 100% */
+    .detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.875rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .col-left, .col-right {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .col-right { grid-template-columns: 1fr !important; }
+
+    /* Photo */
     .equip-photo-box {
         width: 100% !important;
         max-width: 100% !important;
-        aspect-ratio: 4/3;   /* moins haute sur mobile */
+        aspect-ratio: 4/3 !important;
     }
 
-    /* Le tableau specs : réduit les paddings pour tenir dans l'écran */
-    .spec-lbl {
-        padding: 0.65rem 0.75rem !important;
-        width: 42% !important;
-        font-size: 0.68rem !important;
-    }
-    .spec-val {
-        padding: 0.65rem 0.75rem !important;
-        font-size: 0.8rem !important;
-    }
-
-    /* Cards col-right en colonne simple */
-    .col-right {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* Specs card et incidents section pleine largeur */
+    /* Specs card et toutes les cards */
     .specs-card,
     .incidents-section,
     .qr-card,
@@ -880,5 +877,23 @@ html.dark .incident-desc { color: rgba(251,146,60,0.7); }
         width: 100% !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+        border-radius: 14px !important;
     }
+
+    /* Tableau specs — réduit paddings */
+    .spec-lbl {
+        padding: 0.6rem 0.75rem !important;
+        width: 42% !important;
+        font-size: 0.68rem !important;
+    }
+    .spec-val {
+        padding: 0.6rem 0.75rem !important;
+        font-size: 0.78rem !important;
+    }
+
+    /* Header specs et incidents */
+    .specs-header,
+    .incidents-section-header { padding: 0.75rem 1rem !important; }
+
+    .equip-title { font-size: 1.1rem !important; }
 }

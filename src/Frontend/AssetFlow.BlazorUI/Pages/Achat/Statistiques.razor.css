@@ -581,4 +581,19 @@ html.dark .mini-date { background: rgba(255,255,255,0.05); color: var(--text-pri
     .mini-label  { display: none; }
     .kpi-val     { font-size: 1.2rem; }
     .topbar-role-badge { display: none; }
+    .inline-filters {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .mini-date {
+        max-width: 100px;
+        font-size: 0.65rem;
+        padding: 0.25rem 0.4rem;
+    }
+    .btn-apply {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.65rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
 }

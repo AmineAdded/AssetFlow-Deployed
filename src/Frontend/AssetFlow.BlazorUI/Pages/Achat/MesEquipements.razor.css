@@ -454,15 +454,6 @@ html.dark .equipment-card:hover {
     stroke: var(--text-muted); fill: none;
     stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
 }
-
-/* Overlay sidebar */
-.sidebar-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
-    z-index: 90;
-    animation: overlayIn 0.2s ease;
-}
 @keyframes overlayIn { from{opacity:0} to{opacity:1} }
 
 /* ══════════════════════════════════════════════════════

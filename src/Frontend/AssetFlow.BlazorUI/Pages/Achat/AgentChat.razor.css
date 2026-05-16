@@ -345,6 +345,8 @@ html.dark .ai-history-count,
     cursor: pointer;
     transition: all var(--ai-transition);
     letter-spacing: .01em;
+    position: relative;
+    z-index: 999;
 }
 .ai-demandes-toggle-btn svg { width: 15px; height: 15px; }
 .ai-demandes-toggle-btn:hover {
@@ -1262,7 +1264,7 @@ html.dark .ai-history-panel { background: rgba(10,14,25,.95); }
     border-left: 1px solid var(--border);
     box-shadow: -12px 0 48px rgba(0,0,0,.18);
     display: flex; flex-direction: column;
-    z-index: 60;
+    z-index: 999;
     transition: right .28s cubic-bezier(.4,0,.2,1);
     overflow: hidden;
 }
@@ -1699,6 +1701,7 @@ html.dark .ai-demandes-panel {
     .ai-approval-actions { flex-direction: column; }
     .ai-approve-btn, .ai-reject-btn { width: 100%; justify-content: center; }
     .ai-offers-grid { grid-template-columns: 1fr; }
+    .ai-history-toggle-btn span:not(.ai-history-count) { display: none; }
     .ai-demandes-toggle-btn span:not(.ai-demandes-count-badge) { display: none; }
     .ai-demandes-panel { width: 100vw; right: -100vw; }
     .ai-history-panel {
@@ -1718,10 +1721,41 @@ html.dark .ai-demandes-panel {
     .ai-materiel-tab { padding: 6px 10px; font-size: .75rem; gap: 5px; }
     .ai-materiel-tab-name { max-width: 110px; }
     .ai-materiel-tab-count { display: none; }
+
+    .ai-history-toggle-btn { padding: 0 .55rem; }
+    .ai-demandes-toggle-btn { padding: 0 .55rem; }
 }
 
 @media (max-width: 480px) {
-    .ai-topbar-right { margin-right: 48px; }
-    .ai-clear-btn svg + span { display: none; }
-    .ai-clear-btn { padding: 0 .55rem; }
+    .ai-topbar { padding: .5rem .7rem; gap: .5rem; }
+    .ai-topbar-right { gap: .35rem; margin-right: 48px; }
+    .ai-brand-title { font-size: .85rem; }
+    .ai-brand-title {display: none;}
+    .ai-brand-icon {display: none;}
 }
+
+.ai-history-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 44;          /* juste en dessous du panel (z-index: 45) */
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    cursor: pointer;
+}
+.ai-history-close-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: .4rem;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--ai-transition);
+}
+.ai-history-close-btn:hover {
+    background: rgba(239, 68, 68, .10);
+    border-color: rgba(239, 68, 68, .35);
+    color: var(--ai-red);
+}
+.ai-history-close-btn svg { width: 13px; height: 13px; }

@@ -24,6 +24,8 @@ namespace AssetFlow.BlazorUI.Pages.Auth
         private bool   PasswordMismatch{ get; set; } = false;
         private string ErrorMessage    { get; set; } = string.Empty;
         private string SuccessMessage  { get; set; } = string.Empty;
+        private bool CodeSent        { get; set; } = false;
+        private bool PasswordChanged { get; set; } = false;
 
         // 6 cases du token
         private string[] TokenDigits = new string[6];
@@ -41,16 +43,16 @@ namespace AssetFlow.BlazorUI.Pages.Auth
             IsLoading = false;
 
             if (response.IsSuccessStatusCode)
-                Step = 2;
+                CodeSent = true;
             else
                 ErrorMessage = "Erreur lors de l'envoi. Vérifiez votre email.";
         }
 
-        private async Task HandleResetPassword()
+                private async Task HandleResetPassword()
         {
-            ErrorMessage    = string.Empty;
-            TokenError      = false;
-            PasswordMismatch= false;
+            ErrorMessage     = string.Empty;
+            TokenError       = false;
+            PasswordMismatch = false;
 
             if (TokenValue.Length < 6) { TokenError = true; return; }
             if (NewPassword != ConfirmPassword) { PasswordMismatch = true; return; }
@@ -66,11 +68,7 @@ namespace AssetFlow.BlazorUI.Pages.Auth
             IsLoading = false;
 
             if (response.IsSuccessStatusCode)
-            {
-                SuccessMessage = "Mot de passe changé ! Redirection...";
-                await Task.Delay(1500);
-                Navigation.NavigateTo($"/login?role={Role}");
-            }
+                PasswordChanged = true;
             else
             {
                 var msg = await response.Content.ReadAsStringAsync();
@@ -130,5 +128,23 @@ namespace AssetFlow.BlazorUI.Pages.Auth
                 $"document.getElementById('token-{lastIndex}').focus()");
             StateHasChanged();
         }
+
+        private string RoleColor => Role switch
+        {
+            "IT"          => "#7C3AED",
+            "EquipeAchat" => "#136dec",
+            "Employe"     => "#F59E0B",
+            "Admin"       => "#EF4444",
+            _             => "#136dec"
+        };
+
+        private string RoleColorShadow => Role switch
+        {
+            "IT"          => "rgba(124,58,237,0.35)",
+            "EquipeAchat" => "rgba(19,109,236,0.35)",
+            "Employe"     => "rgba(245,158,11,0.35)",
+            "Admin"       => "rgba(239,68,68,0.35)",
+            _             => "rgba(19,109,236,0.35)"
+        };
     }
 }

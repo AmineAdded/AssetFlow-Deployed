@@ -737,4 +737,8 @@ html.dark .facesetup-card {
     .facesetup-title { font-size: 1.2rem; }
     .facesetup-card  { border-radius: 16px; }
     .intro-icon, .confirm-icon { width: 60px; height: 60px; }
+    .facesetup-subtitle {margin-top: 0.9rem;}
+    .facesetup-title { position: relative; top: 5px; }
+    .facesetup-subtitle {margin-top: 0.9rem;}
+    .facesetup-hamburger{position: relative; bottom: 15px;}
 }

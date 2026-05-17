@@ -305,7 +305,7 @@ html.dark .audit-select option:checked { background: #136dec; color: #ffffff; }
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px;
-    overflow: hidden;
+    overflow-x: auto !important;
     box-shadow: 0 2px 20px rgba(0,0,0,0.06);
     border-top: 3px solid #136dec;
 }
@@ -766,4 +766,9 @@ html.dark .clean-option { border-color: rgba(255,255,255,0.07); }
     .audit-table th:nth-child(1), .audit-table td:nth-child(1) { display: none; }
     .audit-count-bar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
     .audit-entite-icon { display: none; }
+    .audit-header-left {position: relative ;bottom:10px}
+    .audit-hamburger{position: relative;bottom: 10px;}
+    .audit-filters{min-width: 320px;}
+    .audit-filter-item.search-item {display: none;}
+    .audit-table-wrap {min-width: 320px;overflow-x: auto !important;}
 }

@@ -685,10 +685,15 @@ html.dark .proj-delete-modal {
     .proj-dropdown-header, .proj-dropdown-item { grid-template-columns: 2fr 1fr 1fr; }
     .proj-dropdown-header span:nth-child(4), .proj-dropdown-header span:nth-child(5),
     .proj-dropdown-item  span:nth-child(4),  .proj-dropdown-item  span:nth-child(5) { display: none; }
+    .proj-table-wrap {overflow-x: auto;}
+    .proj-btn-add {margin-left: 40px;}
 }
 
 @media (max-width: 480px) {
     .proj-stats { grid-template-columns: repeat(2, 1fr); }
     .proj-table th:nth-child(3), .proj-table td:nth-child(3) { display: none; }
     .proj-nom-avatar { display: none; }
+    .proj-btn-add {margin-left: 40px;}
+    .proj-table-wrap {overflow-x: auto;}
+    .proj-header{position: relative; bottom: 8px;}
 }

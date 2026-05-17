@@ -431,7 +431,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private static string GetRelativeDate(DateTime date)
         {
-            var diff = DateTime.Now - date;
+            var localDate = date.ToLocalTime(); // ← conversion UTC → heure locale
+            var diff = DateTime.Now - localDate;
             if (diff.TotalMinutes < 60)  return $"il y a {(int)diff.TotalMinutes} min";
             if (diff.TotalHours   < 24)  return $"il y a {(int)diff.TotalHours} h";
             if (diff.TotalDays    < 2)   return "hier";

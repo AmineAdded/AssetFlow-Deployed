@@ -342,7 +342,7 @@ else if (CommentairesExistants.Any())
                     <div class="existant-content">
                         <div class="existant-meta">
                             <span class="existant-auteur">@c.AuteurNom</span>
-                            <span class="existant-date">@c.DateCreation.ToString("dd MMM yyyy · HH:mm")</span>
+                            <span class="existant-date">@c.DateCreation.ToLocalTime().ToString("dd MMM yyyy · HH:mm")</span>
 
                             @* ── Bouton Supprimer ── *@
                             <button class="btn-supprimer-commentaire"

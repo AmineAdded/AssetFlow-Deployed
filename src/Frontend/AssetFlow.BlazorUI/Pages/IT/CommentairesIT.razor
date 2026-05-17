@@ -323,8 +323,8 @@
                                         <div class="itc-comment-actions">
                                             <div class="itc-comment-date">
                                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                                @c.DateCreation.ToString("dd MMM yyyy")
-                                                <span class="itc-date-time">@c.DateCreation.ToString("HH:mm")</span>
+                                                @c.DateCreation.ToLocalTime().ToString("dd MMM yyyy")
+                                                <span class="itc-date-time">@c.DateCreation.ToLocalTime().ToString("HH:mm")</span>
                                             </div>
                                             <button class="itc-btn-delete"
                                                     disabled="@(SupprimerEnCours == c.Id)"
@@ -370,7 +370,7 @@
                             <span class="itc-role-pill itc-role-@GetRoleClass(CommentaireSelectionne.AuteurRole)">@GetRoleLabel(CommentaireSelectionne.AuteurRole)</span>
                             <span class="itc-modal-date">
                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                                @CommentaireSelectionne.DateCreation.ToString("dd MMM yyyy · HH:mm")
+                                @CommentaireSelectionne.DateCreation.ToLocalTime().ToString("dd MMM yyyy · HH:mm")
                             </span>
                         </div>
                     </div>

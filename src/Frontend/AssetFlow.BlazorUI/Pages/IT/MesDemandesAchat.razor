@@ -145,7 +145,7 @@
                                             <span class="mda-qty-badge">@demande.Lignes.Count</span>
                                         </div>
                                         <div class="mda-td mda-td-date">
-                                            <span class="mda-date-val">@demande.DateCreation.ToString("dd MMM yyyy")</span>
+                                            <span class="mda-date-val">@demande.DateCreation.ToLocalTime().ToString("dd MMMM yyyy à HH:mm")</span>
                                             <span class="mda-date-rel">@GetRelativeDate(demande.DateCreation)</span>
                                         </div>
                                         <div class="mda-td mda-td-statut">
@@ -216,7 +216,7 @@
                                                 </div>
                                                 <div class="mda-detail-block">
                                                     <p class="mda-detail-label">Date de création</p>
-                                                    <p class="mda-detail-val">@demande.DateCreation.ToString("dd MMMM yyyy à HH:mm")</p>
+                                                    <p class="mda-detail-val">@demande.DateCreation.ToLocalTime().ToString("dd MMMM yyyy à HH:mm")</p>
                                                 </div>
                                                 @if (!string.IsNullOrEmpty(demande.Description))
                                                 {

@@ -295,41 +295,47 @@ namespace AssetFlow.Infrastructure.Services
 
         private async Task SendResetEmailAsync(string email, string token, string firstName)
         {
-            using var smtpClient = new System.Net.Mail.SmtpClient(_config["Smtp:Host"])
+            var apiKey  = _config["Brevo:ApiKey"]!;
+            var from    = _config["Brevo:From"]!;
+            var fromName= _config["Brevo:FromName"] ?? "AssetFlow";
+
+            var payload = new
             {
-                Port = int.Parse(_config["Smtp:Port"] ?? "587"),
-                Credentials = new System.Net.NetworkCredential(
-                    _config["Smtp:Username"],
-                    _config["Smtp:Password"]),
-                EnableSsl = true
+                sender = new { name = fromName, email = from },
+                to = new[] { new { email = email, name = firstName } },
+                subject = "AssetFlow — Code de réinitialisation",
+                htmlContent = $@"
+                    <div style='font-family:sans-serif;max-width:480px;margin:auto'>
+                        <h2 style='color:#0d1b35'>Réinitialisation de mot de passe</h2>
+                        <p>Bonjour {firstName},</p>
+                        <p>Votre code de réinitialisation est :</p>
+                        <div style='font-size:2.5rem;font-weight:700;letter-spacing:0.5rem;
+                                    color:#136dec;text-align:center;padding:1rem;
+                                    background:#f0f4ff;border-radius:12px;margin:1rem 0'>
+                            {token}
+                        </div>
+                        <p style='color:#666'>Ce code expire dans <strong>15 minutes</strong>.</p>
+                        <p style='color:#999;font-size:0.8rem'>
+                            Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                        </p>
+                    </div>"
             };
 
-            var body = $@"
-                <div style='font-family:sans-serif;max-width:480px;margin:auto'>
-                    <h2 style='color:#0d1b35'>Réinitialisation de mot de passe</h2>
-                    <p>Bonjour {firstName},</p>
-                    <p>Votre code de réinitialisation est :</p>
-                    <div style='font-size:2.5rem;font-weight:700;letter-spacing:0.5rem;
-                                color:#136dec;text-align:center;padding:1rem;
-                                background:#f0f4ff;border-radius:12px;margin:1rem 0'>
-                        {token}
-                    </div>
-                    <p style='color:#666'>Ce code expire dans <strong>15 minutes</strong>.</p>
-                    <p style='color:#999;font-size:0.8rem'>
-                        Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
-                    </p>
-                </div>";
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("api-key", apiKey);
 
-            var message = new System.Net.Mail.MailMessage
+            var response = await client.PostAsync(
+                "https://api.brevo.com/v3/smtp/email",
+                new StringContent(
+                    JsonSerializer.Serialize(payload),
+                    Encoding.UTF8,
+                    "application/json"));
+
+            if (!response.IsSuccessStatusCode)
             {
-                From       = new System.Net.Mail.MailAddress(_config["Smtp:From"]!),
-                Subject    = "AssetFlow — Code de réinitialisation",
-                Body       = body,
-                IsBodyHtml = true
-            };
-            message.To.Add(email);
-
-            await smtpClient.SendMailAsync(message);
+                var error = await response.Content.ReadAsStringAsync();
+                throw new Exception($"Brevo error: {error}");
+            }
         }
 
         public async Task<(bool Success, string Message)> ResetPasswordAsync(ResetPasswordRequest request)

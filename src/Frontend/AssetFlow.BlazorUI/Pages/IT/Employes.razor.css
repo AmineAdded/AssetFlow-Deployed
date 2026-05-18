@@ -154,6 +154,10 @@ html.dark .emp-layout::before {
     letter-spacing: 0.01em;
 }
 
+/* Subtitle variants */
+.emp-sub-short { display: none; }
+.emp-sub-full  { display: inline; }
+
 /* ── Tab toggle ── */
 .emp-tab-toggle {
     display: flex;
@@ -1656,19 +1660,59 @@ html.dark .emp-modal-icon {
 
     .emp-header {
         padding: 12px 16px;
-        gap: 10px;
+        gap: 8px 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    /* Title block takes remaining space on first row */
+    .emp-header > div:first-of-type {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Tab toggle drops to second row, full width */
+    .emp-tab-toggle {
+        order: 10;
+        width: 100%;
+        justify-content: center;
     }
 
     .emp-page-title { font-size: 14px; }
     .emp-header-search { display: none; }
 
+    /* Layout scrollable vertical comme Incidents */
+    .emp-layout {
+        height: auto;
+        overflow: visible;
+    }
+
+    .emp-main {
+        overflow: visible;
+    }
+
     .emp-body {
         grid-template-columns: 1fr;
         padding: 12px 14px 20px;
+        overflow-y: visible;
+        height: auto;
     }
 
-    .emp-col-left { position: static; }
-    .emp-list { max-height: 280px; }
+    /* Liste employés : hauteur fixe + scroll interne */
+    .emp-col-left {
+        position: static;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .emp-list { max-height: 220px; }
+
+    /* Panneau droit : hauteur auto, tout visible */
+    .emp-col-right {
+        overflow: visible;
+        height: auto;
+        min-height: 0;
+    }
 
     .notif-panel {
         width: calc(100vw - 28px);
@@ -1677,11 +1721,26 @@ html.dark .emp-modal-icon {
 
     .emp-filter-tabs { flex-wrap: wrap; }
     .emp-aff-dates { gap: 8px; }
-
     .notif-bell-wrapper { display: none; }
 }
 
 @media (max-width: 480px) {
-    .emp-tab-toggle { display: none; }
+    /* Tab toggle: visible, below title row */
+    .emp-tab-toggle {
+        display: flex;
+        order: 10;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Shorter subtitle at 480px */
+    .emp-sub-full  { display: none; }
+    .emp-sub-short { display: inline; }
+
     .emp-modal { padding: 24px 20px 22px; }
+
+    .emp-body {
+        padding: 10px 10px 20px;
+        gap: 12px;
+    }
 }

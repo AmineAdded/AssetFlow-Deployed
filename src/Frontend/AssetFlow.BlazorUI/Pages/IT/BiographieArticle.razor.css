@@ -385,6 +385,8 @@ html.dark .risk-bad { background: rgba(226,75,74,0.12); color: #f87171; }
     border: 0.5px solid var(--border);
     border-radius: var(--border-radius-lg, 12px);
     padding: 1.25rem;
+    height: 600px;
+    overflow-y: auto;
 }
 
 html.dark .timeline-section {
@@ -507,7 +509,11 @@ html.dark .timeline-section {
         overflow-y: visible;
     }
 
-    .bio-hamburger { display: flex; }
+    .bio-hamburger { 
+        display: flex;
+        position: static;
+    }
+
     .dna-header-icon { display: none; }
 
     .device-row { grid-template-columns: 1fr; }
@@ -518,4 +524,29 @@ html.dark .timeline-section {
     .ring-wrap { width: 120px; height: 120px; }
     .ring-wrap svg { width: 120px; height: 120px; }
     .ring-num { font-size: 28px; }
+
+    .dna-header-bar {
+        height: auto;
+        padding: 0.75rem 1rem;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+
+    .dna-title {
+        position: static;
+        font-size: 16px;
+    }
+
+    .dna-sub {
+        position: static;
+        font-size: 0;
+    }
+
+    .dna-sub::after {
+        content: "Consulter le cycle de vie d'un article";
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .dna-badge { display: none; }
 }

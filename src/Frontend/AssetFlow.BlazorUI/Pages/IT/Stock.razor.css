@@ -792,4 +792,67 @@ html.dark .stk-viz-wrap { background:#0d1520; border-color:#1e2d42; }
 
 @media (max-width: 480px) {
     .stk-kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* ── Header : même structure qu'en 768px ──
+       Ligne 1 : hamburger + titre (avec espace pour le theme toggle fixe)
+       Ligne 2 : contrôles (search + select) */
+    .stk-header {
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+    }
+
+    .stk-hamburger {
+        order: 0;
+        margin-right: 10px;
+        flex-shrink: 0;
+        align-self: center;
+    }
+
+    .stk-header-left {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        /* Réserve de la place pour le theme-toggle fixe */
+        padding-right: 56px;
+    }
+
+    .stk-page-title {
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stk-page-sub {
+        font-size: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: transparent;
+    }
+    .stk-page-sub::after 
+    {
+        content: "Visualiser l'inventaire";
+        font-size: 11px;
+        color: var(--text-muted, #64748b);
+    }
+
+    .stk-header-controls {
+        order: 2;
+        width: 100%;
+        margin-top: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .stk-search-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stk-select {
+        flex-shrink: 0;
+    }
+    .stk-kpi-trend.up, .stk-kpi-trend.down{display: none;}
 }

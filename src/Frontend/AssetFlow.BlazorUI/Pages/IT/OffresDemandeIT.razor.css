@@ -1229,6 +1229,12 @@ html.dark .oda-chat-pdf-name { background: rgba(79,70,229,0.18); color: #A5B4FC;
     .oda-chat-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 4.75rem; height: 70vh; }
     .oda-pill { margin-right: 0; margin-bottom: 0; }
 }
+@media (max-width: 480px) {
+    .oda-sel-details {overflow-x: auto;}
+    .oda-hamburger {position: relative; bottom: 10px;}
+    .oda-pill {display: none;}
+    .oda-breadcrumb { display: none; }
+}
 
 /* ══════════════════════════════════════════════════════════════
    CIRCUIT BREAKER — bandes top

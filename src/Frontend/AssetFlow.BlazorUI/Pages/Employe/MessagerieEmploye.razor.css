@@ -529,70 +529,49 @@ html.dark .bubble-them {
 .bubble-them .msg-bubble-time { color: var(--text-faint); }
 
 /* ══════════════════════════════════════════════
-   TICKS DE LECTURE — CORRIGES
-   ── Un tick = envoyé (gris/blanc)
+   TICKS DE LECTURE
+   ── Un tick = envoyé (blanc/gris)
    ── Deux ticks = lu (bleu clair)
 ══════════════════════════════════════════════ */
 .msg-read-status {
     display: inline-flex;
     align-items: center;
     line-height: 1;
+    margin-left: 3px;
     flex-shrink: 0;
 }
 
-/* ── Tick unique (envoyé, non lu) ── */
-.msg-tick-single {
-    display: inline-flex;
-    align-items: center;
-}
-.msg-tick-single svg {
-    width: 14px; height: 14px;
-    fill: none;
-    stroke: rgba(255,255,255,0.5);
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+.msg-ticks {
     display: block;
-}
-
-/* ── Double tick (lu) ── */
-.msg-tick-double {
-    display: inline-flex;
-    align-items: center;
-    position: relative;
-    width: 20px;   /* largeur fixe pour éviter le saut de layout */
-    height: 14px;
-}
-
-/* Les deux SVG sont superposés en absolu */
-.msg-tick-double .tick-first,
-.msg-tick-double .tick-second {
-    position: absolute;
-    display: inline-flex;
-    align-items: center;
-    top: 0;
-}
-.msg-tick-double .tick-first  { left: 0; }
-.msg-tick-double .tick-second { left: 5px; }   /* décalage horizontal du 2ème tick */
-
-.msg-tick-double svg {
-    width: 14px; height: 14px;
+    height: 12px;
+    width: auto;
     fill: none;
-    stroke: #53d9fd;           /* bleu clair = lu */
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    display: block;
-    filter: drop-shadow(0 0 3px rgba(83,217,253,0.40));
+    stroke-width: 1.8;
+    overflow: visible;
 }
 
-/* Animation d'apparition du 2ème tick */
-@keyframes msgTickAppear {
-    from { opacity: 0; transform: scale(0.5) translateY(2px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
+.ticks-sent {
+    width: 14px;
+    stroke: rgba(255,255,255,0.85);
+    opacity: 0.95;
 }
-.msg-tick-double.animate .tick-second svg {
-    animation: msgTickAppear 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+.bubble-them .ticks-sent { stroke: var(--text-faint); }
+
+.ticks-read {
+    width: 18px;
+    stroke: #4fc3f7;
+    filter: drop-shadow(0 0 3px rgba(79,195,247,0.55));
+}
+.bubble-them .ticks-read { stroke: #0ea5e9; filter: none; }
+
+@keyframes tickPop {
+    0%   { opacity: 0; transform: scale(0.4); }
+    60%  { opacity: 1; transform: scale(1.15); }
+    100% { opacity: 1; transform: scale(1); }
+}
+.ticks-read.animate {
+    animation: tickPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+    transform-origin: center;
 }
 
 /* ══════════════════════════════════════════════

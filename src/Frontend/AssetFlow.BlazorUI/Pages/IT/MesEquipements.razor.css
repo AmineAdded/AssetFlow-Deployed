@@ -959,3 +959,7 @@ html.dark .existant-content { border-color: rgba(255,255,255,0.07); }
     .iteq-header-left { flex: 1; }
     .modal-backdrop { padding: 0.75rem; }
 }
+@media (max-width: 768px)  {
+    .modal-subtitle {font-size: 1rem;}
+    .modal-title{display: none;}
+}

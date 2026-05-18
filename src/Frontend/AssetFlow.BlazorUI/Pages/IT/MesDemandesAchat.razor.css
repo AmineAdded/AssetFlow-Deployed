@@ -1730,6 +1730,7 @@ html.dark .mda-modal-cancel {
         grid-template-columns: minmax(160px, 2fr) 70px 160px 190px;
     }
 }
+.mda-sub-mobile { display: none; }
 
 @media (max-width: 768px) {
     .mda-layout        { flex-direction: column; }
@@ -1780,6 +1781,8 @@ html.dark .mda-modal-cancel {
         stroke-width: 2.5; stroke-linecap: round;
     }
     .add {display: flex;}
+    .mda-sub-full   { display: none; }
+    .mda-sub-mobile { display: inline; }
 }
 
 @media (max-width: 640px) {

@@ -385,8 +385,6 @@ html.dark .risk-bad { background: rgba(226,75,74,0.12); color: #f87171; }
     border: 0.5px solid var(--border);
     border-radius: var(--border-radius-lg, 12px);
     padding: 1.25rem;
-    height: 600px;
-    overflow-y: auto;
 }
 
 html.dark .timeline-section {
@@ -400,6 +398,8 @@ html.dark .timeline-section {
     gap: 0;
     position: relative;
     padding-left: 28px;
+    height: 500px;
+    overflow-y: auto;
 }
 
 .tl-list::before {

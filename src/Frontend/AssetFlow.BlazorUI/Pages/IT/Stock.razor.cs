@@ -5,14 +5,16 @@ using Microsoft.JSInterop;
 using AssetFlow.BlazorUI.DTOs;
 using Microsoft.AspNetCore.SignalR.Client;
 
+
 namespace AssetFlow.BlazorUI.Pages.IT
 {
     public partial class Stock : IAsyncDisposable
     {
         [Inject] private StockClientService   Svc          { get; set; } = default!;
+        [Inject] private CommandeService   CommandeSvc        { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage  { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
-        [Inject] private HttpClient Http { get; set; } = default!;
+        [Inject] private AssetFlow.BlazorUI.Services.ArticleService ArticleSvc { get; set; } = default!;
 
         private List<MaterielDto> Tous             { get; set; } = new();
         private List<MaterielDto> MaterielsFiltres { get; set; } = new();
@@ -42,6 +44,12 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string      _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
         private HubConnection? _hubConnection;
+        private bool              _panneauArticlesOuvert = false;
+        private string            _panneauArticlesTitre  = string.Empty;
+        private List<ArticleDto>  _panneauArticles       = new();
+        private bool              _chargementArticles    = false;
+        private ArticleDto? _articleHorsService    = null;
+        private bool        _horsServiceEnCours    = false;
 
         protected override async Task OnInitializedAsync()
         {
@@ -53,9 +61,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
 
         private async Task ConnecterSignalR()
         {
-            var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl(hubUrl, options =>
+                .WithUrl("http://localhost:5235/dashboardhub", options =>
                 {
                     options.AccessTokenProvider = async () =>
                     {
@@ -262,6 +269,74 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 await _hubConnection.DisposeAsync();
             }
         }
+        private async Task OuvrirArticles(MaterielDto mat)
+        {
+            _panneauArticlesTitre  = $"{mat.Reference} — {mat.Designation}";
+            _panneauArticlesOuvert = true;
+            _chargementArticles    = true;
+            _panneauArticles       = new();
+            StateHasChanged();
+        
+            try
+            {
+                // Réutilise l'endpoint existant api/commandes/articles/{materielId}
+                var http = /* injecter HttpClient ou passer par un service existant */
+                    await CommandeSvc.GetArticlesByMaterielAsync(mat.Id);
+                _panneauArticles = http;
+            }
+            catch { }
+            finally
+            {
+                _chargementArticles = false;
+                StateHasChanged();
+            }
+        }
+        private void FermerArticles() => _panneauArticlesOuvert = false;
+ 
+        // Demande hors service
+        private void DemanderHorsService(ArticleDto art) => _articleHorsService = art;
+        private void AnnulerHorsService()                => _articleHorsService = null;
+        
+        private async Task ConfirmerHorsService()
+        {
+            if (_articleHorsService is null) return;
+            var art = _articleHorsService;
+            _horsServiceEnCours = true;
+            StateHasChanged();
+        
+            try
+            {
+                var (success, message) = await ArticleSvc.MettreHorsServiceAsync(art.Id);
+                if (success)
+                {
+                    // Mettre à jour localement sans rechargement complet
+                    var idx = _panneauArticles.IndexOf(art);
+                    if (idx >= 0) _panneauArticles[idx].Statut = "HorsService";
+        
+                    AfficherToast($"Article « {art.NumeroSerie ?? $"#{art.Id}"} » mis hors service.", "toast-success");
+                    await ChargerMateriels(); // rafraîchit les compteurs
+                }
+                else
+                {
+                    AfficherToast(message, "toast-error");
+                }
+            }
+            catch (Exception ex) { AfficherToast($"Erreur : {ex.Message}", "toast-error"); }
+            finally
+            {
+                _articleHorsService = null;
+                _horsServiceEnCours = false;
+                StateHasChanged();
+            }
+        }
+        private static string ArtStatutCss(string s) => s switch
+        {
+            "Disponible"   => "art-dispo",
+            "Affecte"      => "art-affecte",
+            "HorsService"  => "art-hs",
+            "EnReparation" => "art-rep",
+            _              => "art-dispo"
+        };
     }
 
     public class MaterielStatsViewModel
@@ -271,4 +346,5 @@ namespace AssetFlow.BlazorUI.Pages.IT
         public int AlerteSeuil     { get; set; }
         public int RuptureCritique { get; set; }
     }
+    
 }

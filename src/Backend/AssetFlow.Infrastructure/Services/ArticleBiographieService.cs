@@ -29,7 +29,7 @@ namespace AssetFlow.Infrastructure.Services
             if (article == null) return null;
 
             var historiques = article.Historiques
-                .OrderBy(h => h.DateEvenement)
+                .OrderByDescending(h => h.DateEvenement)
                 .ToList();
 
             // Calcul des durées entre événements

@@ -6,7 +6,7 @@ namespace AssetFlow.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/articles")]
-    [Authorize(Policy = "AchatOrAdmin")]
+    [Authorize(Policy = "ITOrAchatOrAdmin")]
     public class ArticlesController : ControllerBase
     {
         private readonly IArticleService _articleService;
@@ -17,16 +17,31 @@ namespace AssetFlow.WebAPI.Controllers
         public async Task<IActionResult> UpdateNumeroSerie(int id, [FromBody] UpdateNumeroSerieDto dto)
         {
             var (success, message, numeroSerie) = await _articleService.UpdateNumeroSerieAsync(id, dto.NumeroSerie);
-
             if (!success)
-            {
-                // 404 si article introuvable, 400 sinon
-                return message.Contains("introuvable")
-                    ? NotFound(new { Message = message })
-                    : BadRequest(new { Message = message });
-            }
-
+                return message.Contains("introuvable") ? NotFound(new { Message = message }) : BadRequest(new { Message = message });
             return Ok(new { Message = message, NumeroSerie = numeroSerie });
+        }
+
+        // DELETE api/articles/{id}
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> SupprimerArticle(int id)
+        {
+            var (success, message) = await _articleService.SupprimerArticleAsync(id);
+            if (!success)
+                return message.Contains("introuvable") ? NotFound(new { Message = message }) : BadRequest(new { Message = message });
+            return Ok(new { Message = message });
+        }
+
+        // PATCH api/articles/{id}/hors-service
+        // Accessible aussi par IT → on élargit la policy ou on duplique le contrôleur IT
+        [HttpPatch("{id:int}/hors-service")]
+        [Authorize(Policy = "ITOrAdmin")]   // IT peut mettre hors service
+        public async Task<IActionResult> MettreHorsService(int id)
+        {
+            var (success, message) = await _articleService.MettreHorsServiceAsync(id);
+            if (!success)
+                return message.Contains("introuvable") ? NotFound(new { Message = message }) : BadRequest(new { Message = message });
+            return Ok(new { Message = message });
         }
     }
 

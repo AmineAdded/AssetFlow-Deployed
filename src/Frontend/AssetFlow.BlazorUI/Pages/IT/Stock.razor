@@ -115,7 +115,7 @@
                             <th>QUANTITÉ</th>
                             <th>SEUIL MIN</th>
                             <th>STATUT</th>
-                            <th>SEUIL</th>
+                            <th>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -148,6 +148,10 @@
                                     <button class="stk-btn-seuil" @onclick="() => OuvrirSeuil(mat)" title="Configurer les seuils">
                                         <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                                         Seuils
+                                    </button>
+                                    <button class="stk-btn-articles" @onclick="() => OuvrirArticles(mat)" title="Voir les articles">
+                                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                        Articles
                                     </button>
                                 </td>
                             </tr>
@@ -254,4 +258,131 @@
         </div>
     </div>
 }
+
+@* ── PANNEAU ARTICLES (latéral, style IT) ── *@
+@if (_panneauArticlesOuvert)
+{
+    <div class="stk-panel-overlay" @onclick="FermerArticles"></div>
+    <div class="stk-panel">
+        <div class="stk-panel-header">
+            <div class="stk-panel-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </div>
+            <div>
+                <h3>Articles individuels</h3>
+                <p class="stk-panel-sub">@_panneauArticlesTitre</p>
+            </div>
+            <button class="stk-panel-close" @onclick="FermerArticles">
+                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="stk-panel-body">
+            @if (_chargementArticles)
+            {
+                <div class="stk-loading"><div class="stk-spinner"></div><span>Chargement…</span></div>
+            }
+            else
+            {
+                @* Compteurs *@
+                <div class="stk-art-stats">
+                    <div class="stk-art-stat">
+                        <span class="stk-art-stat-val">@_panneauArticles.Count</span>
+                        <span class="stk-art-stat-lbl">Total</span>
+                    </div>
+                    <div class="stk-art-stat">
+                        <span class="stk-art-stat-val" style="color:#059669">@_panneauArticles.Count(a => a.Statut == "Disponible")</span>
+                        <span class="stk-art-stat-lbl">Disponibles</span>
+                    </div>
+                    <div class="stk-art-stat">
+                        <span class="stk-art-stat-val" style="color:#2563eb">@_panneauArticles.Count(a => a.Statut == "Affecte")</span>
+                        <span class="stk-art-stat-lbl">Affectés</span>
+                    </div>
+                    <div class="stk-art-stat">
+                        <span class="stk-art-stat-val" style="color:#dc2626">@_panneauArticles.Count(a => a.Statut == "HorsService")</span>
+                        <span class="stk-art-stat-lbl">Hors service</span>
+                    </div>
+                </div>
+
+                @* Liste *@
+                <div class="stk-art-list">
+                    @foreach (var art in _panneauArticles)
+                    {
+                        <div class="stk-art-item">
+                            <div class="stk-art-item-left">
+                                <div class="stk-art-dot @ArtStatutCss(art.Statut)"></div>
+                                <div>
+                                    <div class="stk-art-ns">@(art.NumeroSerie ?? $"Sans numéro de série")</div>
+                                    <div class="stk-art-cmd">Commande : @art.NumeroCommande</div>
+                                </div>
+                            </div>
+                            <div class="stk-art-item-right">
+                                <span class="stk-art-badge @ArtStatutCss(art.Statut)">@art.Statut</span>
+                                @if (art.Statut != "HorsService")
+                                {
+                                    <button class="stk-art-hs-btn" title="Mettre hors service"
+                                            @onclick="() => DemanderHorsService(art)">
+                                        <svg viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="m15 9-6 6M9 9l6 6"/>
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* ── MODALE CONFIRMATION HORS SERVICE ── *@
+@if (_articleHorsService is not null)
+{
+    <div class="stk-modal-backdrop">
+        <div class="stk-modal stk-modal-hs" @onclick:stopPropagation="true">
+
+            <div class="stk-modal-header">
+                <div class="stk-modal-icon stk-modal-icon-hs">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="m15 9-6 6M9 9l6 6"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="stk-modal-title">Mettre hors service ?</h3>
+                    <p class="stk-modal-sub">Cette action modifie le statut définitivement.</p>
+                </div>
+                <button class="stk-modal-close" @onclick="AnnulerHorsService">
+                    <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="stk-hs-body">
+                <p>
+                    L'article <strong>« @(_articleHorsService.NumeroSerie ?? $"Article #{_articleHorsService.Id}") »</strong>
+                    sera marqué <span class="stk-hs-label">Hors service</span>.
+                </p>
+                @if (_articleHorsService.Statut == "Affecte")
+                {
+                    <div class="stk-hs-warning">
+                        <svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>
+                        Cet article est actuellement <strong>affecté</strong>. Il sera automatiquement retiré de son propriétaire.
+                    </div>
+                }
+            </div>
+
+            <div class="stk-modal-actions">
+                <button class="stk-modal-cancel" @onclick="AnnulerHorsService">Annuler</button>
+                <button class="stk-modal-hs-confirm" disabled="@_horsServiceEnCours"
+                        @onclick="ConfirmerHorsService">
+                    @if (_horsServiceEnCours) { <div class="stk-btn-spinner"></div> }
+                    Mettre hors service
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 </RoleAuthGuard>

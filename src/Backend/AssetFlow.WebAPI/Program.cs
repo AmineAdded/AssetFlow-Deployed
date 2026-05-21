@@ -144,6 +144,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("ITOrAdmin",      p => p.AddAuthenticationSchemes("Keycloak","FaceAuth").RequireRole("IT","Admin"));
     options.AddPolicy("AchatOrAdmin",   p => p.AddAuthenticationSchemes("Keycloak","FaceAuth").RequireRole("EquipeAchat","Admin"));
     options.AddPolicy("ITOrAchat",      p => p.AddAuthenticationSchemes("Keycloak","FaceAuth").RequireRole("IT","EquipeAchat"));
+    options.AddPolicy("ITOrAchatOrAdmin",      p => p.AddAuthenticationSchemes("Keycloak","FaceAuth").RequireRole("IT","EquipeAchat","Admin"));
 });
 
 // === INJECTION DES SERVICES ===

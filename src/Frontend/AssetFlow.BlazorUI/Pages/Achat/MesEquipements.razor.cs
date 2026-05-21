@@ -83,6 +83,23 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 await InvokeAsync(async () =>
                 {
                     await LoadMaterielsGroupesAsync();
+                     if (ModalOuvert && MaterielSelectionne != null)
+                    {
+                        var updated = MaterielsGroupes
+                            .FirstOrDefault(m => m.MaterielId == MaterielSelectionne.MaterielId);
+                        if (updated != null)
+                            MaterielSelectionne = updated;
+                    }
+                    if (ModalCommentaireOuvert && MaterielCommentaire != null)
+                    {
+                        var updated = MaterielsGroupes
+                            .FirstOrDefault(m => m.MaterielId == MaterielCommentaire.MaterielId);
+                        if (updated != null)
+                            MaterielCommentaire = updated;
+
+                        CommentairesExistants = await EmployeService
+                            .GetCommentairesMaterielAsync(MaterielCommentaire.MaterielId);
+                    }
                     StateHasChanged();
                 });
             });

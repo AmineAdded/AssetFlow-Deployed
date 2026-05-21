@@ -1,11 +1,17 @@
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using AssetFlow.BlazorUI.DTOs;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
+using Blazored.LocalStorage;
 
 namespace AssetFlow.BlazorUI.Pages.Employe
 {
-    public partial class SignalerIncident
+    public partial class SignalerIncident:IAsyncDisposable
     {
+        [Inject] private IJSRuntime           JS           { get; set; } = default!;
+        [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
         [Parameter] public int AffectationId { get; set; } = 0;
         [Parameter] public int ArticleId     { get; set; } = 0;
 
@@ -29,7 +35,7 @@ namespace AssetFlow.BlazorUI.Pages.Employe
         SelectedArticleId > 0
            ? GetDesignation(Articles.FirstOrDefault(a => a.ArticleId == SelectedArticleId)?.AffectationId ?? 0)
            : string.Empty;
-
+        private HubConnection? _hubConnection;
         protected override async Task OnInitializedAsync()
         {
             Groupes  = await EmployeService.GetMaterielsGroupesAsync();
@@ -39,10 +45,59 @@ namespace AssetFlow.BlazorUI.Pages.Employe
                 SelectedArticleId = ArticleId;
 
             IsLoading = false;
+            await ConnecterSignalR();
         }
-        public ValueTask DisposeAsync()
+        private async Task ConnecterSignalR()
         {
-            return ValueTask.CompletedTask;
+            var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl, options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        try
+                        {
+                            return await JS.InvokeAsync<string?>("eval",
+                                "localStorage.getItem('access_token') || localStorage.getItem('token')");
+                        }
+                        catch { return null; }
+                    };
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On("DashboardUpdated", async () =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        Groupes  = await EmployeService.GetMaterielsGroupesAsync();
+                        Articles = Groupes.SelectMany(g => g.Articles).ToList();
+
+                        // Si l'article sélectionné n'existe plus, réinitialiser
+                        if (SelectedArticleId > 0 && !Articles.Any(a => a.ArticleId == SelectedArticleId))
+                            SelectedArticleId = 0;
+                    }
+                    catch { /* silencieux */ }
+                    finally { StateHasChanged(); }
+                });
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+                await _hubConnection.InvokeAsync("JoinDashboard");
+            }
+            catch { /* reste statique si SignalR non dispo */ }
+        }
+        public async ValueTask DisposeAsync()
+        {
+            if (_hubConnection is not null)
+                {
+                    try { await _hubConnection.InvokeAsync("LeaveDashboard"); } catch { }
+                    await _hubConnection.DisposeAsync();
+                }
         }
 
         private void SelectType(string type) { TypeIncident = type; StateHasChanged(); }

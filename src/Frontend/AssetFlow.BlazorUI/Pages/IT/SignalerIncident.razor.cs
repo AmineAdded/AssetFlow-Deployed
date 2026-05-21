@@ -2,10 +2,12 @@ using AssetFlow.BlazorUI.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using AssetFlow.BlazorUI.DTOs;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace AssetFlow.BlazorUI.Pages.IT
 {
-    public partial class SignalerIncident
+    public partial class SignalerIncident:IAsyncDisposable
     {
         [Parameter] public int AffectationId { get; set; } = 0;
         [Parameter] public int ArticleId     { get; set; } = 0;
@@ -14,7 +16,8 @@ namespace AssetFlow.BlazorUI.Pages.IT
         [Inject] private EmployeService       EmployeService  { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage    { get; set; } = default!;
         [Inject] private NavigationManager    Navigation      { get; set; } = default!;
-
+        [Inject] private IJSRuntime           JS           { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
         private List<ArticleAffecteDto>        Articles { get; set; } = new();
         private List<MaterielAffecteGroupeDto> Groupes  { get; set; } = new();
         private int    SelectedArticleId { get; set; } = 0;
@@ -29,6 +32,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private string      _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
         private bool   _menuOpen      = false;
+        private HubConnection? _hubConnection;
 
         protected override async Task OnInitializedAsync()
         {
@@ -42,10 +46,43 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 SelectedArticleId = ArticleId;
 
             IsLoading = false;
+            await ConnecterSignalR();
         }
-        public ValueTask DisposeAsync()
+        private async Task ConnecterSignalR()
         {
-            return ValueTask.CompletedTask;
+            try
+            {
+                var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
+                _hubConnection = new HubConnectionBuilder()
+                    .WithUrl(hubUrl, options =>
+                    {
+                        options.AccessTokenProvider = async () =>
+                        {
+                            try
+                            {
+                                return await JS.InvokeAsync<string?>("eval",
+                                    "localStorage.getItem('access_token') || localStorage.getItem('token')");
+                            }
+                            catch
+                            {
+                                return null;
+                            }
+                        };
+                    })
+                    .Build();
+
+                await _hubConnection.StartAsync();
+                await _hubConnection.InvokeAsync("JoinDashboard");
+            }
+            catch { /* reste statique si SignalR non dispo */ }
+        }
+        public async ValueTask DisposeAsync()
+        {
+            if (_hubConnection is not null)
+            {
+                try { await _hubConnection.InvokeAsync("LeaveDashboard"); } catch { }
+                await _hubConnection.DisposeAsync();
+            }
         }
 
         private void SelectType(string type)

@@ -1,16 +1,21 @@
 using AssetFlow.BlazorUI.Services;
 using Microsoft.AspNetCore.Components;
 using AssetFlow.BlazorUI.DTOs;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
+using Blazored.LocalStorage;
 
 namespace AssetFlow.BlazorUI.Pages.Achat
 {
-    public partial class SignalerIncident
+    public partial class SignalerIncident:IAsyncDisposable
     {
         // ── Paramètre URL optionnel ────────────────────────────
         // Renseigné depuis DetailsEquipement via NaviguerVersSignalement()
         // Vaut 0 si on arrive depuis /employe/incident (sidebar)
         [Parameter] public int AffectationId { get; set; } = 0;
         [Parameter] public int ArticleId { get; set; } = 0;
+        [Inject] private IJSRuntime           JS           { get; set; } = default!;
+        [Inject] private ILocalStorageService LocalStorage { get; set; } = default!;
         private List<ArticleAffecteDto> Articles { get; set; } = new();
         private List<MaterielAffecteGroupeDto> Groupes { get; set; } = new();
         private int SelectedArticleId { get; set; } = 0;
@@ -19,6 +24,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         [Inject] private IncidentService IncidentService { get; set; } = default!;
         [Inject] private EmployeService EmployeService { get; set; } = default!;
         [Inject] private NavigationManager Navigation { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
         // ── Formulaire ──────────────────────────────────────────
         private string TypeIncident { get; set; } = "Panne";
         private string Description { get; set; } = string.Empty;
@@ -37,6 +43,7 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string      _roleUtilisateur = "Service Achat";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
         private bool _roleCharge = false; 
+        private HubConnection? _hubConnection;
 
         // ── Initialisation ─────────────────────────────────────
         protected override async Task OnInitializedAsync()
@@ -52,10 +59,59 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                 SelectedArticleId = ArticleId;
 
             IsLoading = false;
+            await ConnecterSignalR();
         }
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            return ValueTask.CompletedTask;
+            if (_hubConnection is not null)
+            {
+                try { await _hubConnection.InvokeAsync("LeaveDashboard"); } catch { }
+                await _hubConnection.DisposeAsync();
+            }
+        }
+        private async Task ConnecterSignalR()
+        {
+            var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl, options =>
+                {
+                    options.AccessTokenProvider = async () =>
+                    {
+                        try
+                        {
+                            return await JS.InvokeAsync<string?>("eval",
+                                "localStorage.getItem('access_token') || localStorage.getItem('token')");
+                        }
+                        catch { return null; }
+                    };
+                })
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On("DashboardUpdated", async () =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        Groupes  = await EmployeService.GetMaterielsGroupesAsync();
+                        Articles = Groupes.SelectMany(g => g.Articles).ToList();
+
+                        // Si l'article sélectionné n'existe plus, réinitialiser
+                        if (SelectedArticleId > 0 && !Articles.Any(a => a.ArticleId == SelectedArticleId))
+                            SelectedArticleId = 0;
+                    }
+                    catch { /* silencieux */ }
+                    finally { StateHasChanged(); }
+                });
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+                await _hubConnection.InvokeAsync("JoinDashboard");
+            }
+            catch { /* reste statique si SignalR non dispo */ }
         }
 
         // ── Sélection du type d'incident ───────────────────────

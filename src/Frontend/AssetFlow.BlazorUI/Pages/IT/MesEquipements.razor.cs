@@ -85,6 +85,23 @@ namespace AssetFlow.BlazorUI.Pages.IT
                     {
                         MaterielsGroupes = await EmployeService.GetMaterielsGroupesAsync();
                         FiltrerMateriels(); // ← réappliquer le filtre actif au lieu de juste =MaterielsGroupes
+                        if (ModalOuvert && MaterielSelectionne != null)
+                        {
+                            var updated = MaterielsGroupes
+                                .FirstOrDefault(m => m.MaterielId == MaterielSelectionne.MaterielId);
+                            if (updated != null)
+                                MaterielSelectionne = updated;
+                        }
+                        if (ModalCommentaireOuvert && MaterielCommentaire != null)
+                        {
+                            var updated = MaterielsGroupes
+                                .FirstOrDefault(m => m.MaterielId == MaterielCommentaire.MaterielId);
+                            if (updated != null)
+                                MaterielCommentaire = updated;
+
+                            CommentairesExistants = await EmployeService
+                                .GetCommentairesMaterielAsync(MaterielCommentaire.MaterielId);
+                        }
                     }
                     catch { /* silencieux */ }
                     finally

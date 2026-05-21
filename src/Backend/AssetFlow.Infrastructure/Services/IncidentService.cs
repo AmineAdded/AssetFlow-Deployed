@@ -148,8 +148,11 @@ namespace AssetFlow.Infrastructure.Services
         public async Task<List<IncidentMaterielDto>> GetMaterielsAvecIncidentsAsync(int utilisateurId)
         {
             var affectations = await _context.Affectations
-                .Include(a => a.Materiel).Include(a => a.Articles)
+                .Include(a => a.Materiel)
+                .Include(a => a.Articles)
                 .Where(a => a.UtilisateurId == utilisateurId && a.Etat == EtatAffectation.Courante)
+                .OrderBy(a => a.Materiel.Designation)
+                .ThenByDescending(a => a.DateAffectation)   // ← plus récente en premier
                 .ToListAsync();
 
             var affectationIds = affectations.Select(a => a.Id).ToList();
@@ -158,40 +161,44 @@ namespace AssetFlow.Infrastructure.Services
                 .OrderByDescending(i => i.DateIncident)
                 .ToListAsync();
 
-            return affectations
-                .Select(aff =>
-                {
-                    var incidentsAff = incidents.Where(i => i.AffectationId == aff.Id).ToList();
-                    if (!incidentsAff.Any()) return null;
+            // Une entrée par affectation (pas par matériel)
+            return affectations.Select(aff =>
+            {
+                var incidentsAff = incidents.Where(i => i.AffectationId == aff.Id).ToList();
 
-                    var articlesAvecIncidents = aff.Articles
-                        .Select(art =>
-                        {
-                            var incidentsArt = incidentsAff.Where(i => i.ArticleId == art.Id).Select(MapToDto).ToList();
-                            if (!incidentsArt.Any()) return null;
-                            return new IncidentArticleDto
-                            {
-                                ArticleId   = art.Id,
-                                NumeroSerie = art.NumeroSerie ?? $"S/N #{art.Id}",
-                                EtatArticle = art.Etat.ToString(),
-                                Incidents   = incidentsArt
-                            };
-                        })
-                        .Where(x => x != null).Cast<IncidentArticleDto>().ToList();
-
-                    return new IncidentMaterielDto
+                var articlesAvecIncidents = aff.Articles
+                    .Select(art =>
                     {
-                        MaterielId        = aff.MaterielId,
-                        AffectationId     = aff.Id,
-                        Designation       = aff.Materiel.Designation,
-                        Reference         = aff.Materiel.Reference,
-                        ImageUrl          = aff.Materiel.ImageUrl,
-                        Categorie         = aff.Materiel.Categorie,
-                        NbIncidentsActifs = incidentsAff.Count(i => i.Statut == StatutIncident.EnAttente || i.Statut == StatutIncident.EnCours),
-                        Articles          = articlesAvecIncidents
-                    };
-                })
-                .Where(x => x != null).Cast<IncidentMaterielDto>().ToList();
+                        var incidentsArt = incidentsAff
+                            .Where(i => i.ArticleId == art.Id)
+                            .Select(MapToDto).ToList();
+                        if (!incidentsArt.Any()) return null;
+                        return new IncidentArticleDto
+                        {
+                            ArticleId   = art.Id,
+                            NumeroSerie = art.NumeroSerie ?? $"S/N #{art.Id}",
+                            EtatArticle = art.Etat.ToString(),
+                            Incidents   = incidentsArt
+                        };
+                    })
+                    .Where(x => x != null).Cast<IncidentArticleDto>().ToList();
+
+                return new IncidentMaterielDto
+                {
+                    MaterielId        = aff.MaterielId,
+                    AffectationId     = aff.Id,
+                    Designation       = aff.Materiel.Designation,
+                    Reference         = aff.Materiel.Reference,
+                    ImageUrl          = aff.Materiel.ImageUrl,
+                    Categorie         = aff.Materiel.Categorie,
+                    DateAffectation   = aff.DateAffectation,        // ← nouveau
+                    QuantiteAffectee  = aff.QuantiteAffectee,       // ← nouveau
+                    NbIncidentsActifs = incidentsAff.Count(i =>
+                        i.Statut == StatutIncident.EnAttente ||
+                        i.Statut == StatutIncident.EnCours),
+                    Articles          = articlesAvecIncidents
+                };
+            }).ToList();   // ← on garde TOUTES les affectations, même sans incident
         }
 
         public async Task<SignalerIncidentResponseDto> ChangerStatutAsync(int incidentId, ChangerStatutIncidentDto dto)

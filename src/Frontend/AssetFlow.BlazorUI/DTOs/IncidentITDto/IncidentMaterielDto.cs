@@ -10,5 +10,7 @@ namespace AssetFlow.BlazorUI.DTOs
         public string Categorie          { get; set; } = string.Empty;
         public int    NbIncidentsActifs  { get; set; }
         public List<IncidentArticleDto> Articles { get; set; } = new();
+        public DateTime DateAffectation   { get; set; }
+        public int      QuantiteAffectee  { get; set; }
     }
 }

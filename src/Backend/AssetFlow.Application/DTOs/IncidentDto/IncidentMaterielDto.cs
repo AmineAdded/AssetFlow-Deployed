@@ -10,5 +10,7 @@ namespace AssetFlow.Application.DTOs
         public int    AffectationId { get; set; }
         public int    NbIncidentsActifs { get; set; }
         public List<IncidentArticleDto> Articles { get; set; } = new();
+        public DateTime DateAffectation   { get; set; }
+        public int      QuantiteAffectee  { get; set; }
     }
 }

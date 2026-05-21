@@ -9,24 +9,16 @@ namespace AssetFlow.Infrastructure.Services
     public class ProjectService : IProjectService
     {
         private readonly AppDbContext _db;
-        private readonly IDashboardNotifier _notifier;
+        private readonly IDashboardNotifier _notifier; // AJOUTÉ
 
-        public ProjectService(AppDbContext db, IDashboardNotifier notifier)
+        public ProjectService(AppDbContext db, IDashboardNotifier notifier) // AJOUTÉ
         {
             _db       = db;
             _notifier = notifier;
         }
 
-        // ── Helper : force UTC ────────────────────────────────────────────────
-        private static DateTime? ToUtc(DateTime? dt)
-            => dt.HasValue ? DateTime.SpecifyKind(dt.Value, DateTimeKind.Utc) : null;
-        // ─────────────────────────────────────────────────────────────────────
-
         public async Task<List<ProjectDto>> GetAllAsync()
-            => await _db.Projects
-                .OrderByDescending(p => p.CreatedAt)
-                .Select(p => ToDto(p))
-                .ToListAsync();
+            => await _db.Projects.OrderByDescending(p => p.CreatedAt).Select(p => ToDto(p)).ToListAsync();
 
         public async Task<ProjectDto?> GetByIdAsync(int id)
         {
@@ -44,20 +36,20 @@ namespace AssetFlow.Infrastructure.Services
                 Priorite    = Enum.Parse<PrioriteProjet>(dto.Priorite),
                 Responsable = dto.Responsable,
                 Budget      = dto.Budget,
-                DateDebut   = ToUtc(dto.DateDebut),   // ← UTC
-                DateFin     = ToUtc(dto.DateFin),     // ← UTC
+                DateDebut   = dto.DateDebut,
+                DateFin     = dto.DateFin,
                 CreatedAt   = DateTime.UtcNow,
                 UpdatedAt   = DateTime.UtcNow
             };
             _db.Projects.Add(p);
             await _db.SaveChangesAsync();
-
+            // ── MEMORY ──────────────────────────────────────────────────────────
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "projet",
                 NodeId = $"p-{p.Id}"
             });
-
+            // ────────────────────────────────────────────────────────────────────
             return ToDto(p);
         }
 
@@ -72,46 +64,51 @@ namespace AssetFlow.Infrastructure.Services
             p.Priorite    = Enum.Parse<PrioriteProjet>(dto.Priorite);
             p.Responsable = dto.Responsable;
             p.Budget      = dto.Budget;
-            p.DateDebut   = ToUtc(dto.DateDebut);     // ← UTC
-            p.DateFin     = ToUtc(dto.DateFin);       // ← UTC
+            p.DateDebut   = dto.DateDebut;
+            p.DateFin     = dto.DateFin;
             p.UpdatedAt   = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
-
+            // ── MEMORY ──────────────────────────────────────────────────────────
             await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
             {
                 Type   = "projet",
                 NodeId = $"p-{id}"
             });
-
+            // ────────────────────────────────────────────────────────────────────
             return ToDto(p);
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
             var p = await _db.Projects
-                .Include(p => p.Affectations)
-                    .ThenInclude(a => a.Articles)
-                .Include(p => p.Affectations)
-                    .ThenInclude(a => a.Materiel)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .Include(p => p.Affectations)          // AJOUT
+                    .ThenInclude(a => a.Articles)       // AJOUT
+                .Include(p => p.Affectations)          // AJOUT
+                    .ThenInclude(a => a.Materiel)       // AJOUT
+                .FirstOrDefaultAsync(p => p.Id == id); // AJOUT (remplace FindAsync)
 
             if (p == null) return false;
 
+            // ── NOUVEAU : clôturer les affectations et libérer le stock ──────────
             foreach (var affectation in p.Affectations)
             {
-                affectation.Etat       = EtatAffectation.Terminee;
+                // 1. Marquer l'affectation comme Terminée
+                affectation.Etat     = EtatAffectation.Terminee;
                 affectation.DateRetour = DateTime.UtcNow;
-                affectation.ProjetId   = null;
+                affectation.ProjetId = null;
 
+                // 2. Remettre les articles individuels en Disponible
                 foreach (var article in affectation.Articles)
                 {
-                    article.Statut        = StatutArticle.Disponible;
+                    article.Statut       = StatutArticle.Disponible;
                     article.AffectationId = null;
                 }
 
+                // 3. Remettre la quantité au stock du matériel
                 affectation.Materiel.QuantiteStock += affectation.QuantiteAffectee;
             }
+            // ─────────────────────────────────────────────────────────────────────
 
             _db.Projects.Remove(p);
             await _db.SaveChangesAsync();
@@ -129,6 +126,7 @@ namespace AssetFlow.Infrastructure.Services
             => await _db.Affectations
                 .AsNoTracking()
                 .Include(a => a.Materiel)
+                .Include(a => a.Articles) 
                 .Where(a => a.ProjetId == projetId)
                 .OrderByDescending(a => a.DateAffectation)
                 .Select(a => new AffectationProjetDto
@@ -140,7 +138,13 @@ namespace AssetFlow.Infrastructure.Services
                     DateAffectation  = a.DateAffectation,
                     DateRetourPrevue = a.DateRetour,
                     Etat             = a.Etat.ToString(),
-                    ImageUrl         = a.Materiel.ImageUrl
+                    ImageUrl = a.Materiel.ImageUrl,
+                    Articles         = a.Articles.Select(art => new ArticleAffectationDto
+                    {
+                        ArticleId   = art.Id,
+                        NumeroSerie = art.NumeroSerie ?? $"S/N #{art.Id}",
+                        Etat        = art.Etat.ToString()
+                    }).ToList()
                 })
                 .ToListAsync();
 

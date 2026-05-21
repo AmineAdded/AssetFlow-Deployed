@@ -10,5 +10,6 @@ namespace AssetFlow.BlazorUI.DTOs
         public DateTime? DateRetourPrevue { get; set; }
         public string    Etat             { get; set; } = string.Empty;
         public string?  ImageUrl         { get; set; }
+        public List<ArticleAffectationDto> Articles { get; set; } = new();
     }
 }

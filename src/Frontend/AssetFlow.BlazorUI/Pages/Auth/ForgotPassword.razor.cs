@@ -31,7 +31,15 @@ namespace AssetFlow.BlazorUI.Pages.Auth
         private string[] TokenDigits = new string[6];
 
         private string TokenValue => string.Join("", TokenDigits);
+        private async Task OnEmailKeyDown(KeyboardEventArgs e)
+        {
+            if (e.Key == "Enter") await HandleSendCode();
+        }
 
+        private async Task OnPasswordKeyDown(KeyboardEventArgs e)
+        {
+            if (e.Key == "Enter") await HandleResetPassword();
+        }
         private async Task HandleSendCode()
         {
             EmailError   = false;

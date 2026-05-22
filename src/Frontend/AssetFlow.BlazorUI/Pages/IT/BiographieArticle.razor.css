@@ -49,7 +49,7 @@ html.dark .dna-header-bar {
     border-bottom-color: rgba(255,255,255,0.07);
 }
 
-.dna-header-icon {
+/* .dna-header-icon {
     width: 40px;
     height: 40px;
     border-radius: var(--border-radius-md, 8px);
@@ -62,7 +62,25 @@ html.dark .dna-header-bar {
 
 html.dark .dna-header-icon { background: rgba(55,138,221,0.15); }
 
-.dna-header-icon svg { width: 20px; height: 20px; }
+.dna-header-icon svg { width: 20px; height: 20px; } */
+.dna-header-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(19,109,236,0.10);
+    color: #136dec;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.dna-header-icon  svg {
+    width: 17px; height: 17px;
+    fill: none; stroke: currentColor;
+    stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
+html.dark .dna-header-icon  { background: rgba(59,130,246,0.15); color: #60A5FA; }
+@media (max-width: 480px) {
+    .dna-header-icon  { width: 30px; height: 30px; }
+    .dna-header-icon svg { width: 14px; height: 14px; }
+}
 
 .dna-title { font-size: 18px; font-weight: 500; color: var(--text); }
 .dna-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }

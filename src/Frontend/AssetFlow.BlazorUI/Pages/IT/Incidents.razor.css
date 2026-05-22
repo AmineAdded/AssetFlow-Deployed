@@ -61,13 +61,13 @@
 }
 
 html.dark .inc-header {
-    background: rgba(15,22,34,0.95);
+    background: rgba(169, 185, 215, 0.95);
     border-bottom-color: rgba(255,255,255,0.07);
 }
 
 .inc-page-title {
     font-size: 17px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text, #0f172a);
     margin: 0 0 2px;
     letter-spacing: -0.025em;

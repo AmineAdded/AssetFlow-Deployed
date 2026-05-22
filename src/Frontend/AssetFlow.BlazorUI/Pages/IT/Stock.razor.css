@@ -77,7 +77,7 @@ html.dark .stk-header {
 
 .stk-page-title {
     font-size: 17px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text, #0f172a);
     margin: 0 0 2px;
     letter-spacing: -0.025em;
@@ -781,17 +781,37 @@ html.dark .stk-viz-wrap { background:#0d1520; border-color:#1e2d42; }
 @media (max-width: 768px) {
     .stk-layout { flex-direction: column; }
     .stk-hamburger { display: flex; }
-    .stk-header { padding: 12px 16px; padding-right: 60px; }
+    .stk-header {
+        padding: 12px 16px;
+        padding-right: 60px;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    .stk-header-controls { display: none; }
     .stk-kpi-row { padding: 14px 16px 0; gap: 10px; }
     .stk-table-topbar { padding: 12px 16px 8px; }
     .stk-table-wrap { padding: 0 16px 16px; }
     .stk-modal { padding: 1.25rem; }
     .stk-seuil-card-full { max-width: 100%; }
     .stk-modal-seuils, .stk-triggers-row { grid-template-columns: 1fr; }
+    .stk-page-sub { font-size: 0; }
+    .stk-page-sub::after {
+        content: "Visualiser l'inventaire";
+        font-size: 12px;
+        color: var(--text-muted, #64748b);
+    }
 }
 
 @media (max-width: 480px) {
+    .stk-header {
+        padding: 10px 16px;
+        padding-right: 60px;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    .stk-header-controls { display: none; }
     .stk-kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stk-kpi-trend.up, .stk-kpi-trend.down {display: none; }
 }
 /* ═══════════════════════════════════════════════════════════════════
    AJOUTS Stock.razor.css — Panneau articles + bouton hors service
@@ -1118,3 +1138,28 @@ html.dark .stk-restore-info { background: rgba(5,150,105,0.10); color: #6ee7b7; 
     transform: translateY(-1px);
 }
 .stk-modal-restore-confirm:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Icône topbar ── */
+.stk-header-left {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stk-topbar-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: rgba(37,99,235,0.07);
+    color: #2563EB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.stk-topbar-icon svg {
+    width: 17px; height: 17px;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.9;
+    stroke-linecap: round; stroke-linejoin: round;
+}

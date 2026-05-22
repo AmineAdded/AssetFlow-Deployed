@@ -7,9 +7,14 @@ namespace AssetFlow.Application.Services
 {
     public class ArticleService : IArticleService
     {
-        private readonly AppDbContext _db;
-        public ArticleService(AppDbContext db) => _db = db;
-        private readonly IDashboardNotifier _notifier;
+        private readonly AppDbContext        _db;
+        private readonly IDashboardNotifier  _notifier;
+
+        public ArticleService(AppDbContext db, IDashboardNotifier notifier)
+        {
+            _db       = db;
+            _notifier = notifier;
+        }
 
         // ── Mise à jour numéro de série ───────────────────────────────────────
         public async Task<(bool Success, string Message, string? NumeroSerie)> UpdateNumeroSerieAsync(int id, string? numeroSerie)
@@ -33,7 +38,7 @@ namespace AssetFlow.Application.Services
             }
 
             await _db.SaveChangesAsync();
-            await _notifier.NotifyITAsync();
+            await _notifier.NotifyAsync();   // ← ajouté
             return (true, "Numéro de série mis à jour.", article.NumeroSerie);
         }
 
@@ -80,7 +85,7 @@ namespace AssetFlow.Application.Services
                 _db.ArticlesIndividuels.Remove(article);
 
                 await _db.SaveChangesAsync();
-                await _notifier.NotifyITAsync();
+                await _notifier.NotifyAsync();   // ← ajouté
                 await tx.CommitAsync();
                 return (true, $"Article #{id} supprimé définitivement.");
             }
@@ -109,7 +114,6 @@ namespace AssetFlow.Application.Services
             {
                 bool etaitAffecte = article.AffectationId.HasValue;
 
-                // 1. Retirer de l'affectation si affecté
                 if (etaitAffecte)
                 {
                     var affectation = await _db.Affectations
@@ -118,44 +122,37 @@ namespace AssetFlow.Application.Services
                     if (affectation != null)
                     {
                         affectation.QuantiteAffectee = Math.Max(0, affectation.QuantiteAffectee - 1);
-
                         var autresArticles = await _db.ArticlesIndividuels
                             .CountAsync(a => a.AffectationId == affectation.Id && a.Id != id);
                         if (autresArticles == 0)
                             affectation.Etat = EtatAffectation.Terminee;
                     }
-
                     article.AffectationId = null;
-
-                    // Si était affecté, le stock ne change pas (il était déjà sorti du stock)
-                    // On passe juste à HorsService sans toucher au stock
                 }
-                // Si disponible : le stock diminue de 1 (l'article quitte le stock disponible)
                 else if (article.Statut == StatutArticle.Disponible)
                 {
                     article.Materiel.QuantiteStock = Math.Max(0, article.Materiel.QuantiteStock - 1);
                 }
 
-                // 2. Passer le statut à HorsService
                 var incidentsOuverts = await _db.Incidents
-                .Where(i => i.ArticleId == id &&
-                            i.Statut != StatutIncident.Resolu &&
-                            i.Statut != StatutIncident.Cloture)
-                .ToListAsync();
+                    .Where(i => i.ArticleId == id &&
+                                i.Statut != StatutIncident.Resolu &&
+                                i.Statut != StatutIncident.Cloture)
+                    .ToListAsync();
 
                 foreach (var incident in incidentsOuverts)
                 {
-                    incident.Statut              = StatutIncident.Resolu;
-                    incident.DateResolution      = DateTime.Now;
+                    incident.Statut                 = StatutIncident.Resolu;
+                    incident.DateResolution         = DateTime.Now;
                     incident.CommentairesResolution = "Résolu automatiquement — article mis hors service.";
                 }
+
                 article.Statut = StatutArticle.HorsService;
 
-                // 3. Enregistrer dans la biographie
                 _db.ArticleHistoriques.Add(new ArticleHistorique
                 {
                     ArticleId     = article.Id,
-                    TypeEvenement = TypeEvenementArticle.MiseEnStock, // utilise Reforme si dispo, sinon PanneDeclaree
+                    TypeEvenement = TypeEvenementArticle.MiseEnStock,
                     UtilisateurId = null,
                     DateEvenement = DateTime.UtcNow,
                     Description   = etaitAffecte
@@ -164,9 +161,8 @@ namespace AssetFlow.Application.Services
                 });
 
                 await _db.SaveChangesAsync();
-                await _notifier.NotifyITAsync();
+                await _notifier.NotifyAsync();   // ← ajouté
                 await tx.CommitAsync();
-
                 return (true, $"Article #{id} mis hors service.");
             }
             catch (Exception ex)
@@ -176,7 +172,7 @@ namespace AssetFlow.Application.Services
             }
         }
 
-        // ── Remise en service d'un article hors service ───────────────────
+        // ── Remise en service d'un article hors service ───────────────────────
         public async Task<(bool Success, string Message)> RemettreEnServiceAsync(int id)
         {
             var article = await _db.ArticlesIndividuels
@@ -192,14 +188,10 @@ namespace AssetFlow.Application.Services
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                // 1. Remettre l'état à Bon (0) et le statut à Disponible
-                article.Etat   = EtatArticle.Bon;   // enum value 0
+                article.Etat   = EtatArticle.Bon;
                 article.Statut = StatutArticle.Disponible;
-
-                // 2. Incrémenter le stock du matériel
                 article.Materiel.QuantiteStock += 1;
 
-                // 3. Enregistrer dans la biographie
                 _db.ArticleHistoriques.Add(new ArticleHistorique
                 {
                     ArticleId     = article.Id,
@@ -210,11 +202,10 @@ namespace AssetFlow.Application.Services
                 });
 
                 await _db.SaveChangesAsync();
-                await _notifier.NotifyITAsync();
+                await _notifier.NotifyAsync();   // ← ajouté
                 await tx.CommitAsync();
-
                 return (true, $"Article #{id} remis en service avec succès.");
-            }   
+            }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();

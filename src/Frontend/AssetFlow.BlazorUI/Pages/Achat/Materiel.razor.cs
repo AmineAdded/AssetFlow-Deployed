@@ -134,6 +134,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private string TabClass(bool condition) => condition ? "sk-ref-tab active" : "sk-ref-tab";
         // private string      _roleUtilisateur = "Service Achat";
         private bool _estAdmin => _currentUserRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+        private int  _panneauMaterielId  = 0; 
+        private int  _panneauCommandeId  = 0;
 
         private string CurrentUserInitials
         {
@@ -192,6 +194,15 @@ namespace AssetFlow.BlazorUI.Pages.Achat
                             .Select(l => l.Categorie)
                             .Distinct().OrderBy(c => c).ToList();
                         AppliquerFiltres();
+
+                        // ── Sync panneau articles si ouvert ────────────────
+                        if (_panneauArticlesOuvert)
+                        {
+                            if (_panneauMaterielId > 0)
+                                _articles = await CommandeSvc.GetArticlesByMaterielAsync(_panneauMaterielId);
+                            else if (_panneauCommandeId > 0)
+                                _articles = await CommandeSvc.GetArticlesByCommandeAsync(_panneauCommandeId);
+                        }
                     }
                     catch { /* silencieux */ }
                     finally
@@ -213,11 +224,6 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         {
             await JS.InvokeVoidAsync("eval", "document.getElementById('img-upload').click()");
         }
-        private static string TruncateDescription(string? text, int maxLength)
-        {
-            if (string.IsNullOrEmpty(text)) return string.Empty;
-            return text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "…";
-        }
 
         // ── Chargement ─────────────────────────────────────────────
         private async Task ChargerDonnees()
@@ -237,6 +243,11 @@ namespace AssetFlow.BlazorUI.Pages.Achat
             }
             catch (Exception ex) { _erreur = $"Erreur de chargement : {ex.Message}"; }
             finally { _chargement = false; }
+        }
+        private static string TruncateDescription(string? text, int maxLength)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+            return text.Length <= maxLength ? text : text[..maxLength].TrimEnd() + "…";
         }
 
         private async Task ChargerFournisseurs()
@@ -650,8 +661,10 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         }
 
         // ── Panneau articles matériel (bouton ···) ─────────────────
-        private async Task OuvrirArticlesMateriel(LigneMaterielDto lg)
+       private async Task OuvrirArticlesMateriel(LigneMaterielDto lg)
         {
+            _panneauMaterielId     = lg.MaterielId;   
+            _panneauCommandeId     = 0;              
             _panneauArticlesTitre  = $"{lg.Reference} — {lg.Designation}";
             _panneauArticlesOuvert = true;
             _chargementArticles    = true;
@@ -667,6 +680,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         // ── Panneau articles par commande (bouton "i" commande) ────
         private async Task OuvrirArticlesCommande(CommandeDto cmd)
         {
+            _panneauCommandeId     = cmd.Id;         
+            _panneauMaterielId     = 0; 
             _panneauArticlesTitre  = $"{cmd.NumeroCommande} — articles";
             _panneauArticlesOuvert = true;
             _chargementArticles    = true;
@@ -682,6 +697,8 @@ namespace AssetFlow.BlazorUI.Pages.Achat
         private void FermerArticles()
         {
             _panneauArticlesOuvert = false;
+            _panneauMaterielId     = 0;
+            _panneauCommandeId     = 0;
             _editArticleId = null;
         }
 

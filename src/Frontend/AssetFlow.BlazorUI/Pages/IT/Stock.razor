@@ -120,6 +120,7 @@
                         <tr>
                             <th>RÉFÉRENCE</th>
                             <th>DÉSIGNATION</th>
+                            <th>DESCRIPTION</th>
                             <th>CATÉGORIE</th>
                             <th>QUANTITÉ</th>
                             <th>SEUIL MIN</th>
@@ -140,6 +141,18 @@
                                         else
                                         { <div class="stk-mat-img-placeholder"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div> }
                                         <span class="stk-mat-name">@mat.Designation</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="stk-desc-cell">
+                                        @if (!string.IsNullOrWhiteSpace(mat.Description))
+                                        {
+                                            <span class="stk-desc-text" title="@mat.Description">@mat.Description</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="stk-desc-empty">—</span>
+                                        }
                                     </div>
                                 </td>
                                 <td><span class="stk-cat">@mat.Categorie</span></td>

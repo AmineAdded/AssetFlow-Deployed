@@ -44,13 +44,17 @@ namespace AssetFlow.Infrastructure.Services
                 var employe = incident.Affectation?.Utilisateur;
                 if (employe is null || string.IsNullOrWhiteSpace(employe.Email)) return;
 
-                var estCompteTeams = employe.Email.EndsWith("@bizerte.r-iset.tn",
+                bool estDuDomaine = employe.Email.EndsWith("@bizerte.r-iset.tn", 
                     StringComparison.OrdinalIgnoreCase);
 
-                if (estCompteTeams)
+                if (estDuDomaine)
+                {
+                    // Domaine interne → Teams via Power Automate + Email SMTP
                     await EnvoyerTeamsAsync(incident, employe, commentaireResolution);
-                else
-                    await EnvoyerBrevoAsync(incident, employe, commentaireResolution);
+                }
+                
+                // Toujours envoyer l'email SMTP (domaine interne ou externe)
+                await EnvoyerBrevoAsync(incident, employe, commentaireResolution);
             }
             catch (Exception ex)
             {
@@ -89,9 +93,9 @@ namespace AssetFlow.Infrastructure.Services
 
         private async Task EnvoyerBrevoAsync(Domain.Entities.Incident incident, Domain.Entities.User employe, string? commentaire)
         {
-            var apiKey      = _config["Brevo:ApiKey"];
-            var from        = _config["Brevo:From"]     ?? "amineadded4@gmail.com";
-            var fromName    = _config["Brevo:FromName"] ?? "AssetFlow";
+            var apiKey   = _config["Brevo:ApiKey"];
+            var from     = _config["Brevo:From"]     ?? "amineadded4@gmail.com";
+            var fromName = _config["Brevo:FromName"] ?? "AssetFlow";
 
             if (string.IsNullOrWhiteSpace(apiKey)) return;
 
@@ -101,45 +105,48 @@ namespace AssetFlow.Infrastructure.Services
             var commentaireFinal = commentaire?.Trim() ?? "Aucun commentaire";
 
             var corps = $@"
-<html>
-<body style='font-family: Arial, sans-serif; color: #333;'>
-    <div style='max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px;'>
-        <h2 style='color: #136dec;'>✅ Incident résolu — {numeroIncident}</h2>
-        <p>Bonjour <strong>{employe.FirstName} {employe.LastName}</strong>,</p>
-        <p>Votre incident a été résolu. Voici le récapitulatif :</p>
-        <table style='width: 100%; border-collapse: collapse;'>
-            <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Numéro</strong></td><td style='padding: 8px;'>{numeroIncident}</td></tr>
-            <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Type</strong></td><td style='padding: 8px;'>{incident.TypeIncident}</td></tr>
-            <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Matériel</strong></td><td style='padding: 8px;'>{materielNom}</td></tr>
-            <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Commentaire</strong></td><td style='padding: 8px;'>{commentaireFinal}</td></tr>
-            <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Date de résolution</strong></td><td style='padding: 8px;'>{dateResolution}</td></tr>
-        </table>
-        <br/>
-        <p style='color: #888; font-size: 12px;'>Cet email a été envoyé automatiquement par AssetFlow.</p>
-    </div>
-</body>
-</html>";
+        <html>
+        <body style='font-family: Arial, sans-serif; color: #333;'>
+            <div style='max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px;'>
+                <h2 style='color: #136dec;'>✅ Incident résolu — {numeroIncident}</h2>
+                <p>Bonjour <strong>{employe.FirstName} {employe.LastName}</strong>,</p>
+                <p>Votre incident a été résolu. Voici le récapitulatif :</p>
+                <table style='width: 100%; border-collapse: collapse;'>
+                    <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Numéro</strong></td><td style='padding: 8px;'>{numeroIncident}</td></tr>
+                    <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Type</strong></td><td style='padding: 8px;'>{incident.TypeIncident}</td></tr>
+                    <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Matériel</strong></td><td style='padding: 8px;'>{materielNom}</td></tr>
+                    <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Commentaire</strong></td><td style='padding: 8px;'>{commentaireFinal}</td></tr>
+                    <tr><td style='padding: 8px; background: #f5f5f5;'><strong>Date de résolution</strong></td><td style='padding: 8px;'>{dateResolution}</td></tr>
+                </table>
+                <br/>
+                <p style='color: #888; font-size: 12px;'>Cet email a été envoyé automatiquement par AssetFlow.</p>
+            </div>
+        </body>
+        </html>";
 
             var payload = new
             {
-                sender     = new { name = fromName, email = from },
-                to         = new[] { new { email = employe.Email, name = $"{employe.FirstName} {employe.LastName}" } },
-                subject    = $"✅ Incident résolu — {numeroIncident}",
+                sender      = new { name = fromName, email = from },
+                to          = new[] { new { email = employe.Email, name = $"{employe.FirstName} {employe.LastName}" } },
+                subject     = $"✅ Incident résolu — {numeroIncident}",
                 htmlContent = corps
             };
 
             var json    = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            content.Headers.Add("api-key", apiKey);
 
-            var response = await _http.PostAsync("https://api.brevo.com/v3/smtp/email", content);
+            // ✅ api-key dans le header de la requête
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.brevo.com/v3/smtp/email");
+            request.Headers.Add("api-key", apiKey);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _http.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
-                Console.WriteLine($"Email Brevo envoyé à {employe.Email} pour l'incident #{incident.Id}.");
+                Console.WriteLine($"✅ Email Brevo envoyé à {employe.Email} pour l'incident #{incident.Id}.");
             else
             {
                 var err = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Échec Brevo pour incident #{incident.Id}: {response.StatusCode} — {err}");
+                Console.WriteLine($"❌ Échec Brevo pour incident #{incident.Id}: {response.StatusCode} — {err}");
             }
         }
     }

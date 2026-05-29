@@ -56,6 +56,78 @@ namespace AssetFlow.BlazorUI.Pages.IT
         private List<ChatbotMessageDto> _chatMessages    = new();
         private string                  _roleUtilisateur = "Service IT";
         private bool _estAdmin => _roleUtilisateur.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+        private bool _isAnalyzingAll = false;
+        private Dictionary<Guid, string> _analyzeAllStatus = new();
+        private async Task AnalyzeAll()
+        {
+            if (_isAnalyzingAll || _confirmedId.HasValue) return;
+
+            _isAnalyzingAll = true;
+            _analyzeAllStatus.Clear();
+
+            // Initialiser toutes comme "en attente"
+            foreach (var offre in _offres)
+                _analyzeAllStatus[offre.IdOffre] = "waiting";
+
+            StateHasChanged();
+
+            foreach (var offre in _offres)
+            {
+                // Passer cette offre en "en cours"
+                _analyzeAllStatus[offre.IdOffre] = "running";
+                _ocrStatus[offre.IdOffre] = OcrStatus.Running;
+                _ocrError.Remove(offre.IdOffre);
+                StateHasChanged();
+
+                try
+                {
+                    // Circuit breaker check
+                    if (_cbOcr.TryTransitionHalfOpen())
+                    {
+                        StateHasChanged();
+                        await Task.Delay(3500);
+                    }
+
+                    if (!_cbOcr.CanSend())
+                    {
+                        _analyzeAllStatus[offre.IdOffre] = "error";
+                        _ocrStatus[offre.IdOffre] = OcrStatus.Error;
+                        _ocrError[offre.IdOffre] = "Service OCR indisponible.";
+                        StateHasChanged();
+                        continue;
+                    }
+
+                    var (invoice, error) = await OffreService.AnalyzeOcrAsync(offre.IdOffre);
+
+                    if (error != null || invoice == null)
+                    {
+                        _cbOcr.RecordFailure();
+                        _analyzeAllStatus[offre.IdOffre] = "error";
+                        _ocrStatus[offre.IdOffre] = OcrStatus.Error;
+                        _ocrError[offre.IdOffre] = error != null ? FormatOcrError(error) : "Aucune donnée retournée.";
+                    }
+                    else
+                    {
+                        _cbOcr.RecordSuccess();
+                        ApplyInvoiceToState(offre.IdOffre, invoice);
+                        _analyzeAllStatus[offre.IdOffre] = "done";
+                        _ocrStatus[offre.IdOffre] = OcrStatus.Done;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _cbOcr.RecordFailure();
+                    _analyzeAllStatus[offre.IdOffre] = "error";
+                    _ocrStatus[offre.IdOffre] = OcrStatus.Error;
+                    _ocrError[offre.IdOffre] = FormatOcrError(ex.Message);
+                }
+
+                StateHasChanged();
+            }
+
+            _isAnalyzingAll = false;
+            StateHasChanged();
+        }
 
         // ── Chat UI ──────────────────────────────────────────────
         private void ToggleChat()

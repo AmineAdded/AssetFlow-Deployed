@@ -4,7 +4,7 @@
 @using AssetFlow.BlazorUI.CircuitBreaker
 
 <RoleAuthGuard AllowedRoles="@(new[]{"IT","Admin"})" Context="userRole">
-    @{ _roleUtilisateur = userRole; }  @* ← assigné avant le premier rendu du contenu *@
+    @{ _roleUtilisateur = userRole; } 
     @* OCR — OPEN *@
     @if (_cbOcr.State == CbState.Open)
     {
@@ -93,7 +93,7 @@
     @if (_menuOpen)
     { <div  @onclick="() => _menuOpen = !_menuOpen"></div> } 
 
-    @* ══ MODALE PDF ══ *@
+    @* MODALE PDF *@
     @if (_pdfModalUrl != null)
     {
         <div class="oda-pdf-modal-overlay" @onclick="ClosePdfModal">
@@ -112,7 +112,7 @@
         </div>
     }
 
-    @* ══ MODALE DE CONFIRMATION ══ *@
+    @* MODALE DE CONFIRMATION *@
     @if (_confirmModalOffre != null)
     {
         <div class="oda-confirm-modal-overlay" @onclick="CloseConfirmModal">
@@ -127,7 +127,7 @@
                     @_confirmModalOffre.NomFichier
                 </div>
 
-                @* ── Bannière irréversible ── *@
+                @* Bannière irréversible *@
                 <div class="oda-confirm-irreversible-banner">
                     <svg class="oda-irrev-icon" viewBox="0 0 24 24" fill="none">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -177,12 +177,76 @@
                         <span class="oda-sub-mobile">Consultez et sélectionnez la meilleure offre</span>
                     </p>
                 </div>
-                @if (_offres.Count > 0)
+               @if (_offres.Count > 0)
                 {
                     <span class="oda-pill">@_offres.Count offre(s)</span>
+                    <button class="oda-btn-analyze-all @(_isAnalyzingAll ? "analyzing" : "")"
+                            @onclick="AnalyzeAll"
+                            disabled="@(_isAnalyzingAll || _confirmedId.HasValue)">
+                        @if (_isAnalyzingAll)
+                        {
+                            <span class="oda-ocr-spin"></span>
+                            <span>Analyse en cours...</span>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                            <span>Analyser tout</span>
+                        }
+                    </button>
                 }
+                
             </header>
-
+            @if (_isAnalyzingAll || (_analyzeAllStatus.Count > 0 && _analyzeAllStatus.Values.Any(s => s == "done" || s == "error")))
+            {
+                <div class="oda-analyze-all-bar">
+                    <div class="oda-analyze-all-title">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                        Analyse OCR globale
+                        @if (!_isAnalyzingAll)
+                        {
+                            <span class="oda-analyze-all-done-label">— Terminée</span>
+                        }
+                    </div>
+                    <div class="oda-analyze-all-items">
+                        @foreach (var offre in _offres)
+                        {
+                            var st = _analyzeAllStatus.GetValueOrDefault(offre.IdOffre, "waiting");
+                            <div class="oda-analyze-item oda-analyze-@st">
+                                @if (st == "running")
+                                {
+                                    <span class="oda-ocr-spin oda-spin-sm"></span>
+                                }
+                                else if (st == "done")
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                }
+                                else if (st == "error")
+                                {
+                                    <svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                }
+                                else
+                                {
+                                    <span class="oda-analyze-waiting-dot"></span>
+                                }
+                                <span class="oda-analyze-item-name">@offre.NomFichier</span>
+                                <span class="oda-analyze-item-st">
+                                    @(st switch {
+                                        "running" => "En cours...",
+                                        "done"    => "Extrait ✓",
+                                        "error"   => "Erreur",
+                                        _         => "En attente"
+                                    })
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
             <div class="oda-content">
                 @if (_isLoading)
                 {
@@ -210,7 +274,6 @@
                             bool confirmed  = _confirmedId == offre.IdOffre;
                             bool isExpanded = _expandedId == offre.IdOffre;
                             bool modalOpen  = _confirmModalOffre != null;
-                            // locked = modal ouvert OU une offre déjà confirmée
                             bool locked     = modalOpen || _confirmedId.HasValue;
 
                             <div class="oda-sel-card @(selected ? "is-selected" : "") @(confirmed ? "is-confirmed" : "") @(locked && !confirmed ? "is-locked" : "")">
@@ -608,7 +671,7 @@
     </div>
 
 </div>
-@* ══ BOUTON CHATBOT FLOTTANT ══ *@
+@* BOUTON CHATBOT FLOTTANT *@
 <button class="oda-chat-fab @(_chatOpen ? "is-open" : "")"
         @onclick="ToggleChat">
     @if (_chatOpen)
@@ -625,7 +688,7 @@
     }
 </button>
 
-@* ══ PANNEAU CHATBOT ══ *@
+@* PANNEAU CHATBOT *@
 @if (_chatOpen)
 {
     <div class="oda-chat-panel">

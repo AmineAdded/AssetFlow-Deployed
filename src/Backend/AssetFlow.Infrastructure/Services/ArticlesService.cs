@@ -197,7 +197,7 @@ namespace AssetFlow.Application.Services
                     ArticleId     = article.Id,
                     TypeEvenement = TypeEvenementArticle.MiseEnStock,
                     UtilisateurId = null,
-                    DateEvenement = DateTime.Now,
+                    DateEvenement = DateTime.UtcNow,
                     Description   = "Remis en service — état remis à Bon, retour en stock disponible"
                 });
 

@@ -201,7 +201,7 @@
                                             }
 
                                             <div class="msg-bubble-meta">
-                                                <span class="msg-bubble-time">@msg.SentAt.ToString("HH:mm")</span>
+                                                <span class="msg-bubble-time">@msg.SentAt.ToLocalTime().ToString("HH:mm")</span>
                                                 @if (isMe)
                                                 {
                                                     <span class="msg-read-status">

@@ -1,5 +1,3 @@
-// AssetFlow.Application/Services/OffreSelectionService.cs
-
 using AssetFlow.Application.DTOs;
 using AssetFlow.Application.Interfaces;
 
@@ -9,13 +7,16 @@ namespace AssetFlow.Infrastructure.Services
     {
         private readonly IRedisOffreService _redis;
         private readonly IOffreAchatService _offres;
+        private readonly IDashboardNotifier _notifier;
 
         public OffreSelectionService(
             IRedisOffreService redis,
-            IOffreAchatService offres)
+            IOffreAchatService offres,
+            IDashboardNotifier notifier)
         {
-            _redis  = redis;
-            _offres = offres;
+            _redis    = redis;
+            _offres   = offres;
+            _notifier = notifier;
         }
 
         public async Task<(bool Success, string? Error)> ConfirmSelectionAsync(OffreSelectionDto dto)
@@ -40,7 +41,16 @@ namespace AssetFlow.Infrastructure.Services
             var success = await _offres.ChoisirOffreAsync(dto.OffreId, dto.IdDemande);
             if (!success) return (false, "Offre introuvable.");
 
-            // 4. Supprimer TOUS les caches OCR de la demande
+            // 4. Notifier tous les clients SignalR en temps réel  ← AJOUT
+            await _notifier.NotifyAsync();
+            await _notifier.NotifyITAsync();
+            await _notifier.NotifyMemoryAsync("GraphNodeUpdated", new
+            {
+                Type   = "demande",
+                NodeId = $"d-{dto.IdDemande}"
+            });
+
+            // 5. Supprimer TOUS les caches OCR de la demande
             var toutesLesOffres = await _offres.GetByDemandeIdAsync(dto.IdDemande);
             foreach (var offre in toutesLesOffres)
                 await _redis.DeleteOffreSelectionAsync($"ocr_cache:{offre.IdOffre}");

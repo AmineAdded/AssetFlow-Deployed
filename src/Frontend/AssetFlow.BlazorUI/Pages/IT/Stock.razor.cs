@@ -292,8 +292,7 @@ namespace AssetFlow.BlazorUI.Pages.IT
         
             try
             {
-                // Réutilise l'endpoint existant api/commandes/articles/{materielId}
-                var http = /* injecter HttpClient ou passer par un service existant */
+                var http =
                     await CommandeSvc.GetArticlesByMaterielAsync(mat.Id);
                 _panneauArticles = http;
             }
@@ -305,8 +304,6 @@ namespace AssetFlow.BlazorUI.Pages.IT
             }
         }
         private void FermerArticles() => _panneauArticlesOuvert = false;
- 
-        // Demande hors service
         private void DemanderHorsService(ArticleDto art) => _articleHorsService = art;
         private void AnnulerHorsService()                => _articleHorsService = null;
         
@@ -322,12 +319,11 @@ namespace AssetFlow.BlazorUI.Pages.IT
                 var (success, message) = await ArticleSvc.MettreHorsServiceAsync(art.Id);
                 if (success)
                 {
-                    // Mettre à jour localement sans rechargement complet
                     var idx = _panneauArticles.IndexOf(art);
                     if (idx >= 0) _panneauArticles[idx].Statut = "HorsService";
         
                     AfficherToast($"Article « {art.NumeroSerie ?? $"#{art.Id}"} » mis hors service.", "toast-success");
-                    await ChargerMateriels(); // rafraîchit les compteurs
+                    await ChargerMateriels();
                 }
                 else
                 {

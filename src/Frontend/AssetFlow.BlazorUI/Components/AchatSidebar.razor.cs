@@ -124,8 +124,9 @@ namespace AssetFlow.BlazorUI.Components
         // ── SignalR : hub des demandes d'achat ────────────────────────────────
         private async Task ConnecterDashboardHubAsync()
         {
+            var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
             _hubDashboard = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5235/dashboardhub", options =>
+                .WithUrl(hubUrl, options =>
                 {
                     options.AccessTokenProvider = async () =>
                     {

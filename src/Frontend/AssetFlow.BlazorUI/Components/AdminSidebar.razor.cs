@@ -14,6 +14,7 @@ namespace AssetFlow.BlazorUI.Components
         [Inject] private StockAlertService   StockAlertSvc   { get; set; } = default!;
         [Inject] private AgentChatService    AgentSvc        { get; set; } = default!;
         [Inject] private ILocalStorageService LocalStorage   { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
 
         [Parameter] public bool ForceOpen { get; set; } = false;
 
@@ -89,8 +90,9 @@ namespace AssetFlow.BlazorUI.Components
         // ── SignalR ───────────────────────────────────────────────────────────
         private async Task ConnecterDashboardHubAsync()
         {
+            var hubUrl = Http.BaseAddress!.ToString().TrimEnd('/') + "/dashboardhub";
             _hubDashboard = new HubConnectionBuilder()
-                .WithUrl("http://localhost:5235/dashboardhub", options =>
+                .WithUrl(hubUrl, options =>
                 {
                     options.AccessTokenProvider = async () =>
                     {
